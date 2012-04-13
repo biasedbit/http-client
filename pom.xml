@@ -1,0 +1,112 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.biasedbit</groupId>
+  <artifactId>http-client</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>HTTP client framework</name>
+  <description>
+    A Java high performance throughput-oriented HTTP client library built with Netty.
+  </description>
+  <inceptionYear>2012</inceptionYear>
+  <developers>
+    <developer>
+      <name>Bruno de Carvalho</name>
+      <email>bruno@biasedbit.com</email>
+      <url>http://biasedbit.com</url>
+    </developer>
+  </developers>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- Netty; the network I/O swiss army knife -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty</artifactId>
+      <version>3.4.0.Final</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- JUnit; for testing -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.10</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Generate the javadoc -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.8</version>
+          <configuration>
+            <aggregate>true</aggregate>
+            <attach>false</attach>
+            <level>public</level>
+            <stylesheetfile>${basedir}/src/javadoc/stylesheet.css</stylesheetfile>
+            <javadocDirectory>${basedir}/src/javadoc/</javadocDirectory>
+            <docfilessubdirs>true</docfilessubdirs>
+            <useStandardDocletOptions>true</useStandardDocletOptions>
+            <outputDirectory>${project.build.directory}/api</outputDirectory>
+            <reportOutputDirectory>${project.build.directory}/api</reportOutputDirectory>
+            <destDir>api</destDir>
+            <charset>UTF-8</charset>
+            <docencoding>UTF-8</docencoding>
+            <breakiterator>true</breakiterator>
+            <version>true</version>
+            <author>true</author>
+            <keywords>true</keywords>
+            <overview>${basedir}/src/javadoc/overview.html</overview>
+            <doctitle>${project.name} API Reference (${project.version})</doctitle>
+            <windowtitle>${project.name} API Reference (${project.version)</windowtitle>
+            <additionalparam>
+              -link http://java.sun.com/javase/6/docs/api/
+              -link http://docs.jboss.org/netty/3.2/api/
+
+              -group "Connection to server" ${project.groupId}.client.*
+              -group "Request/response lifecycle" ${project.groupId}.request*:${project.groupId}.response*
+
+              -sourceclasspath ${project.build.outputDirectory}
+              -nopackagediagram
+            </additionalparam>
+            <encoding>UTF-8</encoding>
+            <locale>en_US</locale>
+            <excludePackageNames>
+              org.jboss*
+            </excludePackageNames>
+          </configuration>
+        </plugin>
+
+        <!-- IDEA integration -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-idea-plugin</artifactId>
+          <version>2.2</version>
+          <configuration>
+            <downloadSources>true</downloadSources>
+            <jdkLevel>6.0</jdkLevel>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>

@@ -1,0 +1,6 @@
+http-client History
+==================
+
+1.0.0
+-----
+* First release. Based on previous project called hotpotato.
