@@ -30,7 +30,8 @@ import java.security.SecureRandom;
  * @author <a href="https://github.com/jerjanssen">Jeremiah Janssen</a>
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class DefaultSslContextFactory implements SslContextFactory {
+public class DefaultSslContextFactory
+        implements SslContextFactory {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -111,7 +112,8 @@ public class DefaultSslContextFactory implements SslContextFactory {
             return this;
         }
 
-        public DefaultSslContextFactory build() throws Exception {
+        public DefaultSslContextFactory build()
+                throws Exception {
             if (this.algorithm == null) {
                 this.algorithm = "SunX509";
             }

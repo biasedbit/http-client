@@ -21,7 +21,6 @@ import com.biasedbit.http.connection.HttpConnectionFactory;
 import com.biasedbit.http.future.HttpRequestFutureFactory;
 import com.biasedbit.http.host.DefaultHostContextFactory;
 import com.biasedbit.http.host.HostContextFactory;
-import com.biasedbit.http.ssl.BogusSslContextFactory;
 import com.biasedbit.http.ssl.SslContextFactory;
 import com.biasedbit.http.timeout.TimeoutManager;
 
@@ -65,7 +64,7 @@ public class DefaultHttpClientFactory
     private static final HostContextFactory    HOST_CONTEXT_FACTORY               = new DefaultHostContextFactory();
     private static final HttpConnectionFactory CONNECTION_FACTORY                 = new DefaultHttpConnectionFactory();
     private static final boolean               CLEANUP_INACTIVE_HOST_CONTEXTS     = true;
-    private static final SslContextFactory     SSL_CONTEXT_FACTORY                = new BogusSslContextFactory();
+    private static final SslContextFactory     SSL_CONTEXT_FACTORY                = null;
 
     // configuration --------------------------------------------------------------------------------------------------
 
@@ -110,7 +109,6 @@ public class DefaultHttpClientFactory
         this.maxIoWorkerThreads = MAX_IO_WORKER_THREADS;
         this.maxEventProcessorHelperThreads = MAX_EVENT_PROCESSOR_HELPER_THREADS;
         this.cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
-        this.sslContextFactory = SSL_CONTEXT_FACTORY;
     }
 
     // HttpClientFactory ----------------------------------------------------------------------------------------------

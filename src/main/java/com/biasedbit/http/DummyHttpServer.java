@@ -155,7 +155,7 @@ public class DummyHttpServer {
                 ChannelPipeline pipeline = Channels.pipeline();
 
                 if (useSsl) {
-                    SSLEngine engine = new BogusSslContextFactory().getServerContext().createSSLEngine();
+                    SSLEngine engine = BogusSslContextFactory.getInstance().getServerContext().createSSLEngine();
                     engine.setUseClientMode(false);
                     pipeline.addLast("ssl", new SslHandler(engine));
                 }

@@ -51,7 +51,8 @@ public class BogusTrustManagerFactory extends TrustManagerFactorySpi {
     }
 
     @Override
-    protected void engineInit(KeyStore keystore) throws KeyStoreException {
+    protected void engineInit(KeyStore keystore)
+            throws KeyStoreException {
         // Unused
     }
 
@@ -64,18 +65,26 @@ public class BogusTrustManagerFactory extends TrustManagerFactorySpi {
     // private classes ------------------------------------------------------------------------------------------------
 
     private static final TrustManager DUMMY_TRUST_MANAGER = new X509TrustManager() {
+
+        // X509TrustManager -------------------------------------------------------------------------------------------
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] arg0, String arg1)
+                throws CertificateException {
+            // Always trust - it is an example.
+            // You should do something in the real world.
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] arg0, String arg1)
+                throws CertificateException {
+            // Always trust - it is an example.
+            // You should do something in the real world.
+        }
+
+        @Override
         public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[0];
-        }
-
-        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-            // Always trust - it is an example.
-            // You should do something in the real world.
-        }
-
-        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-            // Always trust - it is an example.
-            // You should do something in the real world.
         }
     };
 }

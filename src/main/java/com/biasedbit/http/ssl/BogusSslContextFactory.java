@@ -35,11 +35,12 @@ import java.security.Security;
  *
  * @version $Rev: 183008 $, $Date: 2008-11-18 20:44:38 -0500 (Tue, 18 Nov 2008) $
  */
-public class BogusSslContextFactory implements SslContextFactory {
+public class BogusSslContextFactory
+        implements SslContextFactory {
 
     // constants ------------------------------------------------------------------------------------------------------
 
-    private static final String PROTOCOL = "TLS";
+    private static final String                 PROTOCOL = "TLS";
     private static final BogusSslContextFactory INSTANCE = new BogusSslContextFactory();
 
     // internal vars --------------------------------------------------------------------------------------------------
@@ -52,12 +53,13 @@ public class BogusSslContextFactory implements SslContextFactory {
     public BogusSslContextFactory() {
         String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
         if (algorithm == null) {
-            algorithm = "SunX509";
+            algorithm = "X509";
         }
 
         SSLContext tmpServerContext;
         SSLContext tmpClientContext;
         try {
+            // If you're on android, use BKS here instead of JKS
             KeyStore ks = KeyStore.getInstance("JKS");
             ks.load(BogusKeyStore.asInputStream(), BogusKeyStore.getKeyStorePassword());
 
@@ -99,5 +101,11 @@ public class BogusSslContextFactory implements SslContextFactory {
     @Override
     public SSLContext getClientContext() {
         return clientContext;
+    }
+
+    // private classes ------------------------------------------------------------------------------------------------
+
+    private static class Singleton {
+
     }
 }

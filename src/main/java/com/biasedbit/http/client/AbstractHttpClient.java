@@ -240,7 +240,7 @@ public abstract class AbstractHttpClient
             this.futureFactory = new DefaultHttpRequestFutureFactory();
         }
 
-        if (this.sslContextFactory == null) {
+        if ((this.sslContextFactory == null) && this.isHttps()) {
             this.sslContextFactory = new BogusSslContextFactory();
         }
 
