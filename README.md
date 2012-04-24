@@ -12,7 +12,7 @@ Dependencies
 ------------
 
 * JDK 1.6
-* [Netty 3.4.0.Final](http://netty.io/downloads/)
+* [Netty 3.4](http://netty.io/downloads/)
 
 License
 -------
