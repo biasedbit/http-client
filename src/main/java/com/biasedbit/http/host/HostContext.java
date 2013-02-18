@@ -88,6 +88,7 @@ public interface HostContext {
      * Fails all queued requests with the given cause.
      *
      * @param cause Cause to fail all queued requests.
+     * @return 
      */
-    void failAllRequests(Throwable cause);
+    int failAllRequests(Throwable cause);
 }

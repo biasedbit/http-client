@@ -145,10 +145,12 @@ public abstract class AbstractHostContext
     }
 
     @Override
-    public void failAllRequests(Throwable cause) {
+    public int failAllRequests(Throwable cause) {
+    	int numFailedRequests = queue.size();
         for (HttpRequestContext context : this.queue) {
             context.getFuture().setFailure(cause);
         }
         this.queue.clear();
+        return numFailedRequests;
     }
 }

@@ -111,7 +111,8 @@ public class VerboseHttpClient extends AbstractHttpClient
             this.log(statement);
             // Connection failures occured and there are no more connections active or establishing, so its time to
             // fail all queued requests.
-            context.failAllRequests(HttpRequestFuture.CANNOT_CONNECT);
+            int noFailedRequests = context.failAllRequests(HttpRequestFuture.CANNOT_CONNECT);
+            queuedRequests.addAndGet(noFailedRequests * -1);
         }
     }
 
