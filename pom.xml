@@ -4,7 +4,7 @@
 
   <groupId>com.biasedbit</groupId>
   <artifactId>http-client</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
 
   <name>HTTP client framework</name>
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.4.1.Final</version>
+      <version>3.6.5.Final</version>
       <scope>compile</scope>
     </dependency>
 
@@ -44,7 +44,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.10</version>
+      <version>4.11</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
