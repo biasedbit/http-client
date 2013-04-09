@@ -71,7 +71,7 @@ public class DefaultSslContextFactory
         private String keyStorePassword    = null;
         private String certificatePassword = null;
 
-        // public methods ---------------------------------------------------------------------------------------------
+        // interface --------------------------------------------------------------------------------------------------
 
         public Builder setAlgorithm(final String algorithm) {
             this.algorithm = algorithm;

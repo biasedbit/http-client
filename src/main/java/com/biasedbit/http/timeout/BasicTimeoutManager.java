@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class BasicTimeoutManager implements TimeoutManager {
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private final Executor executor;
 

@@ -67,7 +67,7 @@ public class PipeliningHttpConnection extends SimpleChannelUpstreamHandler
     private static final boolean ALLOW_NON_IDEMPOTENT_PIPELINING      = false;
     private static final int     MAX_REQUESTS_IN_PIPELINE             = 50;
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private final String                 id;
     private final String                 host;

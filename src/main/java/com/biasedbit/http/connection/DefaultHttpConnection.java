@@ -52,7 +52,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
     private static final boolean DISCONNECT_IF_NON_KEEP_ALIVE_REQUEST = false;
     private static final boolean RESTORE_NON_IDEMPOTENT_OPERATIONS    = false;
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private final String                 id;
     private final String                 host;

@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class HashedWheelTimeoutManager implements TimeoutManager {
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private final HashedWheelTimer timer;
 

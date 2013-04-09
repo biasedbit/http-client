@@ -32,7 +32,7 @@ public class PipeliningHttpConnectionFactory
     private static final boolean ALLOW_POST_PIPELINING = false;
     private static final int MAX_REQUESTS_IN_PIPELINE = 50;
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private boolean disconnectIfNonKeepAliveRequest;
     private boolean allowNonIdempotentPipelining;

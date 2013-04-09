@@ -31,7 +31,7 @@ public class DefaultHttpConnectionFactory
     private static final boolean DISCONNECT_IF_NON_KEEP_ALIVE_REQUEST = false;
     private static final boolean RESTORE_NON_IDEMPOTENT_OPERATIONS = false;
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private boolean disconnectIfNonKeepAliveRequest;
     private boolean restoreNonIdempotentOperations;

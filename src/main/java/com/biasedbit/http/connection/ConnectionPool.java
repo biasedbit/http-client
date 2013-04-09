@@ -42,7 +42,7 @@ public class ConnectionPool {
         this.connections = new LinkedList<HttpConnection>();
     }
 
-    // public methods -------------------------------------------------------------------------------------------------
+    // interface ------------------------------------------------------------------------------------------------------
 
     public void connectionOpening() {
         this.connectionsOpening++;

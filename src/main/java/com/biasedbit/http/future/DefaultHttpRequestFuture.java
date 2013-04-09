@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class DefaultHttpRequestFuture<T>
         implements HttpRequestFuture<T> {
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private final boolean cancellable;
 
@@ -332,7 +332,7 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
-    // public methods -------------------------------------------------------------------------------------------------
+    // interface ------------------------------------------------------------------------------------------------------
 
     public void attachConnection(HttpConnection connection) {
         this.connection = connection;

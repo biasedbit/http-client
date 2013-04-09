@@ -78,6 +78,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.biasedbit.http.util.Utils.*;
+
 /**
  * Abstract implementation of the {@link HttpClient} interface. Contains most of the boilerplate code that other
  * {@link HttpClient} implementations would also need.
@@ -133,15 +135,9 @@ public abstract class AbstractHttpClient
     // constants ------------------------------------------------------------------------------------------------------
 
     protected static final HttpClientEvent POISON = new HttpClientEvent() {
-        @Override
-        public EventType getEventType() {
-            return null;
-        }
+        @Override public EventType getEventType() { return null; }
 
-        @Override
-        public String toString() {
-            return "POISON";
-        }
+        @Override public String toString() { return "POISON"; }
     };
 
     // configuration defaults -----------------------------------------------------------------------------------------
@@ -160,7 +156,7 @@ public abstract class AbstractHttpClient
     protected static final int     MAX_EVENT_PROCESSOR_HELPER_THREADS = 20;
     protected static final boolean CLEANUP_INACTIVE_HOST_CONTEXTS     = true;
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     protected boolean                  useSsl;
     protected int                      requestCompressionLevel;
@@ -198,74 +194,65 @@ public abstract class AbstractHttpClient
     // constructors ---------------------------------------------------------------------------------------------------
 
     public AbstractHttpClient() {
-        this.useSsl = USE_SSL;
-        this.requestCompressionLevel = REQUEST_COMPRESSION_LEVEL;
-        this.autoInflate = AUTO_INFLATE;
-        this.requestChunkSize = REQUEST_CHUNK_SIZE;
-        this.aggregateResponseChunks = AGGREGATE_RESPONSE_CHUNKS;
-        this.connectionTimeoutInMillis = CONNECTION_TIMEOUT_IN_MILLIS;
-        this.requestTimeoutInMillis = REQUEST_TIMEOUT_IN_MILLIS;
-        this.maxConnectionsPerHost = MAX_CONNECTIONS_PER_HOST;
-        this.maxQueuedRequests = MAX_QUEUED_REQUESTS;
-        this.useNio = USE_NIO;
-        this.maxIoWorkerThreads = MAX_IO_WORKER_THREADS;
-        this.maxEventProcessorHelperThreads = MAX_EVENT_PROCESSOR_HELPER_THREADS;
-        this.cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
+        useSsl = USE_SSL;
+        requestCompressionLevel = REQUEST_COMPRESSION_LEVEL;
+        autoInflate = AUTO_INFLATE;
+        requestChunkSize = REQUEST_CHUNK_SIZE;
+        aggregateResponseChunks = AGGREGATE_RESPONSE_CHUNKS;
+        connectionTimeoutInMillis = CONNECTION_TIMEOUT_IN_MILLIS;
+        requestTimeoutInMillis = REQUEST_TIMEOUT_IN_MILLIS;
+        maxConnectionsPerHost = MAX_CONNECTIONS_PER_HOST;
+        maxQueuedRequests = MAX_QUEUED_REQUESTS;
+        useNio = USE_NIO;
+        maxIoWorkerThreads = MAX_IO_WORKER_THREADS;
+        maxEventProcessorHelperThreads = MAX_EVENT_PROCESSOR_HELPER_THREADS;
+        cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
-        this.queuedRequests = new AtomicInteger(0);
+        queuedRequests = new AtomicInteger(0);
 
         // No need for synchronized structures here, as they'll be accessed by a single thread
-        this.contextMap = new HashMap<String, HostContext>();
+        contextMap = new HashMap<String, HostContext>();
     }
 
     // HttpClient -----------------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean init() {
-        if (this.timeoutManager == null) {
+    @Override public boolean init() {
+        if (timeoutManager == null) {
             // Consumes less resources, puts less emphasis on precision.
-            this.timeoutManager = new HashedWheelTimeoutManager();
+            timeoutManager = new HashedWheelTimeoutManager();
             //this.timeoutManager = new BasicTimeoutManager(10);
-            this.timeoutManager.init();
-            this.internalTimeoutManager = true;
+            timeoutManager.init();
+            internalTimeoutManager = true;
         }
 
-        if (this.hostContextFactory == null) {
-            this.hostContextFactory = new DefaultHostContextFactory();
-        }
-        if (this.connectionFactory == null) {
-            this.connectionFactory = new DefaultHttpConnectionFactory();
-        }
-        if (this.futureFactory == null) {
-            this.futureFactory = new DefaultHttpRequestFutureFactory();
-        }
+        if (hostContextFactory == null) hostContextFactory = new DefaultHostContextFactory();
+        if (connectionFactory == null) connectionFactory = new DefaultHttpConnectionFactory();
+        if (futureFactory == null) futureFactory = new DefaultHttpRequestFutureFactory();
 
-        if ((this.sslContextFactory == null) && this.isHttps()) {
-            this.sslContextFactory = new BogusSslContextFactory();
-        }
+        if ((sslContextFactory == null) && isHttps()) sslContextFactory = new BogusSslContextFactory();
 
-        this.eventConsumerLatch = new CountDownLatch(1);
-        this.eventQueue = new LinkedBlockingQueue<HttpClientEvent>();
+        eventConsumerLatch = new CountDownLatch(1);
+        eventQueue = new LinkedBlockingQueue<HttpClientEvent>();
 
         // TODO instead of fixed size thread pool, use a cached thread pool with size limit (limited growth cached pool)
-        this.executor = Executors.newFixedThreadPool(this.maxEventProcessorHelperThreads,
-                                                     new NamelessThreadFactory("httpHandyman"));
-        Executor workerPool = Executors.newFixedThreadPool(this.maxIoWorkerThreads,
+        executor = Executors.newFixedThreadPool(maxEventProcessorHelperThreads,
+                                                new NamelessThreadFactory("httpHandyman"));
+        Executor workerPool = Executors.newFixedThreadPool(maxIoWorkerThreads,
                                                            new NamelessThreadFactory("httpWorkers"));
 
-        if (this.useNio) {
+        if (useNio) {
             // It's only going to create 1 thread, so no harm done here.
             Executor bossPool = Executors.newCachedThreadPool();
-            this.channelFactory = new NioClientSocketChannelFactory(bossPool, workerPool);
+            channelFactory = new NioClientSocketChannelFactory(bossPool, workerPool);
         } else {
-            this.channelFactory = new OioClientSocketChannelFactory(workerPool);
+            channelFactory = new OioClientSocketChannelFactory(workerPool);
         }
 
-        this.channelGroup = new CleanupChannelGroup(this.toString());
+        channelGroup = new CleanupChannelGroup(toString());
         // Create a pipeline without the last handler (it will be added right before connecting).
-        this.pipelineFactory = new ChannelPipelineFactory() {
-            @Override
-            public ChannelPipeline getPipeline() throws Exception {
+        pipelineFactory = new ChannelPipelineFactory() {
+            @Override public ChannelPipeline getPipeline()
+                    throws Exception {
                 ChannelPipeline pipeline = Channels.pipeline();
                 if (useSsl) {
                     SSLEngine engine = sslContextFactory.getClientContext().createSSLEngine();
@@ -278,45 +265,36 @@ public abstract class AbstractHttpClient
                 }
 
                 pipeline.addLast("codec", new HttpClientCodec(4096, 8192, requestChunkSize));
-                if (autoInflate) {
-                    pipeline.addLast("inflater", new HttpContentDecompressor());
-                }
-                if (aggregateResponseChunks) {
-                    pipeline.addLast("aggregator", new HttpChunkAggregator(1048576));
-                }
+                if (autoInflate) pipeline.addLast("inflater", new HttpContentDecompressor());
+                if (aggregateResponseChunks) pipeline.addLast("aggregator", new HttpChunkAggregator(1048576));
+
                 return pipeline;
             }
         };
 
-        this.executor.execute(new Runnable() {
-            @Override
-            public void run() {
+        executor.execute(new Runnable() {
+            @Override public void run() {
                 eventHandlingLoop();
             }
         });
+
         return true;
     }
 
-    @Override
-    public boolean isInitialized() {
-        return (this.eventQueue != null) && !this.terminate;
-    }
+    @Override public boolean isInitialized() { return (eventQueue != null) && !terminate; }
 
-    @Override
-    public void terminate() {
-        if (this.terminate || this.eventQueue == null) {
-            return;
-        }
+    @Override public void terminate() {
+        if (terminate || eventQueue == null) return;
 
         // Stop accepting requests.
-        this.terminate = true;
+        terminate = true;
         // Copy any pending operations in order to signal execution request failures.
-        Collection<HttpClientEvent> pendingEvents = new ArrayList<HttpClientEvent>(this.eventQueue);
+        Collection<HttpClientEvent> pendingEvents = new ArrayList<HttpClientEvent>(eventQueue);
         // Clear the queue and kill the consumer thread by "poisoning" the event queue.
-        this.eventQueue.clear();
-        this.eventQueue.add(POISON);
+        eventQueue.clear();
+        eventQueue.add(POISON);
         try {
-            this.eventConsumerLatch.await();
+            eventConsumerLatch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -327,6 +305,7 @@ public abstract class AbstractHttpClient
                 case EXECUTE_REQUEST:
                     ((ExecuteRequestEvent) event).getContext().getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
                     break;
+
                 case CONNECTION_CLOSED:
                     ConnectionClosedEvent closedEvent = (ConnectionClosedEvent) event;
                     if ((closedEvent.getRetryRequests() != null) && !closedEvent.getRetryRequests().isEmpty()) {
@@ -339,7 +318,7 @@ public abstract class AbstractHttpClient
 
         // Kill all connections (will cause failure on requests executing in those connections) and fail context-queued
         // requests.
-        for (HostContext hostContext : this.contextMap.values()) {
+        for (HostContext hostContext : contextMap.values()) {
             for (HttpRequestContext context : hostContext.getQueue()) {
                 context.getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
             }
@@ -347,41 +326,35 @@ public abstract class AbstractHttpClient
                 connection.terminate(HttpRequestFuture.SHUTTING_DOWN);
             }
         }
-        this.contextMap.clear();
+        contextMap.clear();
 
         try {
-            this.channelGroup.close().await(1000);
+            channelGroup.close().await(1000);
         } catch (InterruptedException e) {
             Thread.interrupted();
         }
 
-        this.channelFactory.releaseExternalResources();
-        if (this.executor != null) {
-            ExecutorUtil.terminate(this.executor);
-        }
+        channelFactory.releaseExternalResources();
+        if (executor != null) ExecutorUtil.terminate(executor);
 
-        if (this.internalTimeoutManager) {
-            this.timeoutManager.terminate();
-        }
+        if (internalTimeoutManager) timeoutManager.terminate();
     }
 
-    @Override
-    public <T> HttpRequestFuture<T> execute(String host, int port, HttpRequest request,
+    @Override public <T> HttpRequestFuture<T> execute(String host, int port, HttpRequest request,
                                             HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
-        return this.execute(host, port, this.requestTimeoutInMillis, request, processor);
+        return execute(host, port, requestTimeoutInMillis, request, processor);
     }
 
-    @Override
-    public HttpRequestFuture<Object> execute(String host, int port, HttpRequest request)
+    @Override public HttpRequestFuture<Object> execute(String host, int port, HttpRequest request)
             throws CannotExecuteRequestException {
-        return this.execute(host, port, request, DiscardProcessor.getInstance());
+        return execute(host, port, request, DiscardProcessor.getInstance());
     }
 
-    @Override
-    public <T> HttpRequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                            HttpResponseProcessor<T> processor) throws CannotExecuteRequestException {
-        return this.execute(host, port, timeout, request, processor, null);
+    @Override public <T> HttpRequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
+                                                      HttpResponseProcessor<T> processor)
+            throws CannotExecuteRequestException {
+        return execute(host, port, timeout, request, processor, null);
     }
 
     @Override
@@ -394,87 +367,75 @@ public abstract class AbstractHttpClient
             throw new IllegalArgumentException("Requests with HttpDataSink must be PUT or POST");
         }
 
-        if (this.eventQueue == null) {
-            throw new CannotExecuteRequestException(this.getClass().getSimpleName() + " was not initialised");
+        if (eventQueue == null) {
+            throw new CannotExecuteRequestException(getClass().getSimpleName() + " was not initialised");
         }
 
-        if (this.queuedRequests.incrementAndGet() > this.maxQueuedRequests) {
-            this.queuedRequests.decrementAndGet();
+        if (queuedRequests.incrementAndGet() > maxQueuedRequests) {
+            queuedRequests.decrementAndGet();
             throw new CannotExecuteRequestException("Request queue is full");
         }
 
         // Perform these checks on the caller thread's time rather than the event dispatcher's.
-        if (this.autoInflate) {
-            request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
-        }
-        HttpRequestFuture<T> future = this.futureFactory.getFuture(true);
+        if (autoInflate) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
+
+        HttpRequestFuture<T> future = futureFactory.getFuture(true);
         HttpRequestContext<T> context = new HttpRequestContext<T>(host, port, timeout, request, processor, future);
         context.setDataSinkListener(dataSinkListener);
 
-        if (this.terminate || !this.eventQueue.offer(new ExecuteRequestEvent(context))) {
+        if (terminate || !eventQueue.offer(new ExecuteRequestEvent(context))) {
             throw new CannotExecuteRequestException("Failed to add request to queue");
         }
 
         return future;
     }
 
-    @Override
-    public boolean isHttps() {
-        return this.useSsl;
-    }
+    @Override public boolean isHttps() { return useSsl; }
 
     // HttpConnectionListener -----------------------------------------------------------------------------------------
 
-    @Override
-    public void connectionOpened(HttpConnection connection) {
-        if (this.terminate) {
-            return;
-        }
-        this.eventQueue.offer(new ConnectionOpenEvent(connection));
+    @Override public void connectionOpened(HttpConnection connection) {
+        if (terminate) return;
+
+        eventQueue.offer(new ConnectionOpenEvent(connection));
     }
 
-    @Override
-    public void connectionTerminated(HttpConnection connection, Collection<HttpRequestContext> retryRequests) {
-        if (this.terminate) {
+    @Override public void connectionTerminated(HttpConnection connection,
+                                               Collection<HttpRequestContext> retryRequests) {
+        if (terminate) {
             if ((retryRequests != null) && !retryRequests.isEmpty()) {
                 for (HttpRequestContext request : retryRequests) {
                     request.getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
                 }
             }
-            return;
+        } else {
+            eventQueue.offer(new ConnectionClosedEvent(connection, retryRequests));
         }
-        this.eventQueue.offer(new ConnectionClosedEvent(connection, retryRequests));
     }
 
-    @Override
-    public void connectionTerminated(HttpConnection connection) {
-        if (this.terminate) {
-            return;
-        }
-        this.eventQueue.offer(new ConnectionClosedEvent(connection, null));
+    @Override public void connectionTerminated(HttpConnection connection) {
+        if (terminate) return;
+
+        eventQueue.offer(new ConnectionClosedEvent(connection, null));
     }
 
-    @Override
-    public void connectionFailed(HttpConnection connection) {
-        if (this.terminate) {
-            return;
-        }
-        this.eventQueue.offer(new ConnectionFailedEvent(connection));
+    @Override public void connectionFailed(HttpConnection connection) {
+        if (terminate) return;
+
+        eventQueue.offer(new ConnectionFailedEvent(connection));
     }
 
-    @Override
-    public void requestFinished(HttpConnection connection, HttpRequestContext context) {
-        if (this.terminate) {
-            return;
-        }
-        this.eventQueue.offer(new RequestCompleteEvent(context));
+    @Override public void requestFinished(HttpConnection connection, HttpRequestContext context) {
+        if (terminate) return;
+
+        eventQueue.offer(new RequestCompleteEvent(context));
     }
 
-    // public methods -------------------------------------------------------------------------------------------------
+    // interface ------------------------------------------------------------------------------------------------------
 
     public Map<String, HostContext> getContextMap() {
         // Purely for unit testing purposes...
-        return Collections.unmodifiableMap(this.contextMap);
+        return Collections.unmodifiableMap(contextMap);
     }
 
     // protected helpers ----------------------------------------------------------------------------------------------
@@ -484,27 +445,27 @@ public abstract class AbstractHttpClient
             // Manual synchronization here because before removing an element, we first need to check whether an
             // active available connection exists to satisfy the request.
             try {
-                HttpClientEvent event = this.eventQueue.take();
+                HttpClientEvent event = eventQueue.take();
                 if (event == POISON) {
-                    this.eventConsumerLatch.countDown();
+                    eventConsumerLatch.countDown();
                     return;
                 }
 
                 switch (event.getEventType()) {
                     case EXECUTE_REQUEST:
-                        this.handleExecuteRequest((ExecuteRequestEvent) event);
+                        handleExecuteRequest((ExecuteRequestEvent) event);
                         break;
                     case REQUEST_COMPLETE:
-                        this.handleRequestComplete((RequestCompleteEvent) event);
+                        handleRequestComplete((RequestCompleteEvent) event);
                         break;
                     case CONNECTION_OPEN:
-                        this.handleConnectionOpen((ConnectionOpenEvent) event);
+                        handleConnectionOpen((ConnectionOpenEvent) event);
                         break;
                     case CONNECTION_CLOSED:
-                        this.handleConnectionClosed((ConnectionClosedEvent) event);
+                        handleConnectionClosed((ConnectionClosedEvent) event);
                         break;
                     case CONNECTION_FAILED:
-                        this.handleConnectionFailed((ConnectionFailedEvent) event);
+                        handleConnectionFailed((ConnectionFailedEvent) event);
                         break;
                     default:
                         // Consume and do nothing, unknown event.
@@ -519,84 +480,69 @@ public abstract class AbstractHttpClient
 
     protected void handleExecuteRequest(ExecuteRequestEvent event) {
         // First, add it to the queue (or create a queue for given host if one does not exist)
-        String id = this.hostId(event.getContext());
-        HostContext context = this.contextMap.get(id);
+        String id = hostId(event.getContext());
+        HostContext context = contextMap.get(id);
         if (context == null) {
-            context = this.hostContextFactory
-                    .createHostContext(event.getContext().getHost(), event.getContext().getPort(),
-                                       this.maxConnectionsPerHost);
-            this.contextMap.put(id, context);
+            context = hostContextFactory.createHostContext(event.getContext().getHost(),
+                                                           event.getContext().getPort(),
+                                                           maxConnectionsPerHost);
+            contextMap.put(id, context);
         }
 
         context.addToQueue(event.getContext());
-        this.drainQueueAndProcessResult(context);
+        drainQueueAndProcessResult(context);
     }
 
     protected void handleRequestComplete(RequestCompleteEvent event) {
-        this.queuedRequests.decrementAndGet();
+        queuedRequests.decrementAndGet();
 
-        HostContext context = this.contextMap.get(this.hostId(event.getContext()));
-        if (context == null) {
-            // Can only happen if context is cleaned meanwhile... ignore and bail out.
-            return;
-        }
+        HostContext context = contextMap.get(hostId(event.getContext()));
+        // Can only happen if context is cleaned meanwhile... ignore and bail out.
+        if (context == null) return;
 
-        this.drainQueueAndProcessResult(context);
+        drainQueueAndProcessResult(context);
     }
 
     protected void handleConnectionOpen(ConnectionOpenEvent event) {
-        String id = this.hostId(event.getConnection());
-        HostContext context = this.contextMap.get(id);
-        if (context == null) {
-            throw new IllegalStateException("Context for id '" + id +
-                                            "' does not exist (it may have been incorrectly cleaned up)");
-        }
+        String id = hostId(event.getConnection());
+        HostContext context = contextMap.get(id);
+        ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
 
         context.getConnectionPool().connectionOpen(event.getConnection());
         // Rather than go through the whole process of drainQueue(), simply poll a single element from the head of
         // the queue into this connection (a newly opened connection is ALWAYS available).
         HttpRequestContext nextRequest = context.pollQueue();
 
-        if (nextRequest != null) {
-            event.getConnection().execute(nextRequest);
-        }
+        if (nextRequest != null) event.getConnection().execute(nextRequest);
     }
 
     protected void handleConnectionClosed(ConnectionClosedEvent event) {
         // Update the list of available connections for the same host:port.
-        String id = this.hostId(event.getConnection());
-        HostContext context = this.contextMap.get(id);
-        if (context == null) {
-            throw new IllegalStateException("Context for id '" + id +
-                                            "' does not exist (it may have been incorrectly cleaned up)");
-        }
+        String id = hostId(event.getConnection());
+        HostContext context = contextMap.get(id);
+        ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
 
         context.getConnectionPool().connectionClosed(event.getConnection());
 
         // Restore the requests to the queue prior to cleanup check - avoids unnecessary cleanup when there are request
         // to be retried.
-        if (event.getRetryRequests() != null) {
-            context.restoreRequestsToQueue(event.getRetryRequests());
-        }
+        if (event.getRetryRequests() != null) context.restoreRequestsToQueue(event.getRetryRequests());
 
         // If the pool has no connections and no requests are in queue for this host, then clean it up.
         if ((context.getConnectionPool().getTotalConnections() == 0) && context.getQueue().isEmpty() &&
-            this.cleanupInactiveHostContexts) {
+            cleanupInactiveHostContexts) {
             // No requests in queue, no connections open or opening... Cleanup resources.
-            this.contextMap.remove(id);
+            contextMap.remove(id);
         }
 
-        this.drainQueueAndProcessResult(context);
+        drainQueueAndProcessResult(context);
     }
 
     protected void handleConnectionFailed(ConnectionFailedEvent event) {
         // Update the list of available connections for the same host:port.
-        String id = this.hostId(event.getConnection());
-        HostContext context = this.contextMap.get(id);
-        if (context == null) {
-            throw new IllegalStateException("Context for id '" + id +
-                                            "' does not exist (it may have been incorrectly cleaned up)");
-        }
+        String id = hostId(event.getConnection());
+        HostContext context = contextMap.get(id);
+        ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
 
         context.getConnectionPool().connectionFailed();
         if ((context.getConnectionPool().hasConnectionFailures() &&
@@ -611,8 +557,9 @@ public abstract class AbstractHttpClient
         HostContext.DrainQueueResult result = context.drainQueue();
         switch (result) {
             case OPEN_CONNECTION:
-                this.openConnection(context);
+                openConnection(context);
                 break;
+
             case QUEUE_EMPTY:
             case NOT_DRAINED:
             case DRAINED:
@@ -620,21 +567,13 @@ public abstract class AbstractHttpClient
         }
     }
 
-    protected String hostId(HttpConnection connection) {
-        return this.hostId(connection.getHost(), connection.getPort());
-    }
+    protected String hostId(HttpConnection connection) { return hostId(connection.getHost(), connection.getPort()); }
 
-    protected String hostId(HttpRequestContext context) {
-        return this.hostId(context.getHost(), context.getPort());
-    }
+    protected String hostId(HttpRequestContext context) { return hostId(context.getHost(), context.getPort()); }
 
-    protected String hostId(HostContext context) {
-        return this.hostId(context.getHost(), context.getPort());
-    }
+    protected String hostId(HostContext context) { return hostId(context.getHost(), context.getPort()); }
 
-    protected String hostId(String host, int port) {
-        return new StringBuilder().append(host).append(":").append(port).toString();
-    }
+    protected String hostId(String host, int port) { return string(host, ":", port); }
 
     protected void openConnection(final HostContext context) {
         // No need to recheck whether a connection can be opened or not, that was done already inside the HttpContext.
@@ -643,7 +582,7 @@ public abstract class AbstractHttpClient
         // This should never throw exceptions but who knows...
         final ChannelPipeline pipeline;
         try {
-            pipeline = this.pipelineFactory.getPipeline();
+            pipeline = pipelineFactory.getPipeline();
         } catch (Exception e) {
             // This should only happen in development mode so err.println isn't a big deal...
             System.err.println("Failed to create pipeline.");
@@ -656,21 +595,19 @@ public abstract class AbstractHttpClient
         context.getConnectionPool().connectionOpening();
 
         // server:port-X
-        String id = new StringBuilder().append(this.hostId(context)).append("-")
-                .append(this.connectionCounter++).toString();
+        String id = new StringBuilder().append(hostId(context)).append("-").append(connectionCounter++).toString();
 
         // If not using NIO, then delegate the blocking write() call to the executor.
-        Executor writeDelegator = this.useNio ? null : this.executor;
+        Executor writeDelegator = useNio ? null : executor;
 
-        final HttpConnection connection = this.connectionFactory
-                .createConnection(id, context.getHost(), context.getPort(), this, this.timeoutManager, writeDelegator);
+        final HttpConnection connection = connectionFactory
+                .createConnection(id, context.getHost(), context.getPort(), this, timeoutManager, writeDelegator);
 
         pipeline.addLast("handler", connection);
 
         // Delegate actual connection to other thread, since calling connect is a blocking call.
-        this.executor.execute(new Runnable() {
-            @Override
-            public void run() {
+        executor.execute(new Runnable() {
+            @Override public void run() {
                 ClientBootstrap bootstrap = new ClientBootstrap(channelFactory);
                 bootstrap.setOption("reuseAddress", true);
                 bootstrap.setOption("connectTimeoutMillis", connectionTimeoutInMillis);
@@ -678,8 +615,8 @@ public abstract class AbstractHttpClient
 
                 ChannelFuture future = bootstrap.connect(new InetSocketAddress(context.getHost(), context.getPort()));
                 future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
+                    @Override public void operationComplete(ChannelFuture future)
+                            throws Exception {
                         if (future.isSuccess()) {
                             // Don't even bother checking if client was already instructed to terminate since
                             // CleanupChannelGroup takes care of that.
@@ -693,9 +630,7 @@ public abstract class AbstractHttpClient
 
     // getters & setters ----------------------------------------------------------------------------------------------
 
-    public boolean isUseSsl() {
-        return useSsl;
-    }
+    public boolean isUseSsl() { return useSsl; }
 
     /**
      * Whether this client should create SSL or non-SSL connections.
@@ -707,15 +642,12 @@ public abstract class AbstractHttpClient
      * @param useSsl {@code true} if all connections will have SSL support, {@code false} otherwise.
      */
     public void setUseSsl(boolean useSsl) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.useSsl = useSsl;
     }
 
-    public int getRequestCompressionLevel() {
-        return requestCompressionLevel;
-    }
+    public int getRequestCompressionLevel() { return requestCompressionLevel; }
 
     /**
      * Level of compression when sending requests.
@@ -725,18 +657,14 @@ public abstract class AbstractHttpClient
      * @param requestCompressionLevel Level of compression between 0 and 9; 0 = off and 9 = max.
      */
     public void setRequestCompressionLevel(int requestCompressionLevel) {
-        if ((requestCompressionLevel < 0) || (requestCompressionLevel > 9)) {
-            throw new IllegalArgumentException("RequestCompressionLevel must be in range [0;9] (0 = none, 9 = max)");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue((requestCompressionLevel < 0) || (requestCompressionLevel > 9),
+                    "RequestCompressionLevel must be in range [0;9] (0 = none, 9 = max)");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.requestCompressionLevel = requestCompressionLevel;
     }
 
-    public boolean isAutoInflate() {
-        return autoInflate;
-    }
+    public boolean isAutoInflate() { return autoInflate; }
 
     /**
      * Whether responses should be auto inflated (decompressed) or not.
@@ -750,15 +678,12 @@ public abstract class AbstractHttpClient
      *                    otherwise.
      */
     public void setAutoInflate(boolean autoInflate) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.autoInflate = autoInflate;
     }
 
-    public int getRequestChunkSize() {
-        return requestChunkSize;
-    }
+    public int getRequestChunkSize() { return requestChunkSize; }
 
     /**
      * Maximum size for HTTP request chunks.
@@ -770,18 +695,13 @@ public abstract class AbstractHttpClient
      * @param requestChunkSize If request or response body exceeds this value
      */
     public void setRequestChunkSize(int requestChunkSize) {
-        if (requestChunkSize < 128) {
-            throw new IllegalArgumentException("Minimum accepted chunk size is 128b");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(requestChunkSize < 128, "Minimum accepted chunk size is 128b");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.requestChunkSize = requestChunkSize;
     }
 
-    public boolean isAggregateResponseChunks() {
-        return aggregateResponseChunks;
-    }
+    public boolean isAggregateResponseChunks() { return aggregateResponseChunks; }
 
     /**
      * If the response is transferred in chunks, whether they should be automatically grouped or not.
@@ -792,15 +712,12 @@ public abstract class AbstractHttpClient
      *                                otherwise.
      */
     public void setAggregateResponseChunks(boolean aggregateResponseChunks) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.aggregateResponseChunks = aggregateResponseChunks;
     }
 
-    public int getMaxConnectionsPerHost() {
-        return maxConnectionsPerHost;
-    }
+    public int getMaxConnectionsPerHost() { return maxConnectionsPerHost; }
 
     /**
      * Sets the maximum number of active connections per host.
@@ -814,18 +731,13 @@ public abstract class AbstractHttpClient
      *                              time. Minimum value is 1.
      */
     public void setMaxConnectionsPerHost(int maxConnectionsPerHost) {
-        if (maxConnectionsPerHost < 1) {
-            throw new IllegalArgumentException("MaxConnectionsPerHost must be > 1");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(maxConnectionsPerHost < 1, "MaxConnectionsPerHost must be > 1");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.maxConnectionsPerHost = maxConnectionsPerHost;
     }
 
-    public int getMaxQueuedRequests() {
-        return this.maxQueuedRequests;
-    }
+    public int getMaxQueuedRequests() { return maxQueuedRequests; }
 
     /**
      * Sets the maximum number of queued requests for this client.
@@ -839,18 +751,13 @@ public abstract class AbstractHttpClient
      * @param maxQueuedRequests Maximum number of queued requests at any given moment.
      */
     public void setMaxQueuedRequests(int maxQueuedRequests) {
-        if (maxQueuedRequests < 1) {
-            throw new IllegalArgumentException("MaxQueuedRequests must be > 1");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(maxQueuedRequests < 1, "MaxQueuedRequests must be > 1");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.maxQueuedRequests = maxQueuedRequests;
     }
 
-    public int getConnectionTimeoutInMillis() {
-        return connectionTimeoutInMillis;
-    }
+    public int getConnectionTimeoutInMillis() { return connectionTimeoutInMillis; }
 
     /**
      * Sets the connection to host timeout, in milliseconds.
@@ -860,18 +767,13 @@ public abstract class AbstractHttpClient
      * @param connectionTimeoutInMillis Connection to host timeout, in milliseconds.
      */
     public void setConnectionTimeoutInMillis(int connectionTimeoutInMillis) {
-        if (connectionTimeoutInMillis < 0) {
-            throw new IllegalArgumentException("ConnectionTimeoutInMillis must be >= 0 (0 means infinite)");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(connectionTimeoutInMillis < 0, "ConnectionTimeoutInMillis must be >= 0 (0 means infinite)");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.connectionTimeoutInMillis = connectionTimeoutInMillis;
     }
 
-    public int getRequestTimeoutInMillis() {
-        return requestTimeoutInMillis;
-    }
+    public int getRequestTimeoutInMillis() { return requestTimeoutInMillis; }
 
     /**
      * Sets the default request timeout, in milliseconds.
@@ -888,18 +790,13 @@ public abstract class AbstractHttpClient
      * @param requestTimeoutInMillis Default request timeout, in milliseconds.
      */
     public void setRequestTimeoutInMillis(int requestTimeoutInMillis) {
-        if (requestTimeoutInMillis <= 0) {
-            throw new IllegalArgumentException("RequestTimeoutInMillis must be >= 0 (0 means infinite)");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(requestTimeoutInMillis <= 0, "RequestTimeoutInMillis must be >= 0 (0 means infinite)");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.requestTimeoutInMillis = requestTimeoutInMillis;
     }
 
-    public boolean isUseNio() {
-        return useNio;
-    }
+    public boolean isUseNio() { return useNio; }
 
     /**
      * Whether this client should use non-blocking IO (New I/O or NIO) or blocking IO (Plain Socket Old IO or OIO).
@@ -918,15 +815,12 @@ public abstract class AbstractHttpClient
      * @param useNio {@code true} if this client should use NIO, {@code false} if it should use OIO.
      */
     public void setUseNio(boolean useNio) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.useNio = useNio;
     }
 
-    public int getMaxIoWorkerThreads() {
-        return maxIoWorkerThreads;
-    }
+    public int getMaxIoWorkerThreads() { return maxIoWorkerThreads; }
 
     /**
      * Maximum number of worker threads for the executor provided to Netty's {@link ChannelFactory}.
@@ -936,18 +830,13 @@ public abstract class AbstractHttpClient
      * @param maxIoWorkerThreads Maximum number of IO worker threads.
      */
     public void setMaxIoWorkerThreads(int maxIoWorkerThreads) {
-        if (maxIoWorkerThreads <= 1) {
-            throw new IllegalArgumentException("Minimum value for maxIoWorkerThreads is 1");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(maxIoWorkerThreads <= 1, "Minimum value for maxIoWorkerThreads is 1");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.maxIoWorkerThreads = maxIoWorkerThreads;
     }
 
-    public int getMaxEventProcessorHelperThreads() {
-        return maxEventProcessorHelperThreads;
-    }
+    public int getMaxEventProcessorHelperThreads() { return maxEventProcessorHelperThreads; }
 
     /**
      * Maximum number of helper threads for the event processor.
@@ -961,18 +850,13 @@ public abstract class AbstractHttpClient
      * @param maxEventProcessorHelperThreads Maximum number of IO worker threads.
      */
     public void setMaxEventProcessorHelperThreads(int maxEventProcessorHelperThreads) {
-        if (maxEventProcessorHelperThreads <= 3) {
-            throw new IllegalArgumentException("Minimum value for maxEventProcessorHelperThreads is 3");
-        }
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureValue(maxEventProcessorHelperThreads <= 3, "Minimum value for maxEventProcessorHelperThreads is 3");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.maxEventProcessorHelperThreads = maxEventProcessorHelperThreads;
     }
 
-    public HostContextFactory getHostContextFactory() {
-        return hostContextFactory;
-    }
+    public HostContextFactory getHostContextFactory() { return hostContextFactory; }
 
     /**
      * The {@link HostContextFactory} that will be used to create new {@link HostContext} instances.
@@ -985,15 +869,12 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.host.HostContext
      */
     public void setHostContextFactory(HostContextFactory hostContextFactory) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.hostContextFactory = hostContextFactory;
     }
 
-    public HttpConnectionFactory getConnectionFactory() {
-        return connectionFactory;
-    }
+    public HttpConnectionFactory getConnectionFactory() { return connectionFactory; }
 
     /**
      * The {@link HttpConnectionFactory} that will be used to create new {@link HttpConnection}.
@@ -1006,15 +887,12 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.connection.HttpConnection
      */
     public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.connectionFactory = connectionFactory;
     }
 
-    public HttpRequestFutureFactory getFutureFactory() {
-        return futureFactory;
-    }
+    public HttpRequestFutureFactory getFutureFactory() { return futureFactory; }
 
     /**
      * The {@link HttpRequestFutureFactory} that will be used to create new
@@ -1028,15 +906,12 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.future.HttpRequestFuture
      */
     public void setFutureFactory(HttpRequestFutureFactory futureFactory) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
         this.futureFactory = futureFactory;
     }
 
-    public TimeoutManager getTimeoutManager() {
-        return timeoutManager;
-    }
+    public TimeoutManager getTimeoutManager() { return timeoutManager; }
 
     /**
      * The {@link TimeoutManager} that will be used to check request timeouts.
@@ -1055,7 +930,7 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.timeout.TimeoutManager
      */
     public void setTimeoutManager(TimeoutManager timeoutManager) {
-        if (this.eventQueue != null) {
+        if (eventQueue != null) {
             throw new IllegalStateException("Cannot modify property after initialization");
         }
 
@@ -1085,29 +960,20 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.host.HostContext
      */
     public void setCleanupInactiveHostContexts(boolean cleanupInactiveHostContexts) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.cleanupInactiveHostContexts = cleanupInactiveHostContexts;
     }
 
-    public SslContextFactory getSslContextFactory() {
-        return sslContextFactory;
-    }
+    public SslContextFactory getSslContextFactory() { return sslContextFactory; }
 
     public void setSslContextFactory(SslContextFactory sslContextFactory) {
-        if (this.eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.sslContextFactory = sslContextFactory;
     }
 
     // object overrides -----------------------------------------------------------------------------------------------
 
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName() + '@' + Integer.toHexString(this.hashCode());
-    }
+    @Override public String toString() { return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode()); }
 }

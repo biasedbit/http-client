@@ -20,8 +20,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * As seen on <a href="http://biasedbit.com/naming-threads-created-with-the-executorservice/">
- * TV</a>.
+ * As seen on <a href="http://biasedbit.com/naming-threads-created-with-the-executorservice/">TV</a>.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
@@ -36,29 +35,22 @@ public class NamelessThreadFactory
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public NamelessThreadFactory() {
-        this(String.format("ThreadPool-thread-"));
-    }
+    public NamelessThreadFactory() { this(String.format("ThreadPool-thread-")); }
 
     public NamelessThreadFactory(String namePrefix) {
         SecurityManager s = System.getSecurityManager();
-        this.group = (s != null) ? s.getThreadGroup() :
-                     Thread.currentThread().getThreadGroup();
+        group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
         this.namePrefix = String.format("%s-thread", namePrefix);
-        this.threadNumber = new AtomicInteger(1);
+        threadNumber = new AtomicInteger(1);
     }
 
     // ThreadFactory --------------------------------------------------------------------------------------------------
 
-    @Override
-    public Thread newThread(Runnable r) {
-        Thread t = new Thread(this.group, r, this.namePrefix + this.threadNumber.getAndIncrement(), 0L);
-        if (t.isDaemon()) {
-            t.setDaemon(false);
-        }
-        if (t.getPriority() != Thread.NORM_PRIORITY) {
-            t.setPriority(Thread.NORM_PRIORITY);
-        }
+    @Override public Thread newThread(Runnable r) {
+        Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0L);
+        if (t.isDaemon()) t.setDaemon(false);
+        if (t.getPriority() != Thread.NORM_PRIORITY) t.setPriority(Thread.NORM_PRIORITY);
+
         return t;
     }
 }

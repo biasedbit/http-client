@@ -66,7 +66,7 @@ public class DefaultHttpClientFactory
     private static final boolean               CLEANUP_INACTIVE_HOST_CONTEXTS     = true;
     private static final SslContextFactory     SSL_CONTEXT_FACTORY                = null;
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private boolean                  debug;
     private boolean                  gatherEventHandlingStats;

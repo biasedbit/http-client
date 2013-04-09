@@ -80,7 +80,7 @@ public class HttpRequestContext<T> {
         this(host, 80, timeout, request, processor, future);
     }
 
-    // public methods -------------------------------------------------------------------------------------------------
+    // interface ------------------------------------------------------------------------------------------------------
 
     /**
      * Determines (based on request method) if a request is idempotent or not, based on recommendations of the RFC.
