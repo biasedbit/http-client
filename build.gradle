@@ -1,0 +1,28 @@
+/* A Java high performance throughput-oriented HTTP client library built with Netty */
+description = "http-client"
+
+version = "1.1.0-SNAPSHOT"
+repositories { mavenCentral() }
+
+apply plugin: "groovy" // sets up Java as well
+apply plugin: "idea"
+apply from: "https://raw.github.com/brunodecarvalho/gradle-plugins/master/integration-test.gradle"
+
+dependencies {
+  sourceCompatibility = 1.7
+
+  groovy group: "org.codehaus.groovy", name: "groovy-all", version: "2.1.2"
+
+  compile 'io.netty:netty:3.6.4.Final'      // I/O swiss army knife
+  compile 'org.projectlombok:lombok:0.11.6' // Because f*** you, getters and setters!
+
+  testCompile "junit:junit:4.11"
+  testCompile "org.spockframework:spock-core:0.7-groovy-2.0"
+  testRuntime "cglib:cglib-nodep:2.2.2" // Required for spock to mock classes
+}
+
+idea {
+  module {
+    testSourceDirs += [file("src/integration-test/java"), file("src/integration-test/groovy")]
+  }
+}

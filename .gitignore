@@ -1,8 +1,7 @@
-/.project
-/.classpath
-/.settings
-/target
-/reports
+# gradle
+/build
+.gradle
+# idea files
 *.ipr
 *.iws
 *.iml
