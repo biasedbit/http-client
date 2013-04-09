@@ -21,6 +21,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -48,6 +49,7 @@ import org.jboss.netty.util.CharsetUtil;
 import javax.net.ssl.SSLEngine;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -100,7 +102,7 @@ public class DummyHttpServer {
             "\t</food> \n" +
             "</breakfast_menu> ";
 
-    // configuration --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
     private final String  host;
     private final int     port;
@@ -124,34 +126,32 @@ public class DummyHttpServer {
         this.host = host;
         this.port = port;
         this.verbose = verbose;
-        this.errors = new AtomicInteger();
 
-        this.useSsl = USE_SSL;
-        this.failureProbability = FAILURE_PROBABILITY;
-        this.responseLatency = RESPONSE_LATENCY;
-        this.content = CONTENT;
-        this.useOldIo = USE_OLD_IO;
+        errors = new AtomicInteger();
+        useSsl = USE_SSL;
+        failureProbability = FAILURE_PROBABILITY;
+        responseLatency = RESPONSE_LATENCY;
+        content = CONTENT;
+        useOldIo = USE_OLD_IO;
     }
 
-    public DummyHttpServer(int port) {
-        this(null, port, false);
-    }
+    public DummyHttpServer(int port) { this(null, port, false); }
 
-    // public methods -------------------------------------------------------------------------------------------------
+    // interface ------------------------------------------------------------------------------------------------------
 
     public boolean init() {
-        if (this.useOldIo) {
-            this.bootstrap = new ServerBootstrap(new OioServerSocketChannelFactory(Executors.newCachedThreadPool(),
-                                                                                   Executors.newCachedThreadPool()));
-        } else {
-            this.bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
-                                                                                   Executors.newCachedThreadPool()));
-        }
+        ChannelFactory factory;
+        Executor bossExecutor = Executors.newCachedThreadPool();
+        Executor workerExecutor = Executors.newCachedThreadPool();
 
-        this.bootstrap.setOption("child.tcpNoDelay", true);
-        this.bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            @Override
-            public ChannelPipeline getPipeline() throws Exception {
+        if (useOldIo) factory = new OioServerSocketChannelFactory(bossExecutor, workerExecutor);
+        else factory = new NioServerSocketChannelFactory(bossExecutor, workerExecutor);
+
+        bootstrap = new ServerBootstrap(factory);
+        bootstrap.setOption("child.tcpNoDelay", true);
+        bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            @Override public ChannelPipeline getPipeline()
+                    throws Exception {
                 ChannelPipeline pipeline = Channels.pipeline();
 
                 if (useSsl) {
@@ -167,51 +167,34 @@ public class DummyHttpServer {
                 return pipeline;
             }
         });
-        this.channelGroup = new DefaultChannelGroup("hotpotato-http-server-" + Integer.toHexString(this.hashCode()));
+        channelGroup = new DefaultChannelGroup("hotpotato-dummy-server-" + Integer.toHexString(hashCode()));
 
-        SocketAddress bindAddress;
-        if (this.host != null) {
-            bindAddress = new InetSocketAddress(this.host, this.port);
-        } else {
-            bindAddress = new InetSocketAddress(this.port);
-        }
-        Channel serverChannel = this.bootstrap.bind(bindAddress);
-        this.channelGroup.add(serverChannel);
+        SocketAddress bindAddress = (host != null) ? new InetSocketAddress(host, port) : new InetSocketAddress(port);
+        Channel serverChannel = bootstrap.bind(bindAddress);
+        channelGroup.add(serverChannel);
 
-        return (this.running = serverChannel.isBound());
+        return (running = serverChannel.isBound());
     }
 
     public void terminate() {
-        if (!this.running) {
-            return;
-        }
+        if (!running) return;
 
-        this.running = false;
-        this.channelGroup.close().awaitUninterruptibly();
-        this.bootstrap.releaseExternalResources();
+        running = false;
+        channelGroup.close().awaitUninterruptibly();
+        bootstrap.releaseExternalResources();
     }
 
     // getters & setters ----------------------------------------------------------------------------------------------
 
-    public boolean isVerbose() {
-        return verbose;
-    }
+    public boolean isVerbose() { return verbose; }
 
-    public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-    }
+    public void setVerbose(boolean verbose) { this.verbose = verbose; }
 
-    public boolean isUseSsl() {
-        return useSsl;
-    }
+    public boolean isUseSsl() { return useSsl; }
 
-    public void setUseSsl(boolean useSsl) {
-        this.useSsl = useSsl;
-    }
+    public void setUseSsl(boolean useSsl) { this.useSsl = useSsl; }
 
-    public float getFailureProbability() {
-        return failureProbability;
-    }
+    public float getFailureProbability() { return failureProbability; }
 
     public void setFailureProbability(float failureProbability) {
         if (failureProbability < 0) {
@@ -223,62 +206,47 @@ public class DummyHttpServer {
         }
     }
 
-    public long getResponseLatency() {
-        return responseLatency;
-    }
+    public long getResponseLatency() { return responseLatency; }
 
-    public void setResponseLatency(long responseLatency) {
-        this.responseLatency = responseLatency;
-    }
+    public void setResponseLatency(long responseLatency) { this.responseLatency = responseLatency; }
 
-    public boolean isUseOldIo() {
-        return useOldIo;
-    }
+    public boolean isUseOldIo() { return useOldIo; }
 
-    public void setUseOldIo(boolean useOldIo) {
-        this.useOldIo = useOldIo;
-    }
+    public void setUseOldIo(boolean useOldIo) { this.useOldIo = useOldIo; }
 
-    public String getContent() {
-        return content;
-    }
+    public String getContent() { return content; }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+    public void setContent(String content) { this.content = content; }
 
-    public boolean isRunning() {
-        return running;
-    }
+    public boolean isRunning() { return running; }
 
     // private classes ------------------------------------------------------------------------------------------------
 
-    private final class RequestHandler extends SimpleChannelUpstreamHandler {
+    private final class RequestHandler
+            extends SimpleChannelUpstreamHandler {
 
         private final ChannelBuffer contentBuffer = ChannelBuffers.copiedBuffer(content, CharsetUtil.UTF_8);
 
         // SimpleChannelUpstreamHandler -------------------------------------------------------------------------------
 
-        @Override
-        public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+        @Override public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
+                throws Exception {
             channelGroup.add(e.getChannel());
         }
 
-        @Override
-        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        @Override public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+                throws Exception {
             if (Math.random() <= failureProbability) {
                 errors.incrementAndGet();
                 e.getChannel().close();
                 return;
             }
 
-            if (responseLatency > 0) {
-                try { Thread.sleep(responseLatency); } catch (InterruptedException ignored) { }
-            }
+            if (responseLatency > 0) try { Thread.sleep(responseLatency); } catch (InterruptedException ignored) { }
+
             HttpRequest request = (HttpRequest) e.getMessage();
-            if (verbose) {
-                System.err.println(request);
-            }
+            if (verbose) System.err.println(request);
+
             if ((request.getContent().readableBytes() > 0) && verbose) {
                 System.err.println("-------------");
                 System.err.println("Body has " + request.getContent().readableBytes() + " readable bytes.");
@@ -293,24 +261,16 @@ public class DummyHttpServer {
             response.setHeader(HttpHeaders.Names.CONTENT_TYPE, "text/xml; charset=UTF-8");
 
             boolean keepAlive = HttpHeaders.isKeepAlive(request);
-            if (keepAlive) {
-                response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, contentBuffer.readableBytes());
-            }
+            response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, contentBuffer.readableBytes());
 
             ChannelFuture f = e.getChannel().write(response);
             // Write the response & close the connection after the write operation.
-            if (!keepAlive) {
-                f.addListener(ChannelFutureListener.CLOSE);
-            }
+            if (!keepAlive) f.addListener(ChannelFutureListener.CLOSE);
         }
 
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            //System.err.println("Exception caught on HTTP connection from " + e.getChannel().getRemoteAddress() +
-            //                   "; closing channel.");
-            if (e.getChannel().isConnected()) {
-                e.getChannel().close();
-            }
+        @Override public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+                throws Exception {
+            if (e.getChannel().isConnected()) e.getChannel().close();
         }
     }
 
@@ -322,21 +282,13 @@ public class DummyHttpServer {
         float failureProbability = 0.0f;
         boolean useOio = false;
         boolean verbose = false;
-        if (args.length >= 1) {
-            host = args[0];
-        }
-        if (args.length >= 2) {
-            port = Integer.parseInt(args[1]);
-        }
-        if (args.length >= 3) {
-            failureProbability = Float.parseFloat(args[2]);
-        }
-        if (args.length == 4) {
-            useOio = ("useOio".equals(args[3]));
-        }
-        if (args.length == 5) {
-            verbose = ("verbose".equals(args[4]));
-        }
+
+        if (args.length >= 1) host = args[0];
+        if (args.length >= 2) port = Integer.parseInt(args[1]);
+        if (args.length >= 3) failureProbability = Float.parseFloat(args[2]);
+        if (args.length == 4) useOio = ("useOio".equals(args[3]));
+        if (args.length == 5) verbose = ("verbose".equals(args[4]));
+
         final DummyHttpServer server = new DummyHttpServer(host, port, verbose);
         server.setFailureProbability(failureProbability);
         server.setUseOldIo(useOio);
@@ -350,10 +302,7 @@ public class DummyHttpServer {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                server.terminate();
-            }
+            @Override public void run() { server.terminate(); }
         });
     }
 }
