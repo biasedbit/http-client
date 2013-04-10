@@ -24,9 +24,7 @@ public class DefaultHttpRequestFutureFactory
 
     // HttpRequestFuture ----------------------------------------------------------------------------------------------
 
-    @Override public <T> HttpRequestFuture<T> getFuture() { return new DefaultHttpRequestFuture<>(); }
-
-    @Override public <T> HttpRequestFuture<T> getFuture(boolean cancellable) {
+    @Override public <T> HttpRequestFuture<T> createFuture(boolean cancellable) {
         return new DefaultHttpRequestFuture<>(cancellable);
     }
 }

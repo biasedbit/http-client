@@ -21,7 +21,5 @@ package com.biasedbit.http.client.future;
  */
 public interface HttpRequestFutureFactory {
 
-    <T> HttpRequestFuture<T> getFuture();
-
-    <T> HttpRequestFuture<T> getFuture(boolean cancellable);
+    <T> HttpRequestFuture<T> createFuture(boolean cancellable);
 }
