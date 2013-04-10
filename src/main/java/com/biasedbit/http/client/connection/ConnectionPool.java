@@ -33,19 +33,12 @@ public class ConnectionPool {
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    @Getter private final Collection<HttpConnection> connections;
+    @Getter private final Collection<HttpConnection> connections = new LinkedList<>();
 
     // internal vars --------------------------------------------------------------------------------------------------
 
     private boolean connectionFailures;
     private int     connectionsOpening;
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public ConnectionPool() {
-        connectionsOpening = 0;
-        connections = new LinkedList<>();
-    }
 
     // interface ------------------------------------------------------------------------------------------------------
 
