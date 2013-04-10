@@ -608,8 +608,8 @@ public abstract class AbstractHttpClient
      * @param connectionTimeoutInMillis Connection to host timeout, in milliseconds.
      */
     public void setConnectionTimeout(int connectionTimeoutInMillis) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue(connectionTimeoutInMillis >= 0, "connectionTimeoutInMillis must be >= 0 (0 means infinite)");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         connectionTimeout = connectionTimeoutInMillis;
     }
@@ -629,8 +629,9 @@ public abstract class AbstractHttpClient
      * @param requestTimeoutInMillis Default request timeout, in milliseconds.
      */
     public void setRequestInactivityTimeout(int requestTimeoutInMillis) {
-        ensureValue(requestTimeoutInMillis >= 0, "requestTimeoutInMillis must be >= 0 (0 means infinite)");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
+        ensureValue(requestInactivityTimeoutInMillis >= 0,
+                    "requestInactivityTimeoutInMillis must be >= 0 (0 means infinite)");
 
         requestInactivityTimeout = requestTimeoutInMillis;
     }
@@ -652,7 +653,7 @@ public abstract class AbstractHttpClient
      * @param useNio {@code true} if this client should use NIO, {@code false} if it should use OIO.
      */
     public void setUseNio(boolean useNio) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.useNio = useNio;
     }
@@ -667,7 +668,7 @@ public abstract class AbstractHttpClient
      * @param useSsl {@code true} if all connections will have SSL support, {@code false} otherwise.
      */
     public void setUseSsl(boolean useSsl) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.useSsl = useSsl;
     }
@@ -684,8 +685,8 @@ public abstract class AbstractHttpClient
      *                              time. Minimum value is 1.
      */
     public void setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue(maxConnectionsPerHost >= 1, "maxConnectionsPerHost must be >= 1");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.maxConnectionsPerHost = maxConnectionsPerHost;
     }
@@ -702,8 +703,8 @@ public abstract class AbstractHttpClient
      * @param maxQueuedRequests Maximum number of queued requests at any given moment.
      */
     public void setMaxQueuedRequests(int maxQueuedRequests) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue(maxQueuedRequests > 1, "maxQueuedRequests must be > 1");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.maxQueuedRequests = maxQueuedRequests;
     }
@@ -716,8 +717,8 @@ public abstract class AbstractHttpClient
      * @param maxIoWorkerThreads Maximum number of IO worker threads.
      */
     public void setMaxIoWorkerThreads(int maxIoWorkerThreads) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue(maxIoWorkerThreads > 1, "maxIoWorkerThreads must be > 1");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.maxIoWorkerThreads = maxIoWorkerThreads;
     }
@@ -734,8 +735,8 @@ public abstract class AbstractHttpClient
      * @param maxHelperThreads Maximum number of IO worker threads.
      */
     public void setMaxHelperThreads(int maxHelperThreads) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue(maxHelperThreads > 3, "maxHelperThreads must be > 3");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.maxHelperThreads = maxHelperThreads;
     }
@@ -748,9 +749,9 @@ public abstract class AbstractHttpClient
      * @param requestCompressionLevel Level of compression between 0 and 9; 0 = off and 9 = max.
      */
     public void setRequestCompressionLevel(int requestCompressionLevel) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue((requestCompressionLevel >= 0) && (requestCompressionLevel <= 9),
                     "requestCompressionLevel must be in range [0;9] (0 = none, 9 = max)");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.requestCompressionLevel = requestCompressionLevel;
     }
@@ -767,7 +768,7 @@ public abstract class AbstractHttpClient
      *                    otherwise.
      */
     public void setAutoInflate(boolean autoInflate) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.autoInflate = autoInflate;
     }
@@ -790,7 +791,7 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.client.host.HostContext
      */
     public void setCleanupInactiveHostContexts(boolean cleanupInactiveHostContexts) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.cleanupInactiveHostContexts = cleanupInactiveHostContexts;
     }
@@ -805,7 +806,7 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.client.connection.HttpConnection
      */
     public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.connectionFactory = connectionFactory;
     }
@@ -820,7 +821,7 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.client.host.HostContext
      */
     public void setHostContextFactory(HostContextFactory hostContextFactory) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.hostContextFactory = hostContextFactory;
     }
@@ -836,7 +837,7 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.client.future.HttpRequestFuture
      */
     public void setFutureFactory(HttpRequestFutureFactory futureFactory) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.futureFactory = futureFactory;
     }
@@ -857,13 +858,13 @@ public abstract class AbstractHttpClient
      * @see com.biasedbit.http.client.timeout.TimeoutController
      */
     public void setTimeoutManager(TimeoutController timeoutController) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.timeoutController = timeoutController;
     }
 
     public void setSslContextFactory(SslContextFactory sslContextFactory) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.sslContextFactory = sslContextFactory;
     }
