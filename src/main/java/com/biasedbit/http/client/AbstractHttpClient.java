@@ -349,7 +349,7 @@ public abstract class AbstractHttpClient
         // Perform these checks on the caller thread's time rather than the event dispatcher's.
         if (autoInflate) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
-        HttpRequestFuture<T> future = futureFactory.createFuture(true);
+        HttpRequestFuture<T> future = futureFactory.createFuture();
         HttpRequestContext<T> context = new HttpRequestContext<>(host, port, timeout, request, processor, future);
         context.setDataSinkListener(dataSinkListener);
 

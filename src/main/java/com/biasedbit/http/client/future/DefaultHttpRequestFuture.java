@@ -30,10 +30,6 @@ import java.util.concurrent.TimeUnit;
 public class DefaultHttpRequestFuture<T>
         implements HttpRequestFuture<T> {
 
-    // properties -----------------------------------------------------------------------------------------------------
-
-    private final boolean cancellable;
-
     // internal vars --------------------------------------------------------------------------------------------------
 
     private       T                                  result;
@@ -51,11 +47,6 @@ public class DefaultHttpRequestFuture<T>
     // constructors ---------------------------------------------------------------------------------------------------
 
     public DefaultHttpRequestFuture() {
-        this(false);
-    }
-
-    public DefaultHttpRequestFuture(boolean cancellable) {
-        this.cancellable = cancellable;
         creation = System.nanoTime();
         executionStart = -1;
     }
@@ -102,8 +93,6 @@ public class DefaultHttpRequestFuture<T>
     @Override public Throwable getCause() { return cause; }
 
     @Override public boolean cancel() {
-        if (!cancellable) return false;
-
         synchronized (this) {
             if (done) return false;
 
