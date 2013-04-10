@@ -329,7 +329,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         }
 
         // Attach this connection to the future, so that when it gets cancelled it can terminate this connection.
-        ((DefaultHttpRequestFuture) context.getFuture()).attachConnection(this);
+        context.getFuture().attachConnection(this);
 
         // Launch a timeout checker.
         if (context.getTimeout() > 0) timeoutController.manageRequestTimeout(context);

@@ -53,6 +53,9 @@ public class DefaultHttpRequestFuture<T>
 
     // HttpRequestFuture ----------------------------------------------------------------------------------------------
 
+    // TODO review this
+    @Override public void attachConnection(HttpConnection connection) { this.connection = connection; }
+
     @Override public T getProcessedResult() { return result; }
 
     @Override public HttpResponse getResponse() { return response; }
@@ -239,10 +242,6 @@ public class DefaultHttpRequestFuture<T>
             throw new InternalError();
         }
     }
-
-    // interface ------------------------------------------------------------------------------------------------------
-
-    public void attachConnection(HttpConnection connection) { this.connection = connection; }
 
     // private helpers ------------------------------------------------------------------------------------------------
 

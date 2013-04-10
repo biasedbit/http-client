@@ -16,6 +16,7 @@
 
 package com.biasedbit.http.client.future;
 
+import com.biasedbit.http.client.connection.HttpConnection;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
@@ -34,6 +35,8 @@ public interface HttpRequestFuture<T> {
     static final Throwable EXECUTION_REJECTED = new Throwable("Execution rejected by connection");
     static final Throwable TIMED_OUT          = new Throwable("Request execution timed out");
     static final Throwable INVALID_REDIRECT   = new Throwable("Redirect without Location header");
+
+    void attachConnection(HttpConnection connection);
 
     T getProcessedResult();
 
