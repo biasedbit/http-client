@@ -41,14 +41,14 @@ import java.util.concurrent.TimeUnit;
  * <p/>
  * <strong>The more threads it has, the more precise it will be, but also more resources it will consume.</strong>
  * Conversely, the less threads it has, the less precise it will be.
- *
+ * <p/>
  * <div class="note">
  * <div class="header>Important note:</div>
- * If an instance is {@linkplain #BasicTimeoutManager(java.util.concurrent.Executor) created with an external
+ * If an instance is {@linkplain #BasicTimeoutController(java.util.concurrent.Executor) created with an external
  * {@code Executor}}, then this manager <strong>will not</strong> terminate the executor.
  * <p/>
- * If an instance is created with the constructor {@link #BasicTimeoutManager(int)}, it will terminate the thread pool
- * when {@link #terminate()} is called.
+ * If an instance is created with the constructor {@link #BasicTimeoutController(int)}, it will terminate the thread
+ * pool when {@link #terminate()} is called.
  * </div>
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -114,24 +114,22 @@ public class BasicTimeoutController implements TimeoutController {
      * Having a per-request checker does hurt performance a bit but it avoids the aforementioned problem. Besides, this
      * small performance slowdown only occurs when the request-response cycle takes 0.01~ to complete which, in real
      * scenarios, is extremely unlikely to ever happen.
-     *
-     * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
      */
     public static class TimeoutChecker implements Runnable, HttpRequestFutureListener {
 
-        // internal vars --------------------------------------------------------------------------------------------------
+        // internal vars ----------------------------------------------------------------------------------------------
 
         private final HttpRequestContext request;
         private final CountDownLatch latch;
 
-        // constructors ---------------------------------------------------------------------------------------------------
+        // constructors -----------------------------------------------------------------------------------------------
 
         public TimeoutChecker(HttpRequestContext request) {
             this.request = request;
             this.latch = new CountDownLatch(1);
         }
 
-        // Runnable -------------------------------------------------------------------------------------------------------
+        // Runnable ---------------------------------------------------------------------------------------------------
 
         @SuppressWarnings({"unchecked"})
         @Override

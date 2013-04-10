@@ -89,8 +89,7 @@ import static com.biasedbit.http.client.util.Utils.*;
  * method, rather than reimplement the whole class all over again (just like {@link StatsGatheringHttpClient} does -
  * only overrides the {@code eventHandlingLoop()} method to gather execution statistics).
  * <p/>
- * <h3>Thread safety and performance</h3> This default implementation is thread-safe and, unlike <a
- * href="http://hc.apache.org/httpcomponents-client-4.0.1/index.html">Apache HttpClient</a>, the performance does not
+ * <h3>Thread safety and performance</h3> This default implementation is thread-safe and the performance does not
  * degrade when the instance is shared by multiple threads accessing it at the same time.
  * <p/>
  * <h3>Event queue (producer/consumer)</h3> When this implementation is initialised, it fires up an auxilliary thread,
@@ -110,10 +109,10 @@ import static com.biasedbit.http.client.util.Utils.*;
  * before B. The reasons are obvious:
  * <p/>
  * <ul>
- * <li>A can end up in a connection slower than B's</li>
- * <li>Server can respond faster on one socket than on the other</li>
- * <li>Response for request B can have 10b and for request A 10bKb</li>
- * <li>etc</li>
+ *  <li>A can end up in a connection slower than B's</li>
+ *  <li>Server can respond faster on one socket than on the other</li>
+ *  <li>Response for request B can have 10b and for request A 10bKb</li>
+ *  <li>etc</li>
  * </ul
  * <p/>
  * If you need to guarantee that a request B can only hit the server after a request A, you can either manually manage
@@ -618,8 +617,9 @@ public abstract class AbstractHttpClient
      * When {@link #execute(String, int, HttpRequest, HttpResponseProcessor)} is called (i.e. the variant without
      * explicit request timeout) then this value is applied as the request timeout.
      * <p/>
-     * Requests whose execution time exceeds (precision depends on the {@link com.biasedbit.http.client.timeout.TimeoutController} chosen) this value will be
-     * considered failed and their {@link com.biasedbit.http.client.future.HttpRequestFuture} will be released with cause
+     * Requests whose execution time exceeds (precision depends on the
+     * {@link com.biasedbit.http.client.timeout.TimeoutController} chosen) this value will be considered failed and
+     * their {@link com.biasedbit.http.client.future.HttpRequestFuture} will be released with cause
      * {@link com.biasedbit.http.client.future.HttpRequestFuture#TIMED_OUT}.
      * <p/>
      * Defaults to 2000.
@@ -846,9 +846,11 @@ public abstract class AbstractHttpClient
      * If no instance is provided, a new instance is created upon calling {@link #init()}. This instance will be
      * automatically terminated when {@link #terminate()} is called.
      * <p/>
-     * If an external {@link com.biasedbit.http.client.timeout.TimeoutController} is provided, then it must be pre-initialised (i.e. its
-     * {@link com.biasedbit.http.client.timeout.TimeoutController#init()} must be called and return {@code true}) and it must be post-terminated (i.e. its
-     * {@link com.biasedbit.http.client.timeout.TimeoutController#terminate()} must be called after this instance of {@link HttpClient} is disposed).
+     * If an external {@link com.biasedbit.http.client.timeout.TimeoutController} is provided, then it must be
+     * pre-initialised (i.e. its {@link com.biasedbit.http.client.timeout.TimeoutController#init()} must be called and
+     * return {@code true}) and it must be post-terminated (i.e. its
+     * {@link com.biasedbit.http.client.timeout.TimeoutController#terminate()} must be called after this instance
+     * of {@link HttpClient} is disposed).
      * <p/>
      * Defaults to a new instance of {@link com.biasedbit.http.client.timeout.HashedWheelTimeoutController}.
      *

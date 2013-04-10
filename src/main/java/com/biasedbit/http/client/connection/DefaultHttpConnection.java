@@ -261,8 +261,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             try {
                 channel.close();
             } catch (Exception ignored) {
-                // ignore, may happen if channel closes between passing the condition checks and the call to close()
-                // executes.
+                // may happen if channel closes between passing the condition checks and the call to close() executes.
             }
         }
     }
