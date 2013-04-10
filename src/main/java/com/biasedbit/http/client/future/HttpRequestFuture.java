@@ -78,7 +78,8 @@ public interface HttpRequestFuture<T> {
 
     Object getAttachment();
 
-    HttpRequestFuture<T> await() throws InterruptedException;
+    HttpRequestFuture<T> await()
+            throws InterruptedException;
 
     HttpRequestFuture<T> awaitUninterruptibly();
 

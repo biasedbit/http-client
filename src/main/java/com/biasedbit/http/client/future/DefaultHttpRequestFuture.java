@@ -32,17 +32,18 @@ public class DefaultHttpRequestFuture<T>
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private       T                                  result;
-    private       HttpResponse                       response;
-    private       Object                             attachment;
-    private       boolean                            done;
-    private       List<HttpRequestFutureListener<T>> listeners;
-    private       Throwable                          cause;
-    private       int                                waiters;
-    private       long                               executionStart;
-    private       long                               executionEnd;
-    private final long                               creation;
-    private       HttpConnection                     connection;
+    private final long creation;
+
+    private T                                  result;
+    private HttpResponse                       response;
+    private Object                             attachment;
+    private boolean                            done;
+    private List<HttpRequestFutureListener<T>> listeners;
+    private Throwable                          cause;
+    private int                                waiters;
+    private long                               executionStart;
+    private long                               executionEnd;
+    private HttpConnection                     connection;
 
     // constructors ---------------------------------------------------------------------------------------------------
 
@@ -279,15 +280,12 @@ public class DefaultHttpRequestFuture<T>
 
                 waiters++;
                 try {
-                    for (;;) {
+                    while (true) {
                         try {
                             wait(waitTime / 1000000, (int) (waitTime % 1000000));
                         } catch (InterruptedException e) {
-                            if (interruptable) {
-                                throw e;
-                            } else {
-                                interrupted = true;
-                            }
+                            if (interruptable) throw e;
+                            else interrupted = true;
                         }
 
                         if (done) {

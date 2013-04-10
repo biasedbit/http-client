@@ -29,7 +29,7 @@ import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
 
 /**
  * Abstract implementation of the {@link HostContext} interface.
- *
+ * <p/>
  * This class contains boilerplate code that all implementations of {@link HostContext} would surely have as well.
  * The important logic is present in {@link #drainQueue()}, method that needs to be implemented by extensions of this
  * class.
@@ -41,11 +41,12 @@ public abstract class AbstractHostContext
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    protected final String                         host;
-    protected final int                            port;
-    protected final int                            maxConnections;
-    protected final ConnectionPool                 connectionPool;
-    protected final LinkedList<HttpRequestContext> queue;
+    protected final String host;
+    protected final int    port;
+    protected final int    maxConnections;
+
+    protected final ConnectionPool                 connectionPool = new ConnectionPool();
+    protected final LinkedList<HttpRequestContext> queue          = new LinkedList<>();
 
     // constructors ---------------------------------------------------------------------------------------------------
 
@@ -55,8 +56,6 @@ public abstract class AbstractHostContext
         this.host = host;
         this.port = port;
         this.maxConnections = maxConnections;
-        connectionPool = new ConnectionPool();
-        queue = new LinkedList<>();
     }
 
     // HostContext ----------------------------------------------------------------------------------------------------
