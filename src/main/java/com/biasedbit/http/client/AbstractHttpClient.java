@@ -626,14 +626,14 @@ public abstract class AbstractHttpClient
      * <p/>
      * Defaults to 2000.
      *
-     * @param requestTimeoutInMillis Default request timeout, in milliseconds.
+     * @param requestInactivityTimeoutInMillis Default request timeout, in milliseconds.
      */
-    public void setRequestInactivityTimeout(int requestTimeoutInMillis) {
+    public void setRequestInactivityTimeout(int requestInactivityTimeoutInMillis) {
         ensureState(eventQueue == null, "Cannot modify property after initialization");
         ensureValue(requestInactivityTimeoutInMillis >= 0,
                     "requestInactivityTimeoutInMillis must be >= 0 (0 means infinite)");
 
-        requestInactivityTimeout = requestTimeoutInMillis;
+        requestInactivityTimeout = requestInactivityTimeoutInMillis;
     }
 
     /**
