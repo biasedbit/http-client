@@ -34,16 +34,10 @@ public class PipeliningHttpConnectionFactory
     // properties -----------------------------------------------------------------------------------------------------
 
     @Getter @Setter private boolean disconnectIfNonKeepAliveRequest = DISCONNECT_IF_NON_KEEP_ALIVE_REQUEST;
-    @Getter @Setter private boolean allowNonIdempotentPipelining = ALLOW_POST_PIPELINING;
-    @Getter @Setter private int maxRequestsInPipeline = MAX_REQUESTS_IN_PIPELINE;
+    @Getter @Setter private boolean allowNonIdempotentPipelining    = ALLOW_POST_PIPELINING;
+    @Getter @Setter private int     maxRequestsInPipeline           = MAX_REQUESTS_IN_PIPELINE;
 
     // HttpConnectionFactory ------------------------------------------------------------------------------------------
-
-    @Override public HttpConnection createConnection(String id, String host, int port,
-                                                     HttpConnectionListener listener,
-                                                     TimeoutController manager) {
-        return createConnection(id, host, port, listener, manager, null);
-    }
 
     @Override public HttpConnection createConnection(String id, String host, int port,
                                                      HttpConnectionListener listener,

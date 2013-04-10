@@ -20,7 +20,6 @@ import com.biasedbit.http.client.HttpRequestContext;
 import com.biasedbit.http.client.future.DefaultHttpRequestFuture;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
-import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.Utils;
 import lombok.Getter;
 import lombok.Setter;

@@ -44,15 +44,7 @@ public class HttpConnectionTestUtil {
 
         @Override
         public HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
-                                               TimeoutController manager) {
-            AlwaysAvailableHttpConnection connection = new AlwaysAvailableHttpConnection(id, host, port, listener);
-            this.connectionsGenerated.add(connection);
-            return connection;
-        }
-
-        @Override
-        public HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
-                                               TimeoutController manager, Executor executor) {
+                                               TimeoutController timeoutController, Executor executor) {
             AlwaysAvailableHttpConnection connection = new AlwaysAvailableHttpConnection(id, host, port, listener);
             this.connectionsGenerated.add(connection);
             return connection;
@@ -70,15 +62,7 @@ public class HttpConnectionTestUtil {
 
         @Override
         public HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
-                                               TimeoutController manager) {
-            NeverAvailableHttpConnection connection = new NeverAvailableHttpConnection(id, host, port, listener);
-            this.connectionsGenerated.add(connection);
-            return connection;
-        }
-
-        @Override
-        public HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
-                                               TimeoutController manager, Executor executor) {
+                                               TimeoutController timeoutController, Executor executor) {
             NeverAvailableHttpConnection connection = new NeverAvailableHttpConnection(id, host, port, listener);
             this.connectionsGenerated.add(connection);
             return connection;

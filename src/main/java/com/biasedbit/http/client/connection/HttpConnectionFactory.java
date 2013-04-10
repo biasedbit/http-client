@@ -26,8 +26,5 @@ import java.util.concurrent.Executor;
 public interface HttpConnectionFactory {
 
     HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
-                                    TimeoutController manager);
-
-    HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
-                                    TimeoutController manager, Executor executor);
+                                    TimeoutController timeoutController, Executor executor);
 }

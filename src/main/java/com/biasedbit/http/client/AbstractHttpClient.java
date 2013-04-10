@@ -40,8 +40,6 @@ import com.biasedbit.http.client.processor.HttpResponseProcessor;
 import com.biasedbit.http.client.ssl.BogusSslContextFactory;
 import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
-import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
-import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.CleanupChannelGroup;
 import com.biasedbit.http.client.util.NamelessThreadFactory;
