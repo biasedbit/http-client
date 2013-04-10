@@ -12,6 +12,6 @@ class DefaultHttpRequestFutureFactorySpec extends Specification {
   def setup() { factory = new DefaultHttpRequestFutureFactory() }
 
   def "#createFuture creates a default future"() {
-    expect: with(factory.createFuture()) { it != null }
+    expect: with(factory.createFuture()) { it instanceof DefaultHttpRequestFuture }
   }
 }
