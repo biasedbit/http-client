@@ -56,222 +56,146 @@ public class DefaultHttpRequestFuture<T>
 
     public DefaultHttpRequestFuture(boolean cancellable) {
         this.cancellable = cancellable;
-        this.creation = System.nanoTime();
-        this.executionStart = -1;
+        creation = System.nanoTime();
+        executionStart = -1;
     }
 
     // HttpRequestFuture ----------------------------------------------------------------------------------------------
 
-    @Override
-    public T getProcessedResult() {
-        return this.result;
+    @Override public T getProcessedResult() { return result; }
+
+    @Override public HttpResponse getResponse() { return response; }
+
+    @Override public HttpResponseStatus getStatus() {
+        if (response == null) return null;
+        else return response.getStatus();
     }
 
-    @Override
-    public HttpResponse getResponse() {
-        return this.response;
+    @Override public int getResponseStatusCode() {
+        if (response == null) return -1;
+        else return response.getStatus().getCode();
     }
 
-    @Override
-    public HttpResponseStatus getStatus() {
-        if (this.response == null) {
-            return null;
-        }
-        return this.response.getStatus();
-    }
-
-    @Override
-    public int getResponseStatusCode() {
-        if (this.response == null) {
-            return -1;
-        }
-
-        return this.response.getStatus().getCode();
-    }
-
-    @Override
-    public boolean isSuccessfulResponse() {
-        int code = this.getResponseStatusCode();
+    @Override public boolean isSuccessfulResponse() {
+        int code = getResponseStatusCode();
         return (code >= 200) && (code <= 299);
     }
 
-    @Override
-    public void markExecutionStart() {
-        this.executionStart = System.nanoTime();
+    @Override public void markExecutionStart() { executionStart = System.nanoTime(); }
+
+    @Override public long getExecutionTime() {
+        if (done) return executionStart == -1 ? 0 : (executionEnd - executionStart) / 1000000;
+        else return -1;
     }
 
-    @Override
-    public long getExecutionTime() {
-        if (this.done) {
-            return this.executionStart == -1 ? 0 : (this.executionEnd - this.executionStart) / 1000000;
-        } else {
-            return -1;
-        }
+    @Override public long getExistenceTime() {
+        if (done) return (executionEnd - creation) / 1000000;
+        else return (System.nanoTime() - creation) / 1000000;
     }
 
-    @Override
-    public long getExistenceTime() {
-        if (this.done) {
-            return (this.executionEnd - this.creation) / 1000000;
-        } else {
-            return (System.nanoTime() - this.creation) / 1000000;
-        }
-    }
+    @Override public boolean isDone() { return done; }
 
-    @Override
-    public boolean isDone() {
-        return this.done;
-    }
+    @Override public boolean isSuccess() { return response != null; }
 
-    @Override
-    public boolean isSuccess() {
-        return this.response != null;
-    }
+    @Override public boolean isCancelled() { return cause == CANCELLED; }
 
-    @Override
-    public boolean isCancelled() {
-        return cause == CANCELLED;
-    }
+    @Override public Throwable getCause() { return cause; }
 
-    @Override
-    public Throwable getCause() {
-        return this.cause;
-    }
-
-    @Override
-    public boolean cancel() {
-        if (!this.cancellable) {
-            return false;
-        }
+    @Override public boolean cancel() {
+        if (!cancellable) return false;
 
         synchronized (this) {
-            if (this.done) {
-                return false;
-            }
+            if (done) return false;
 
-            this.executionEnd = System.nanoTime();
-            this.cause = CANCELLED;
-            this.done = true;
+            executionEnd = System.nanoTime();
+            cause = CANCELLED;
+            done = true;
 
             // The connection must be killed in order for the request to effectively be cancelled
-            this.connection.terminate(CANCELLED);
+            connection.terminate(CANCELLED);
 
-            if (this.waiters > 0) {
-                this.notifyAll();
-            }
+            if (waiters > 0) notifyAll();
         }
 
-        this.notifyListeners();
+        notifyListeners();
         return true;
     }
 
-    @Override
-    public boolean setSuccess(T processedResponse, HttpResponse response) {
+    @Override public boolean setSuccess(T processedResponse, HttpResponse response) {
         synchronized (this) {
-            if (this.done) {
-                return false;
-            }
+            if (done) return false;
 
-            this.executionEnd = System.nanoTime();
-            this.done = true;
-            this.result = processedResponse;
+            executionEnd = System.nanoTime();
+            done = true;
+            result = processedResponse;
             this.response = response;
-            if (this.waiters > 0) {
-                this.notifyAll();
-            }
+            if (waiters > 0) notifyAll();
         }
 
-        this.notifyListeners();
+        notifyListeners();
         return true;
     }
 
-    @Override
-    public boolean setFailure(Throwable cause) {
+    @Override public boolean setFailure(Throwable cause) {
         synchronized (this) {
-            // Allow only once.
-            if (this.done) {
-                return false;
-            }
+            if (done) return false; // Allow only once.
 
-            this.executionEnd = System.nanoTime();
+            executionEnd = System.nanoTime();
             this.cause = cause;
-            this.done = true;
-            if (this.waiters > 0) {
-                this.notifyAll();
-            }
+            done = true;
+            if (waiters > 0) notifyAll();
         }
 
-        this.notifyListeners();
+        notifyListeners();
         return true;
     }
 
-    @Override
-    public boolean setFailure(HttpResponse response, Throwable cause) {
+    @Override public boolean setFailure(HttpResponse response, Throwable cause) {
         synchronized (this) {
-            // Allow only once.
-            if (this.done) {
-                return false;
-            }
+            if (done) return false;
 
-            this.executionEnd = System.nanoTime();
+            executionEnd = System.nanoTime();
             this.response = response;
             this.cause = cause;
-            this.done = true;
-            if (this.waiters > 0) {
-                this.notifyAll();
-            }
+            done = true;
+            if (waiters > 0) notifyAll();
         }
 
-        this.notifyListeners();
+        notifyListeners();
         return true;
     }
 
-    @Override
-    public void addListener(HttpRequestFutureListener<T> listener) {
+    @Override public void addListener(HttpRequestFutureListener<T> listener) {
         synchronized (this) {
-            if (this.done) {
-                this.notifyListener(listener);
+            if (done) {
+                notifyListener(listener);
             } else {
-                if (this.listeners == null) {
-                    this.listeners = new ArrayList<HttpRequestFutureListener<T>>(1);
-                }
-                this.listeners.add(listener);
+                if (listeners == null) listeners = new ArrayList<>(1);
+                listeners.add(listener);
             }
         }
     }
 
-    @Override
-    public void removeListener(HttpRequestFutureListener<T> listener) {
+    @Override public void removeListener(HttpRequestFutureListener<T> listener) {
         synchronized (this) {
-            if (!this.done) {
-                if (this.listeners != null) {
-                    this.listeners.remove(listener);
-                }
-            }
+            if (done) return;
+
+            if (listeners != null) listeners.remove(listener);
         }
     }
 
-    @Override
-    public Object getAttachment() {
-        return attachment;
-    }
+    @Override public Object getAttachment() { return attachment; }
 
-    @Override
-    public void setAttachment(Object attachment) {
-        this.attachment = attachment;
-    }
+    @Override public void setAttachment(Object attachment) { this.attachment = attachment; }
 
-    @Override
-    public HttpRequestFuture<T> await() throws InterruptedException {
-        if (Thread.interrupted()) {
-            throw new InterruptedException();
-        }
+    @Override public HttpRequestFuture<T> await() throws InterruptedException {
+        if (Thread.interrupted()) throw new InterruptedException();
 
         synchronized (this) {
-            while (!this.done) {
+            while (!done) {
                 waiters++;
                 try {
-                    this.wait();
+                    wait();
                 } finally {
                     waiters--;
                 }
@@ -280,42 +204,38 @@ public class DefaultHttpRequestFuture<T>
         return this;
     }
 
-    @Override
-    public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+    @Override public boolean await(long timeout, TimeUnit unit)
+            throws InterruptedException {
         return await0(unit.toNanos(timeout), true);
     }
 
-    @Override
-    public boolean await(long timeoutMillis) throws InterruptedException {
-        return this.await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), true);
+    @Override public boolean await(long timeoutMillis)
+            throws InterruptedException {
+        return await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), true);
     }
 
-    @Override
-    public HttpRequestFuture<T> awaitUninterruptibly() {
+    @Override public HttpRequestFuture<T> awaitUninterruptibly() {
         boolean interrupted = false;
         synchronized (this) {
-            while (!this.done) {
-                this.waiters++;
+            while (!done) {
+                waiters++;
                 try {
-                    this.wait();
+                    wait();
                 } catch (InterruptedException e) {
                     interrupted = true;
                 } finally {
-                    this.waiters--;
+                    waiters--;
                 }
             }
         }
 
         // Preserve interruption.
-        if (interrupted) {
-            Thread.currentThread().interrupt();
-        }
+        if (interrupted) Thread.currentThread().interrupt();
 
         return this;
     }
 
-    @Override
-    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
+    @Override public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
         try {
             return await0(unit.toNanos(timeout), false);
         } catch (InterruptedException e) {
@@ -323,8 +243,7 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
-    @Override
-    public boolean awaitUninterruptibly(long timeoutMillis) {
+    @Override public boolean awaitUninterruptibly(long timeoutMillis) {
         try {
             return await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), false);
         } catch (InterruptedException e) {
@@ -334,9 +253,7 @@ public class DefaultHttpRequestFuture<T>
 
     // interface ------------------------------------------------------------------------------------------------------
 
-    public void attachConnection(HttpConnection connection) {
-        this.connection = connection;
-    }
+    public void attachConnection(HttpConnection connection) { this.connection = connection; }
 
     // private helpers ------------------------------------------------------------------------------------------------
 
@@ -346,14 +263,9 @@ public class DefaultHttpRequestFuture<T>
         //    Hence any listener list modification happens-before this method.
         // 2) This method is called only when 'done' is true.  Once 'done'
         //    becomes true, the listener list is never modified - see add/removeListener()
-        if (this.listeners == null) {
-            // Not testing for isEmpty as it is ultra rare someone adding a listener and then removing it...
-            return;
-        }
+        if (listeners == null) return; // Not testing for isEmpty since removing listeners is quite rare...
 
-        for (HttpRequestFutureListener<T> listener : listeners) {
-            this.notifyListener(listener);
-        }
+        for (HttpRequestFutureListener<T> listener : listeners) notifyListener(listener);
     }
 
     private void notifyListener(HttpRequestFutureListener<T> listener) {
@@ -366,9 +278,7 @@ public class DefaultHttpRequestFuture<T>
     }
 
     private boolean await0(long timeoutNanos, boolean interruptable) throws InterruptedException {
-        if (interruptable && Thread.interrupted()) {
-            throw new InterruptedException();
-        }
+        if (interruptable && Thread.interrupted()) throw new InterruptedException();
 
         long startTime = timeoutNanos <= 0 ? 0 : System.nanoTime();
         long waitTime = timeoutNanos;
@@ -376,17 +286,14 @@ public class DefaultHttpRequestFuture<T>
 
         try {
             synchronized (this) {
-                if (this.done) {
-                    return true;
-                } else if (waitTime <= 0) {
-                    return this.done;
-                }
+                if (done) return true;
+                else if (waitTime <= 0) return done;
 
-                this.waiters++;
+                waiters++;
                 try {
                     for (;;) {
                         try {
-                            this.wait(waitTime / 1000000, (int) (waitTime % 1000000));
+                            wait(waitTime / 1000000, (int) (waitTime % 1000000));
                         } catch (InterruptedException e) {
                             if (interruptable) {
                                 throw e;
@@ -395,41 +302,34 @@ public class DefaultHttpRequestFuture<T>
                             }
                         }
 
-                        if (this.done) {
+                        if (done) {
                             return true;
                         } else {
                             waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                            if (waitTime <= 0) {
-                                return this.done;
-                            }
+                            if (waitTime <= 0) return done;
                         }
                     }
                 } finally {
-                    this.waiters--;
+                    waiters--;
                 }
             }
         } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            if (interrupted) Thread.currentThread().interrupt();
         }
     }
 
     // object overrides -----------------------------------------------------------------------------------------------
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         StringBuilder builder = new StringBuilder()
                 .append("HttpRequestFuture{")
-                .append("existenceTime=").append(this.getExistenceTime())
-                .append(", executionTime=").append(this.getExecutionTime());
-        if (!this.isDone()) {
-            builder.append(", inProgress");
-        } else if (this.isSuccess()) {
-            builder.append(", succeeded (code ").append(this.response.getStatus().getCode()).append(')');
-        } else {
-            builder.append(", failed (").append(this.cause).append(')');
-        }
+                .append("existenceTime=").append(getExistenceTime())
+                .append(", executionTime=").append(getExecutionTime());
+
+        if (!isDone()) builder.append(", inProgress");
+        else if (isSuccess()) builder.append(", succeeded (code ").append(response.getStatus().getCode()).append(')');
+        else builder.append(", failed (").append(cause).append(')');
+
         return builder.append('}').toString();
     }
 }
