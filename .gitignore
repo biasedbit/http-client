@@ -2,7 +2,6 @@
 /build
 .gradle
 # idea
-/out
 *.ipr
 *.iws
 *.iml
