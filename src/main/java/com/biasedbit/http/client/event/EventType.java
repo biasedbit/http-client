@@ -14,21 +14,33 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.event;
 
 /**
- * Factory for {@link HttpClient} instances.
+ * Definition of possible event types for {@link com.biasedbit.http.client.AbstractHttpClient}'s consumer thread.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public enum EventType {
 
     /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
+     * A new request execution call was issued.
      */
-    HttpClient getClient();
+    EXECUTE_REQUEST,
+    /**
+     * A request execution was completeed (successfully or not).
+     */
+    REQUEST_COMPLETE,
+    /**
+     * A new connection to a given host was opened.
+     */
+    CONNECTION_OPEN,
+    /**
+     * An existing connection to a host was closed.
+     */
+    CONNECTION_CLOSED,
+    /**
+     * An attempt to connect to a given host failed.
+     */
+    CONNECTION_FAILED,
 }

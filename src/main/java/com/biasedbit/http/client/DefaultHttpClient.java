@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Bruno de Carvalho
+ * Copyright 2013 BiasedBit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,5 @@ package com.biasedbit.http.client;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class DefaultHttpClient extends AbstractHttpClient {
-
-}
+public class DefaultHttpClient
+        extends AbstractHttpClient { }

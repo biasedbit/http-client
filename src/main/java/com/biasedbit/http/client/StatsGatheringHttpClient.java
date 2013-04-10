@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Bruno de Carvalho
+ * Copyright 2013 BiasedBit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.event.ConnectionClosedEvent;
-import com.biasedbit.http.event.ConnectionFailedEvent;
-import com.biasedbit.http.event.ConnectionOpenEvent;
-import com.biasedbit.http.event.EventType;
-import com.biasedbit.http.event.ExecuteRequestEvent;
-import com.biasedbit.http.event.HttpClientEvent;
-import com.biasedbit.http.event.RequestCompleteEvent;
+import com.biasedbit.http.client.event.ConnectionClosedEvent;
+import com.biasedbit.http.client.event.ConnectionFailedEvent;
+import com.biasedbit.http.client.event.ConnectionOpenEvent;
+import com.biasedbit.http.client.event.EventType;
+import com.biasedbit.http.client.event.ExecuteRequestEvent;
+import com.biasedbit.http.client.event.HttpClientEvent;
+import com.biasedbit.http.client.event.RequestCompleteEvent;
+import lombok.Getter;
 
 /**
  * Statistics gathering version of {@link DefaultHttpClient}.
@@ -31,117 +32,91 @@ import com.biasedbit.http.event.RequestCompleteEvent;
  * calls. Even though these add neglectable overhead, for production scenarios where stats gathering is not vital, you
  * should use {@link DefaultHttpClient} rather than this one.
  * <p/>
- * This is only useful if you're implementing your own {@link com.biasedbit.http.host.HostContext} or
- * {@link com.biasedbit.http.connection.HttpConnection} and want to test the impact of your changes.
+ * This is only useful if you're implementing your own {@link com.biasedbit.http.client.host.HostContext} or
+ * {@link com.biasedbit.http.client.connection.HttpConnection} and want to test the impact of your changes.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class StatsGatheringHttpClient extends AbstractHttpClient
+public class StatsGatheringHttpClient
+        extends AbstractHttpClient
         implements EventProcessorStatsProvider {
 
-    // internal vars --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
-    protected long totalTime            = 0;
-    protected long executeRequestTime   = 0;
-    protected long requestCompleteTime  = 0;
-    protected long connectionOpenTime   = 0;
-    protected long connectionClosedTime = 0;
-    protected long connectionFailedTime = 0;
-    protected int  events               = 0;
+    @Getter private long totalTime            = 0;
+    @Getter private long executeRequestTime   = 0;
+    @Getter private long requestCompleteTime  = 0;
+    @Getter private long connectionOpenTime   = 0;
+    @Getter private long connectionClosedTime = 0;
+    @Getter private long connectionFailedTime = 0;
+    @Getter private int  events               = 0;
 
     // AbstractHttpClient ---------------------------------------------------------------------------------------------
 
-    @Override
-    public void eventHandlingLoop() {
-        for (;;) {
-            // Manual synchronization here because before removing an element, we first need to check whether an
-            // active available connection exists to satisfy the request.
+    @Override public void eventHandlingLoop() {
+        while (true) {
             try {
-                HttpClientEvent event = eventQueue.take();
+                HttpClientEvent event = popNextEvent();
                 if (event == POISON) {
-                    this.eventConsumerLatch.countDown();
+                    eventQueuePoisoned();
                     return;
                 }
-                this.events++;
+                events++;
                 long start = System.nanoTime();
 
                 switch (event.getEventType()) {
                     case EXECUTE_REQUEST:
-                        this.handleExecuteRequest((ExecuteRequestEvent) event);
-                        this.executeRequestTime += System.nanoTime() - start;
+                        handleExecuteRequest((ExecuteRequestEvent) event);
+                        executeRequestTime += System.nanoTime() - start;
                         break;
                     case REQUEST_COMPLETE:
-                        this.handleRequestComplete((RequestCompleteEvent) event);
-                        this.requestCompleteTime += System.nanoTime() - start;
+                        handleRequestComplete((RequestCompleteEvent) event);
+                        requestCompleteTime += System.nanoTime() - start;
                         break;
                     case CONNECTION_OPEN:
-                        this.handleConnectionOpen((ConnectionOpenEvent) event);
-                        this.connectionOpenTime += System.nanoTime() - start;
+                        handleConnectionOpen((ConnectionOpenEvent) event);
+                        connectionOpenTime += System.nanoTime() - start;
                         break;
                     case CONNECTION_CLOSED:
-                        this.handleConnectionClosed((ConnectionClosedEvent) event);
-                        this.connectionClosedTime += System.nanoTime() - start;
+                        handleConnectionClosed((ConnectionClosedEvent) event);
+                        connectionClosedTime += System.nanoTime() - start;
                         break;
                     case CONNECTION_FAILED:
-                        this.handleConnectionFailed((ConnectionFailedEvent) event);
-                        this.connectionFailedTime += System.nanoTime() - start;
+                        handleConnectionFailed((ConnectionFailedEvent) event);
+                        connectionFailedTime += System.nanoTime() - start;
                         break;
-                    default:
-                        // Consume and do nothing, unknown event.
+                    default: // Consume and do nothing, unknown event.
                 }
-                this.totalTime += System.nanoTime() - start;
-            } catch (InterruptedException e) {
-                // ignore, poisoning the queue is the only way to stop
-            }
+                totalTime += System.nanoTime() - start;
+            } catch (InterruptedException ignored) {  /* poisoning the queue is the only way to stop */ }
         }
-
     }
 
     // EventProcessorStatsProvider ------------------------------------------------------------------------------------
 
-    @Override
-    public long getTotalExecutionTime() {
-        return this.totalTime / 1000000;
-    }
+    @Override public long getTotalExecutionTime() { return totalTime / 1000000; }
 
-    @Override
-    public long getEventProcessingTime(EventType event) {
+    @Override public long getEventProcessingTime(EventType event) {
         switch (event) {
-            case EXECUTE_REQUEST:
-                return this.executeRequestTime / 1000000;
-            case REQUEST_COMPLETE:
-                return this.requestCompleteTime / 1000000;
-            case CONNECTION_OPEN:
-                return this.connectionOpenTime / 1000000;
-            case CONNECTION_CLOSED:
-                return this.connectionClosedTime / 1000000;
-            case CONNECTION_FAILED:
-                return this.connectionFailedTime / 1000000;
-            default:
-                throw new IllegalArgumentException("Unsupported event type: " + event);
+            case EXECUTE_REQUEST: return executeRequestTime / 1000000;
+            case REQUEST_COMPLETE: return requestCompleteTime / 1000000;
+            case CONNECTION_OPEN: return connectionOpenTime / 1000000;
+            case CONNECTION_CLOSED: return connectionClosedTime / 1000000;
+            case CONNECTION_FAILED: return connectionFailedTime / 1000000;
+            default: throw new IllegalArgumentException("Unsupported event type: " + event);
         }
     }
 
-    @Override
-    public float getEventProcessingPercentage(EventType event) {
+    @Override public float getEventProcessingPercentage(EventType event) {
         switch (event) {
-            case EXECUTE_REQUEST:
-                return (this.executeRequestTime / (float) this.totalTime) * 100;
-            case REQUEST_COMPLETE:
-                return (this.requestCompleteTime / (float) this.totalTime) * 100;
-            case CONNECTION_OPEN:
-                return (this.connectionOpenTime / (float) this.totalTime) * 100;
-            case CONNECTION_CLOSED:
-                return (this.connectionClosedTime / (float) this.totalTime) * 100;
-            case CONNECTION_FAILED:
-                return (this.connectionFailedTime / (float) this.totalTime) * 100;
-            default:
-                throw new IllegalArgumentException("Unsupported event type: " + event);
+            case EXECUTE_REQUEST: return (executeRequestTime / (float) totalTime) * 100;
+            case REQUEST_COMPLETE: return (requestCompleteTime / (float) totalTime) * 100;
+            case CONNECTION_OPEN: return (connectionOpenTime / (float) totalTime) * 100;
+            case CONNECTION_CLOSED: return (connectionClosedTime / (float) totalTime) * 100;
+            case CONNECTION_FAILED: return (connectionFailedTime / (float) totalTime) * 100;
+            default: throw new IllegalArgumentException("Unsupported event type: " + event);
         }
     }
 
-    @Override
-    public long getProcessedEvents() {
-        return this.events;
-    }
+    @Override public long getProcessedEvents() { return events; }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Bruno de Carvalho
+ * Copyright 2013 BiasedBit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,36 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.util.NamelessThreadFactory;
-import com.biasedbit.http.util.CleanupChannelGroup;
-import com.biasedbit.http.CannotExecuteRequestException;
-import com.biasedbit.http.HttpRequestContext;
-import com.biasedbit.http.connection.DefaultHttpConnectionFactory;
-import com.biasedbit.http.connection.HttpConnection;
-import com.biasedbit.http.connection.HttpConnectionFactory;
-import com.biasedbit.http.connection.HttpConnectionListener;
-import com.biasedbit.http.event.ConnectionClosedEvent;
-import com.biasedbit.http.event.ConnectionFailedEvent;
-import com.biasedbit.http.event.ConnectionOpenEvent;
-import com.biasedbit.http.event.EventType;
-import com.biasedbit.http.event.ExecuteRequestEvent;
-import com.biasedbit.http.event.HttpClientEvent;
-import com.biasedbit.http.event.RequestCompleteEvent;
-import com.biasedbit.http.future.DefaultHttpRequestFutureFactory;
-import com.biasedbit.http.future.HttpDataSinkListener;
-import com.biasedbit.http.future.HttpRequestFuture;
-import com.biasedbit.http.future.HttpRequestFutureFactory;
-import com.biasedbit.http.host.DefaultHostContextFactory;
-import com.biasedbit.http.host.HostContext;
-import com.biasedbit.http.host.HostContextFactory;
-import com.biasedbit.http.processor.DiscardProcessor;
-import com.biasedbit.http.processor.HttpResponseProcessor;
-import com.biasedbit.http.ssl.BogusSslContextFactory;
-import com.biasedbit.http.ssl.SslContextFactory;
-import com.biasedbit.http.timeout.HashedWheelTimeoutManager;
-import com.biasedbit.http.timeout.TimeoutManager;
+import com.biasedbit.http.client.connection.ConnectionPool;
+import com.biasedbit.http.client.connection.DefaultHttpConnectionFactory;
+import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.connection.HttpConnectionFactory;
+import com.biasedbit.http.client.connection.HttpConnectionListener;
+import com.biasedbit.http.client.event.ConnectionClosedEvent;
+import com.biasedbit.http.client.event.ConnectionFailedEvent;
+import com.biasedbit.http.client.event.ConnectionOpenEvent;
+import com.biasedbit.http.client.event.EventType;
+import com.biasedbit.http.client.event.ExecuteRequestEvent;
+import com.biasedbit.http.client.event.HttpClientEvent;
+import com.biasedbit.http.client.event.RequestCompleteEvent;
+import com.biasedbit.http.client.future.DefaultHttpRequestFutureFactory;
+import com.biasedbit.http.client.future.HttpDataSinkListener;
+import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.future.HttpRequestFutureFactory;
+import com.biasedbit.http.client.host.DefaultHostContextFactory;
+import com.biasedbit.http.client.host.HostContext;
+import com.biasedbit.http.client.host.HostContextFactory;
+import com.biasedbit.http.client.processor.DiscardProcessor;
+import com.biasedbit.http.client.processor.HttpResponseProcessor;
+import com.biasedbit.http.client.ssl.BogusSslContextFactory;
+import com.biasedbit.http.client.ssl.SslContextFactory;
+import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
+import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
+import com.biasedbit.http.client.timeout.TimeoutController;
+import com.biasedbit.http.client.timeout.TimeoutController;
+import com.biasedbit.http.client.util.CleanupChannelGroup;
+import com.biasedbit.http.client.util.NamelessThreadFactory;
+import lombok.Getter;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
@@ -54,7 +56,6 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.oio.OioClientSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 import org.jboss.netty.handler.codec.http.HttpClientCodec;
 import org.jboss.netty.handler.codec.http.HttpContentCompressor;
 import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
@@ -78,7 +79,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.biasedbit.http.util.Utils.*;
+import static com.biasedbit.http.client.future.HttpRequestFuture.*;
+import static com.biasedbit.http.client.util.Utils.*;
 
 /**
  * Abstract implementation of the {@link HttpClient} interface. Contains most of the boilerplate code that other
@@ -108,18 +110,18 @@ import static com.biasedbit.http.util.Utils.*;
  * <p/>
  * This doesn't mean that request A will hit the server before request B or that the response for request A will arrive
  * before B. The reasons are obvious:
- *
+ * <p/>
  * <ul>
- *   <li>A can end up in a connection slower than B's</li>
- *   <li>Server can respond faster on one socket than on the other</li>
- *   <li>Response for request B can have 10b and for request A 10bKb</li>
- *   <li>etc</li>
+ * <li>A can end up in a connection slower than B's</li>
+ * <li>Server can respond faster on one socket than on the other</li>
+ * <li>Response for request B can have 10b and for request A 10bKb</li>
+ * <li>etc</li>
  * </ul
  * <p/>
  * If you need to guarantee that a request B can only hit the server after a request A, you can either manually manage
  * that in your code through the {@link HttpRequestFuture} API or configure the concrete instance of this class to allow
  * at most 1 connection per host - although this last option will hurt performance globally.
- *
+ * <p/>
  * <div class="note">
  * <div class="header">Note:</div>
  * Calling {@linkplain #execute(String, int, HttpRequest, HttpResponseProcessor) one of the variants of {@code execute}}
@@ -130,7 +132,8 @@ import static com.biasedbit.http.util.Utils.*;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public abstract class AbstractHttpClient
-        implements HttpClient, HttpConnectionListener {
+        implements HttpClient,
+                   HttpConnectionListener {
 
     // constants ------------------------------------------------------------------------------------------------------
 
@@ -142,86 +145,60 @@ public abstract class AbstractHttpClient
 
     // configuration defaults -----------------------------------------------------------------------------------------
 
-    protected static final boolean USE_SSL                            = false;
-    protected static final int     REQUEST_COMPRESSION_LEVEL          = 0;
-    protected static final boolean AUTO_INFLATE                       = false;
-    protected static final int     REQUEST_CHUNK_SIZE                 = 8192;
-    protected static final boolean AGGREGATE_RESPONSE_CHUNKS          = false;
-    protected static final int     CONNECTION_TIMEOUT_IN_MILLIS       = 10000;
-    protected static final int     REQUEST_TIMEOUT_IN_MILLIS          = 10000;
-    protected static final int     MAX_CONNECTIONS_PER_HOST           = 3;
-    protected static final int     MAX_QUEUED_REQUESTS                = Short.MAX_VALUE;
-    protected static final boolean USE_NIO                            = false;
-    protected static final int     MAX_IO_WORKER_THREADS              = 50;
-    protected static final int     MAX_EVENT_PROCESSOR_HELPER_THREADS = 20;
-    protected static final boolean CLEANUP_INACTIVE_HOST_CONTEXTS     = true;
+    public static final int     CONNECTION_TIMEOUT             = 10;
+    public static final int     REQUEST_INACTIVITY_TIMEOUT     = 10;
+    public static final boolean USE_NIO                        = false;
+    public static final boolean USE_SSL                        = false;
+    public static final int     MAX_CONNECTIONS_PER_HOST       = 3;
+    public static final int     MAX_QUEUED_REQUESTS            = Short.MAX_VALUE;
+    public static final int     MAX_IO_WORKER_THREADS          = 50;
+    public static final int     MAX_HELPER_THREADS             = 20;
+    public static final int     REQUEST_COMPRESSION_LEVEL      = 0;
+    public static final boolean AUTO_INFLATE                   = false;
+    public static final boolean CLEANUP_INACTIVE_HOST_CONTEXTS = true;
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    protected boolean                  useSsl;
-    protected int                      requestCompressionLevel;
-    protected boolean                  autoInflate;
-    protected int                      requestChunkSize;
-    protected boolean                  aggregateResponseChunks;
-    protected int                      maxConnectionsPerHost;
-    protected int                      maxQueuedRequests;
-    protected int                      connectionTimeoutInMillis;
-    protected int                      requestTimeoutInMillis;
-    protected boolean                  useNio;
-    protected int                      maxIoWorkerThreads;
-    protected int                      maxEventProcessorHelperThreads;
-    protected HttpConnectionFactory    connectionFactory;
-    protected HostContextFactory       hostContextFactory;
-    protected HttpRequestFutureFactory futureFactory;
-    protected TimeoutManager           timeoutManager;
-    protected boolean                  cleanupInactiveHostContexts;
-    protected SslContextFactory        sslContextFactory;
+    @Getter private int     connectionTimeout           = CONNECTION_TIMEOUT;
+    @Getter private int     requestInactivityTimeout    = REQUEST_INACTIVITY_TIMEOUT;
+    @Getter private boolean useNio                      = USE_NIO;
+    @Getter private boolean useSsl                      = USE_SSL;
+    @Getter private int     maxConnectionsPerHost       = MAX_CONNECTIONS_PER_HOST;
+    @Getter private int     maxQueuedRequests           = MAX_QUEUED_REQUESTS;
+    @Getter private int     maxIoWorkerThreads          = MAX_IO_WORKER_THREADS;
+    @Getter private int     maxHelperThreads            = MAX_HELPER_THREADS;
+    @Getter private int     requestCompressionLevel     = REQUEST_COMPRESSION_LEVEL;
+    @Getter private boolean autoInflate                 = AUTO_INFLATE;
+    @Getter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
+
+    @Getter private HttpConnectionFactory    connectionFactory;
+    @Getter private HostContextFactory       hostContextFactory;
+    @Getter private HttpRequestFutureFactory futureFactory;
+    @Getter private TimeoutController        timeoutController;
+    @Getter private SslContextFactory        sslContextFactory;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    protected          Executor                       executor;
-    protected          ChannelFactory                 channelFactory;
-    protected          ChannelPipelineFactory         pipelineFactory;
-    protected          ChannelGroup                   channelGroup;
-    protected          BlockingQueue<HttpClientEvent> eventQueue;
-    protected final    Map<String, HostContext>       contextMap;
-    protected final    AtomicInteger                  queuedRequests;
-    protected          int                            connectionCounter;
-    protected          CountDownLatch                 eventConsumerLatch;
-    protected volatile boolean                        terminate;
-    protected          boolean                        internalTimeoutManager;
+    private final Map<String, HostContext> contextMap     = new HashMap<>();
+    private final AtomicInteger            queuedRequests = new AtomicInteger(0);
 
-    // constructors ---------------------------------------------------------------------------------------------------
+    private Executor                       executor;
+    private ChannelFactory                 channelFactory;
+    private ChannelPipelineFactory         pipelineFactory;
+    private ChannelGroup                   channelGroup;
+    private BlockingQueue<HttpClientEvent> eventQueue;
+    private int                            connectionCounter;
+    private CountDownLatch                 eventConsumerLatch;
+    private boolean                        internalTimeoutManager;
 
-    public AbstractHttpClient() {
-        useSsl = USE_SSL;
-        requestCompressionLevel = REQUEST_COMPRESSION_LEVEL;
-        autoInflate = AUTO_INFLATE;
-        requestChunkSize = REQUEST_CHUNK_SIZE;
-        aggregateResponseChunks = AGGREGATE_RESPONSE_CHUNKS;
-        connectionTimeoutInMillis = CONNECTION_TIMEOUT_IN_MILLIS;
-        requestTimeoutInMillis = REQUEST_TIMEOUT_IN_MILLIS;
-        maxConnectionsPerHost = MAX_CONNECTIONS_PER_HOST;
-        maxQueuedRequests = MAX_QUEUED_REQUESTS;
-        useNio = USE_NIO;
-        maxIoWorkerThreads = MAX_IO_WORKER_THREADS;
-        maxEventProcessorHelperThreads = MAX_EVENT_PROCESSOR_HELPER_THREADS;
-        cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
-
-        queuedRequests = new AtomicInteger(0);
-
-        // No need for synchronized structures here, as they'll be accessed by a single thread
-        contextMap = new HashMap<String, HostContext>();
-    }
+    private volatile boolean terminate;
 
     // HttpClient -----------------------------------------------------------------------------------------------------
 
     @Override public boolean init() {
-        if (timeoutManager == null) {
-            // Consumes less resources, puts less emphasis on precision.
-            timeoutManager = new HashedWheelTimeoutManager();
-            //this.timeoutManager = new BasicTimeoutManager(10);
-            timeoutManager.init();
+        if (timeoutController == null) {
+            timeoutController = new HashedWheelTimeoutController(); // prefer lower resources consumption over precision
+            timeoutController.init();
             internalTimeoutManager = true;
         }
 
@@ -232,11 +209,11 @@ public abstract class AbstractHttpClient
         if ((sslContextFactory == null) && isHttps()) sslContextFactory = new BogusSslContextFactory();
 
         eventConsumerLatch = new CountDownLatch(1);
-        eventQueue = new LinkedBlockingQueue<HttpClientEvent>();
+        eventQueue = new LinkedBlockingQueue<>();
 
         // TODO instead of fixed size thread pool, use a cached thread pool with size limit (limited growth cached pool)
-        executor = Executors.newFixedThreadPool(maxEventProcessorHelperThreads,
-                                                new NamelessThreadFactory("httpHandyman"));
+        executor = Executors.newFixedThreadPool(maxHelperThreads,
+                                                new NamelessThreadFactory("httpHelpers"));
         Executor workerPool = Executors.newFixedThreadPool(maxIoWorkerThreads,
                                                            new NamelessThreadFactory("httpWorkers"));
 
@@ -264,18 +241,15 @@ public abstract class AbstractHttpClient
                     pipeline.addLast("deflater", new HttpContentCompressor(requestCompressionLevel));
                 }
 
-                pipeline.addLast("codec", new HttpClientCodec(4096, 8192, requestChunkSize));
+                pipeline.addLast("codec", new HttpClientCodec());
                 if (autoInflate) pipeline.addLast("inflater", new HttpContentDecompressor());
-                if (aggregateResponseChunks) pipeline.addLast("aggregator", new HttpChunkAggregator(1048576));
 
                 return pipeline;
             }
         };
 
         executor.execute(new Runnable() {
-            @Override public void run() {
-                eventHandlingLoop();
-            }
+            @Override public void run() { eventHandlingLoop(); }
         });
 
         return true;
@@ -289,7 +263,7 @@ public abstract class AbstractHttpClient
         // Stop accepting requests.
         terminate = true;
         // Copy any pending operations in order to signal execution request failures.
-        Collection<HttpClientEvent> pendingEvents = new ArrayList<HttpClientEvent>(eventQueue);
+        Collection<HttpClientEvent> pendingEvents = new ArrayList<>(eventQueue);
         // Clear the queue and kill the consumer thread by "poisoning" the event queue.
         eventQueue.clear();
         eventQueue.add(POISON);
@@ -303,14 +277,14 @@ public abstract class AbstractHttpClient
         for (HttpClientEvent event : pendingEvents) {
             switch (event.getEventType()) {
                 case EXECUTE_REQUEST:
-                    ((ExecuteRequestEvent) event).getContext().getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
+                    ((ExecuteRequestEvent) event).getContext().getFuture().setFailure(SHUTTING_DOWN);
                     break;
 
                 case CONNECTION_CLOSED:
                     ConnectionClosedEvent closedEvent = (ConnectionClosedEvent) event;
                     if ((closedEvent.getRetryRequests() != null) && !closedEvent.getRetryRequests().isEmpty()) {
                         for (HttpRequestContext context : closedEvent.getRetryRequests()) {
-                            context.getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
+                            context.getFuture().setFailure(SHUTTING_DOWN);
                         }
                     }
             }
@@ -319,12 +293,10 @@ public abstract class AbstractHttpClient
         // Kill all connections (will cause failure on requests executing in those connections) and fail context-queued
         // requests.
         for (HostContext hostContext : contextMap.values()) {
-            for (HttpRequestContext context : hostContext.getQueue()) {
-                context.getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
-            }
-            for (HttpConnection connection : hostContext.getConnectionPool().getConnections()) {
-                connection.terminate(HttpRequestFuture.SHUTTING_DOWN);
-            }
+            for (HttpRequestContext context : hostContext.getQueue()) context.getFuture().setFailure(SHUTTING_DOWN);
+
+            ConnectionPool pool = hostContext.getConnectionPool();
+            for (HttpConnection connection : pool.getConnections()) connection.terminate(SHUTTING_DOWN);
         }
         contextMap.clear();
 
@@ -337,13 +309,13 @@ public abstract class AbstractHttpClient
         channelFactory.releaseExternalResources();
         if (executor != null) ExecutorUtil.terminate(executor);
 
-        if (internalTimeoutManager) timeoutManager.terminate();
+        if (internalTimeoutManager) timeoutController.terminate();
     }
 
     @Override public <T> HttpRequestFuture<T> execute(String host, int port, HttpRequest request,
-                                            HttpResponseProcessor<T> processor)
+                                                      HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
-        return execute(host, port, requestTimeoutInMillis, request, processor);
+        return execute(host, port, requestInactivityTimeout, request, processor);
     }
 
     @Override public HttpRequestFuture<Object> execute(String host, int port, HttpRequest request)
@@ -380,7 +352,7 @@ public abstract class AbstractHttpClient
         if (autoInflate) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
         HttpRequestFuture<T> future = futureFactory.getFuture(true);
-        HttpRequestContext<T> context = new HttpRequestContext<T>(host, port, timeout, request, processor, future);
+        HttpRequestContext<T> context = new HttpRequestContext<>(host, port, timeout, request, processor, future);
         context.setDataSinkListener(dataSinkListener);
 
         if (terminate || !eventQueue.offer(new ExecuteRequestEvent(context))) {
@@ -404,9 +376,7 @@ public abstract class AbstractHttpClient
                                                Collection<HttpRequestContext> retryRequests) {
         if (terminate) {
             if ((retryRequests != null) && !retryRequests.isEmpty()) {
-                for (HttpRequestContext request : retryRequests) {
-                    request.getFuture().setFailure(HttpRequestFuture.SHUTTING_DOWN);
-                }
+                for (HttpRequestContext request : retryRequests) request.getFuture().setFailure(SHUTTING_DOWN);
             }
         } else {
             eventQueue.offer(new ConnectionClosedEvent(connection, retryRequests));
@@ -433,21 +403,24 @@ public abstract class AbstractHttpClient
 
     // interface ------------------------------------------------------------------------------------------------------
 
-    public Map<String, HostContext> getContextMap() {
-        // Purely for unit testing purposes...
-        return Collections.unmodifiableMap(contextMap);
-    }
+    // TODO this seems to only be necessary for unit tests so it needs to be cut off
+    public Map<String, HostContext> getContextMap() { return Collections.unmodifiableMap(contextMap); }
 
     // protected helpers ----------------------------------------------------------------------------------------------
 
+    protected HttpClientEvent popNextEvent()
+            throws InterruptedException {
+        return eventQueue.take();
+    }
+
+    protected void eventQueuePoisoned() { eventConsumerLatch.countDown(); }
+
     protected void eventHandlingLoop() {
-        for (;;) {
-            // Manual synchronization here because before removing an element, we first need to check whether an
-            // active available connection exists to satisfy the request.
+        while (true) {
             try {
-                HttpClientEvent event = eventQueue.take();
+                HttpClientEvent event = popNextEvent();
                 if (event == POISON) {
-                    eventConsumerLatch.countDown();
+                    eventQueuePoisoned();
                     return;
                 }
 
@@ -467,12 +440,9 @@ public abstract class AbstractHttpClient
                     case CONNECTION_FAILED:
                         handleConnectionFailed((ConnectionFailedEvent) event);
                         break;
-                    default:
-                        // Consume and do nothing, unknown event.
+                    default: // Consume and do nothing, unknown event.
                 }
-            } catch (InterruptedException e) {
-                // ignore, poisoning the queue is the only way to stop
-            }
+            } catch (InterruptedException ignored) {  /* poisoning the queue is the only way to stop */ }
         }
     }
 
@@ -529,7 +499,7 @@ public abstract class AbstractHttpClient
         if (event.getRetryRequests() != null) context.restoreRequestsToQueue(event.getRetryRequests());
 
         // If the pool has no connections and no requests are in queue for this host, then clean it up.
-        if ((context.getConnectionPool().getTotalConnections() == 0) && context.getQueue().isEmpty() &&
+        if ((context.getConnectionPool().totalConnections() == 0) && context.getQueue().isEmpty() &&
             cleanupInactiveHostContexts) {
             // No requests in queue, no connections open or opening... Cleanup resources.
             contextMap.remove(id);
@@ -546,10 +516,10 @@ public abstract class AbstractHttpClient
 
         context.getConnectionPool().connectionFailed();
         if ((context.getConnectionPool().hasConnectionFailures() &&
-             context.getConnectionPool().getTotalConnections() == 0)) {
+             context.getConnectionPool().totalConnections() == 0)) {
             // Connection failures occured and there are no more connections active or establishing, so its time to
             // fail all queued requests.
-            context.failAllRequests(HttpRequestFuture.CANNOT_CONNECT);
+            context.failAllRequests(CANNOT_CONNECT);
         }
     }
 
@@ -585,7 +555,7 @@ public abstract class AbstractHttpClient
             pipeline = pipelineFactory.getPipeline();
         } catch (Exception e) {
             // This should only happen in development mode so err.println isn't a big deal...
-            System.err.println("Failed to create pipeline.");
+            System.err.println("Could not create pipeline.");
             e.printStackTrace();
             // bail out before marking a connection as opening.
             return;
@@ -601,7 +571,7 @@ public abstract class AbstractHttpClient
         Executor writeDelegator = useNio ? null : executor;
 
         final HttpConnection connection = connectionFactory
-                .createConnection(id, context.getHost(), context.getPort(), this, timeoutManager, writeDelegator);
+                .createConnection(id, context.getHost(), context.getPort(), this, timeoutController, writeDelegator);
 
         pipeline.addLast("handler", connection);
 
@@ -610,7 +580,7 @@ public abstract class AbstractHttpClient
             @Override public void run() {
                 ClientBootstrap bootstrap = new ClientBootstrap(channelFactory);
                 bootstrap.setOption("reuseAddress", true);
-                bootstrap.setOption("connectTimeoutMillis", connectionTimeoutInMillis);
+                bootstrap.setOption("connectTimeoutMillis", connectionTimeout);
                 bootstrap.setPipeline(pipeline);
 
                 ChannelFuture future = bootstrap.connect(new InetSocketAddress(context.getHost(), context.getPort()));
@@ -630,135 +600,6 @@ public abstract class AbstractHttpClient
 
     // getters & setters ----------------------------------------------------------------------------------------------
 
-    public boolean isUseSsl() { return useSsl; }
-
-    /**
-     * Whether this client should create SSL or non-SSL connections.
-     * <p/>
-     * All connections are affected by this flag.
-     * <p/>
-     * Defaults to {@code false}.
-     *
-     * @param useSsl {@code true} if all connections will have SSL support, {@code false} otherwise.
-     */
-    public void setUseSsl(boolean useSsl) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.useSsl = useSsl;
-    }
-
-    public int getRequestCompressionLevel() { return requestCompressionLevel; }
-
-    /**
-     * Level of compression when sending requests.
-     * <p/>
-     * Defaults to 0.
-     *
-     * @param requestCompressionLevel Level of compression between 0 and 9; 0 = off and 9 = max.
-     */
-    public void setRequestCompressionLevel(int requestCompressionLevel) {
-        ensureValue((requestCompressionLevel < 0) || (requestCompressionLevel > 9),
-                    "RequestCompressionLevel must be in range [0;9] (0 = none, 9 = max)");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.requestCompressionLevel = requestCompressionLevel;
-    }
-
-    public boolean isAutoInflate() { return autoInflate; }
-
-    /**
-     * Whether responses should be auto inflated (decompressed) or not.
-     * <p/>
-     * Setting this flag to true will cause a 'Accept-Encoding' header with value 'gzip' to be added to the requests
-     * submitted.
-     * <p/>
-     * Defaults to {@code true}.
-     *
-     * @param autoInflate {@code true} if the connections should automatically decompress gzip content, {@code false}
-     *                    otherwise.
-     */
-    public void setAutoInflate(boolean autoInflate) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.autoInflate = autoInflate;
-    }
-
-    public int getRequestChunkSize() { return requestChunkSize; }
-
-    /**
-     * Maximum size for HTTP request chunks.
-     * If the contents of the requests exceed this value, the request will be chunked and a 'Transfer-Encoding' header
-     * will be added with value 'chunked'.
-     * <p/>
-     * Defaults to 8192.
-     *
-     * @param requestChunkSize If request or response body exceeds this value
-     */
-    public void setRequestChunkSize(int requestChunkSize) {
-        ensureValue(requestChunkSize < 128, "Minimum accepted chunk size is 128b");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.requestChunkSize = requestChunkSize;
-    }
-
-    public boolean isAggregateResponseChunks() { return aggregateResponseChunks; }
-
-    /**
-     * If the response is transferred in chunks, whether they should be automatically grouped or not.
-     * <p/>
-     * Defaults to {@code true}.
-     *
-     * @param aggregateResponseChunks {@code true} to aggregate http response chunks automatically, {@code false}
-     *                                otherwise.
-     */
-    public void setAggregateResponseChunks(boolean aggregateResponseChunks) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.aggregateResponseChunks = aggregateResponseChunks;
-    }
-
-    public int getMaxConnectionsPerHost() { return maxConnectionsPerHost; }
-
-    /**
-     * Sets the maximum number of active connections per host.
-     * <p/>
-     * This number also limits the number of connections being established so that
-     * {@code connectionsOpen + connectionsOpening <= maxConnectionsPerHost} is always true.
-     * <p/>
-     * Defaults to 3.
-     *
-     * @param maxConnectionsPerHost Maximum number of total active connections (open + opening) per host at a given
-     *                              time. Minimum value is 1.
-     */
-    public void setMaxConnectionsPerHost(int maxConnectionsPerHost) {
-        ensureValue(maxConnectionsPerHost < 1, "MaxConnectionsPerHost must be > 1");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.maxConnectionsPerHost = maxConnectionsPerHost;
-    }
-
-    public int getMaxQueuedRequests() { return maxQueuedRequests; }
-
-    /**
-     * Sets the maximum number of queued requests for this client.
-     * <p/>
-     * If the number of queued requests is exceeded, calling
-     * {@linkplain #execute(String, int, HttpRequest, HttpResponseProcessor) one of the variants of {@code execute()}}
-     * will throw a {@link CannotExecuteRequestException}.
-     * <p/>
-     * Defaults to {@link Short#MAX_VALUE}.
-     *
-     * @param maxQueuedRequests Maximum number of queued requests at any given moment.
-     */
-    public void setMaxQueuedRequests(int maxQueuedRequests) {
-        ensureValue(maxQueuedRequests < 1, "MaxQueuedRequests must be > 1");
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.maxQueuedRequests = maxQueuedRequests;
-    }
-
-    public int getConnectionTimeoutInMillis() { return connectionTimeoutInMillis; }
-
     /**
      * Sets the connection to host timeout, in milliseconds.
      * <p/>
@@ -766,14 +607,12 @@ public abstract class AbstractHttpClient
      *
      * @param connectionTimeoutInMillis Connection to host timeout, in milliseconds.
      */
-    public void setConnectionTimeoutInMillis(int connectionTimeoutInMillis) {
-        ensureValue(connectionTimeoutInMillis < 0, "ConnectionTimeoutInMillis must be >= 0 (0 means infinite)");
+    public void setConnectionTimeout(int connectionTimeoutInMillis) {
+        ensureValue(connectionTimeoutInMillis >= 0, "connectionTimeoutInMillis must be >= 0 (0 means infinite)");
         ensureState(eventQueue != null, "Cannot modify property after initialization");
 
-        this.connectionTimeoutInMillis = connectionTimeoutInMillis;
+        connectionTimeout = connectionTimeoutInMillis;
     }
-
-    public int getRequestTimeoutInMillis() { return requestTimeoutInMillis; }
 
     /**
      * Sets the default request timeout, in milliseconds.
@@ -781,22 +620,20 @@ public abstract class AbstractHttpClient
      * When {@link #execute(String, int, HttpRequest, HttpResponseProcessor)} is called (i.e. the variant without
      * explicit request timeout) then this value is applied as the request timeout.
      * <p/>
-     * Requests whose execution time exceeds (precision depends on the {@link TimeoutManager} chosen) this value will be
-     * considered failed and their {@link com.biasedbit.http.future.HttpRequestFuture} will be released with cause
-     * {@link com.biasedbit.http.future.HttpRequestFuture#TIMED_OUT}.
+     * Requests whose execution time exceeds (precision depends on the {@link com.biasedbit.http.client.timeout.TimeoutController} chosen) this value will be
+     * considered failed and their {@link com.biasedbit.http.client.future.HttpRequestFuture} will be released with cause
+     * {@link com.biasedbit.http.client.future.HttpRequestFuture#TIMED_OUT}.
      * <p/>
      * Defaults to 2000.
      *
      * @param requestTimeoutInMillis Default request timeout, in milliseconds.
      */
-    public void setRequestTimeoutInMillis(int requestTimeoutInMillis) {
-        ensureValue(requestTimeoutInMillis <= 0, "RequestTimeoutInMillis must be >= 0 (0 means infinite)");
+    public void setRequestInactivityTimeout(int requestTimeoutInMillis) {
+        ensureValue(requestTimeoutInMillis >= 0, "requestTimeoutInMillis must be >= 0 (0 means infinite)");
         ensureState(eventQueue != null, "Cannot modify property after initialization");
 
-        this.requestTimeoutInMillis = requestTimeoutInMillis;
+        requestInactivityTimeout = requestTimeoutInMillis;
     }
-
-    public boolean isUseNio() { return useNio; }
 
     /**
      * Whether this client should use non-blocking IO (New I/O or NIO) or blocking IO (Plain Socket Old IO or OIO).
@@ -820,7 +657,56 @@ public abstract class AbstractHttpClient
         this.useNio = useNio;
     }
 
-    public int getMaxIoWorkerThreads() { return maxIoWorkerThreads; }
+    /**
+     * Whether this client should create SSL or non-SSL connections.
+     * <p/>
+     * All connections are affected by this flag.
+     * <p/>
+     * Defaults to {@code false}.
+     *
+     * @param useSsl {@code true} if all connections will have SSL support, {@code false} otherwise.
+     */
+    public void setUseSsl(boolean useSsl) {
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.useSsl = useSsl;
+    }
+
+    /**
+     * Sets the maximum number of active connections per host.
+     * <p/>
+     * This number also limits the number of connections being established so that
+     * {@code connectionsOpen + connectionsOpening <= maxConnectionsPerHost} is always true.
+     * <p/>
+     * Defaults to 3.
+     *
+     * @param maxConnectionsPerHost Maximum number of total active connections (open + opening) per host at a given
+     *                              time. Minimum value is 1.
+     */
+    public void setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+        ensureValue(maxConnectionsPerHost >= 1, "maxConnectionsPerHost must be >= 1");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.maxConnectionsPerHost = maxConnectionsPerHost;
+    }
+
+    /**
+     * Sets the maximum number of queued requests for this client.
+     * <p/>
+     * If the number of queued requests is exceeded, calling
+     * {@linkplain #execute(String, int, HttpRequest, HttpResponseProcessor) one of the variants of {@code execute()}}
+     * will throw a {@link CannotExecuteRequestException}.
+     * <p/>
+     * Defaults to {@link Short#MAX_VALUE}.
+     *
+     * @param maxQueuedRequests Maximum number of queued requests at any given moment.
+     */
+    public void setMaxQueuedRequests(int maxQueuedRequests) {
+        ensureValue(maxQueuedRequests > 1, "maxQueuedRequests must be > 1");
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.maxQueuedRequests = maxQueuedRequests;
+    }
 
     /**
      * Maximum number of worker threads for the executor provided to Netty's {@link ChannelFactory}.
@@ -830,13 +716,11 @@ public abstract class AbstractHttpClient
      * @param maxIoWorkerThreads Maximum number of IO worker threads.
      */
     public void setMaxIoWorkerThreads(int maxIoWorkerThreads) {
-        ensureValue(maxIoWorkerThreads <= 1, "Minimum value for maxIoWorkerThreads is 1");
+        ensureValue(maxIoWorkerThreads > 1, "maxIoWorkerThreads must be > 1");
         ensureState(eventQueue != null, "Cannot modify property after initialization");
 
         this.maxIoWorkerThreads = maxIoWorkerThreads;
     }
-
-    public int getMaxEventProcessorHelperThreads() { return maxEventProcessorHelperThreads; }
 
     /**
      * Maximum number of helper threads for the event processor.
@@ -847,98 +731,45 @@ public abstract class AbstractHttpClient
      * <p/>
      * Defaults to 20.
      *
-     * @param maxEventProcessorHelperThreads Maximum number of IO worker threads.
+     * @param maxHelperThreads Maximum number of IO worker threads.
      */
-    public void setMaxEventProcessorHelperThreads(int maxEventProcessorHelperThreads) {
-        ensureValue(maxEventProcessorHelperThreads <= 3, "Minimum value for maxEventProcessorHelperThreads is 3");
+    public void setMaxHelperThreads(int maxHelperThreads) {
+        ensureValue(maxHelperThreads > 3, "maxHelperThreads must be > 3");
         ensureState(eventQueue != null, "Cannot modify property after initialization");
 
-        this.maxEventProcessorHelperThreads = maxEventProcessorHelperThreads;
+        this.maxHelperThreads = maxHelperThreads;
     }
 
-    public HostContextFactory getHostContextFactory() { return hostContextFactory; }
-
     /**
-     * The {@link HostContextFactory} that will be used to create new {@link HostContext} instances.
+     * Level of compression when sending requests.
      * <p/>
-     * Defaults to {@link DefaultHostContextFactory} if none is provided.
+     * Defaults to 0.
      *
-     * @param hostContextFactory The {@link HostContextFactory} to be used.
-     *
-     * @see com.biasedbit.http.host.HostContextFactory
-     * @see com.biasedbit.http.host.HostContext
+     * @param requestCompressionLevel Level of compression between 0 and 9; 0 = off and 9 = max.
      */
-    public void setHostContextFactory(HostContextFactory hostContextFactory) {
+    public void setRequestCompressionLevel(int requestCompressionLevel) {
+        ensureValue((requestCompressionLevel >= 0) && (requestCompressionLevel <= 9),
+                    "requestCompressionLevel must be in range [0;9] (0 = none, 9 = max)");
         ensureState(eventQueue != null, "Cannot modify property after initialization");
 
-        this.hostContextFactory = hostContextFactory;
+        this.requestCompressionLevel = requestCompressionLevel;
     }
 
-    public HttpConnectionFactory getConnectionFactory() { return connectionFactory; }
-
     /**
-     * The {@link HttpConnectionFactory} that will be used to create new {@link HttpConnection}.
+     * Whether responses should be auto inflated (decompressed) or not.
      * <p/>
-     * Defaults to {@link DefaultHttpConnectionFactory} if none is provided.
+     * Setting this flag to true will cause a 'Accept-Encoding' header with value 'gzip' to be added to the requests
+     * submitted.
+     * <p/>
+     * Defaults to {@code true}.
      *
-     * @param connectionFactory The {@link HttpConnectionFactory} to be used.
-     *
-     * @see com.biasedbit.http.connection.HttpConnectionFactory
-     * @see com.biasedbit.http.connection.HttpConnection
+     * @param autoInflate {@code true} if the connections should automatically decompress gzip content, {@code false}
+     *                    otherwise.
      */
-    public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
+    public void setAutoInflate(boolean autoInflate) {
         ensureState(eventQueue != null, "Cannot modify property after initialization");
 
-        this.connectionFactory = connectionFactory;
-    }
-
-    public HttpRequestFutureFactory getFutureFactory() { return futureFactory; }
-
-    /**
-     * The {@link HttpRequestFutureFactory} that will be used to create new
-     * {@link com.biasedbit.http.future.HttpRequestFuture}.
-     * <p/>
-     * Defaults to {@link DefaultHttpRequestFutureFactory} if none is provided.
-     *
-     * @param futureFactory The {@link HttpRequestFutureFactory} to be used.
-     *
-     * @see com.biasedbit.http.future.HttpRequestFutureFactory
-     * @see com.biasedbit.http.future.HttpRequestFuture
-     */
-    public void setFutureFactory(HttpRequestFutureFactory futureFactory) {
-        ensureState(eventQueue != null, "Cannot modify property after initialization");
-
-        this.futureFactory = futureFactory;
-    }
-
-    public TimeoutManager getTimeoutManager() { return timeoutManager; }
-
-    /**
-     * The {@link TimeoutManager} that will be used to check request timeouts.
-     * <p/>
-     * If no instance is provided, a new instance is created upon calling {@link #init()}. This instance will be
-     * automatically terminated when {@link #terminate()} is called.
-     * <p/>
-     * If an external {@link TimeoutManager} is provided, then it must be pre-initialised (i.e. its
-     * {@link TimeoutManager#init()} must be called and return {@code true}) and it must be post-terminated (i.e. its
-     * {@link TimeoutManager#terminate()} must be called after this instance of {@link HttpClient} is disposed).
-     * <p/>
-     * Defaults to a new instance of {@link HashedWheelTimeoutManager}.
-     *
-     * @param timeoutManager The {@link TimeoutManager} instance to use.
-     *
-     * @see com.biasedbit.http.timeout.TimeoutManager
-     */
-    public void setTimeoutManager(TimeoutManager timeoutManager) {
-        if (eventQueue != null) {
-            throw new IllegalStateException("Cannot modify property after initialization");
-        }
-
-        this.timeoutManager = timeoutManager;
-    }
-
-    public boolean isCleanupInactiveHostContexts() {
-        return cleanupInactiveHostContexts;
+        this.autoInflate = autoInflate;
     }
 
     /**
@@ -956,8 +787,7 @@ public abstract class AbstractHttpClient
      *
      * @param cleanupInactiveHostContexts {@code true} if inactive host contexts should be cleaned up, {@code false}
      *                                    otherwise.
-     *
-     * @see com.biasedbit.http.host.HostContext
+     * @see com.biasedbit.http.client.host.HostContext
      */
     public void setCleanupInactiveHostContexts(boolean cleanupInactiveHostContexts) {
         ensureState(eventQueue != null, "Cannot modify property after initialization");
@@ -965,7 +795,72 @@ public abstract class AbstractHttpClient
         this.cleanupInactiveHostContexts = cleanupInactiveHostContexts;
     }
 
-    public SslContextFactory getSslContextFactory() { return sslContextFactory; }
+    /**
+     * The {@link HttpConnectionFactory} that will be used to create new {@link HttpConnection}.
+     * <p/>
+     * Defaults to {@link DefaultHttpConnectionFactory} if none is provided.
+     *
+     * @param connectionFactory The {@link HttpConnectionFactory} to be used.
+     * @see com.biasedbit.http.client.connection.HttpConnectionFactory
+     * @see com.biasedbit.http.client.connection.HttpConnection
+     */
+    public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.connectionFactory = connectionFactory;
+    }
+
+    /**
+     * The {@link HostContextFactory} that will be used to create new {@link HostContext} instances.
+     * <p/>
+     * Defaults to {@link DefaultHostContextFactory} if none is provided.
+     *
+     * @param hostContextFactory The {@link HostContextFactory} to be used.
+     * @see com.biasedbit.http.client.host.HostContextFactory
+     * @see com.biasedbit.http.client.host.HostContext
+     */
+    public void setHostContextFactory(HostContextFactory hostContextFactory) {
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.hostContextFactory = hostContextFactory;
+    }
+
+    /**
+     * The {@link HttpRequestFutureFactory} that will be used to create new
+     * {@link com.biasedbit.http.client.future.HttpRequestFuture}.
+     * <p/>
+     * Defaults to {@link DefaultHttpRequestFutureFactory} if none is provided.
+     *
+     * @param futureFactory The {@link HttpRequestFutureFactory} to be used.
+     * @see com.biasedbit.http.client.future.HttpRequestFutureFactory
+     * @see com.biasedbit.http.client.future.HttpRequestFuture
+     */
+    public void setFutureFactory(HttpRequestFutureFactory futureFactory) {
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.futureFactory = futureFactory;
+    }
+
+    /**
+     * The {@link com.biasedbit.http.client.timeout.TimeoutController} that will be used to check request timeouts.
+     * <p/>
+     * If no instance is provided, a new instance is created upon calling {@link #init()}. This instance will be
+     * automatically terminated when {@link #terminate()} is called.
+     * <p/>
+     * If an external {@link com.biasedbit.http.client.timeout.TimeoutController} is provided, then it must be pre-initialised (i.e. its
+     * {@link com.biasedbit.http.client.timeout.TimeoutController#init()} must be called and return {@code true}) and it must be post-terminated (i.e. its
+     * {@link com.biasedbit.http.client.timeout.TimeoutController#terminate()} must be called after this instance of {@link HttpClient} is disposed).
+     * <p/>
+     * Defaults to a new instance of {@link com.biasedbit.http.client.timeout.HashedWheelTimeoutController}.
+     *
+     * @param timeoutController The {@link com.biasedbit.http.client.timeout.TimeoutController} instance to use.
+     * @see com.biasedbit.http.client.timeout.TimeoutController
+     */
+    public void setTimeoutManager(TimeoutController timeoutController) {
+        ensureState(eventQueue != null, "Cannot modify property after initialization");
+
+        this.timeoutController = timeoutController;
+    }
 
     public void setSslContextFactory(SslContextFactory sslContextFactory) {
         ensureState(eventQueue != null, "Cannot modify property after initialization");

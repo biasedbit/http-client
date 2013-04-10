@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Bruno de Carvalho
+ * Copyright 2013 BiasedBit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.DummyHttpServer;
-import com.biasedbit.http.HttpConnectionTestUtil;
-import com.biasedbit.http.HttpRequestContext;
-import com.biasedbit.http.connection.PipeliningHttpConnectionFactory;
-import com.biasedbit.http.future.HttpRequestFuture;
-import com.biasedbit.http.processor.DiscardProcessor;
+import com.biasedbit.http.server.DummyHttpServer;
+import com.biasedbit.http.client.connection.PipeliningHttpConnectionFactory;
+import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.processor.DiscardProcessor;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -50,13 +48,13 @@ public class AbstractHttpClientTest {
 
     @Before
     public void setUp() {
-        this.server = new DummyHttpServer("localhost", 8081, false);
+        server = new DummyHttpServer("localhost", 8081, false);
     }
 
     @After
     public void tearDown() {
-        if (this.server != null) {
-            this.server.terminate();
+        if (server != null) {
+            server.terminate();
         }
     }
 
@@ -70,9 +68,9 @@ public class AbstractHttpClientTest {
         // Ensuring all futures are unlocked under all circumstances is vital to keep this library from generating code
         // stalls.
 
-        this.server.setFailureProbability(0.0f);
-        this.server.setResponseLatency(50L);
-        assertTrue(this.server.init());
+        server.setFailureProbability(0.0f);
+        server.setResponseLatency(50L);
+        assertTrue(server.init());
 
         DefaultHttpClientFactory factory = new DefaultHttpClientFactory();
         //factory.setDebug(true);
@@ -106,9 +104,9 @@ public class AbstractHttpClientTest {
 
     @Test
     public void testCancellationOfAllPendingRequestsWithPipelining() throws Exception {
-        this.server.setFailureProbability(0.0f);
-        this.server.setResponseLatency(50L);
-        assertTrue(this.server.init());
+        server.setFailureProbability(0.0f);
+        server.setResponseLatency(50L);
+        assertTrue(server.init());
 
         DefaultHttpClientFactory factory = new DefaultHttpClientFactory();
         factory.setConnectionFactory(new PipeliningHttpConnectionFactory());
@@ -144,9 +142,9 @@ public class AbstractHttpClientTest {
 
     @Test
     public void testRequestTimeout() {
-        this.server.setFailureProbability(0.0f);
-        this.server.setResponseLatency(1000L); // because default hashedwheeltimer has 500ms variable precision
-        assertTrue(this.server.init());
+        server.setFailureProbability(0.0f);
+        server.setResponseLatency(1000L); // because default hashedwheeltimer has 500ms variable precision
+        assertTrue(server.init());
 
         DefaultHttpClientFactory factory = new DefaultHttpClientFactory();
         //factory.setDebug(true);
@@ -165,9 +163,9 @@ public class AbstractHttpClientTest {
     @SuppressWarnings({"unchecked"})
     @Test
     public void testContextNonCleanup() throws Exception {
-        assertTrue(this.server.init());
+        assertTrue(server.init());
 
-        AbstractHttpClient client = new VerboseHttpClient();
+        AbstractHttpClient client = new DefaultHttpClient();
         client.setCleanupInactiveHostContexts(false);
         HttpConnectionTestUtil.AlwaysAvailableConnectionFactory factory =
                 new HttpConnectionTestUtil.AlwaysAvailableConnectionFactory();
@@ -193,9 +191,9 @@ public class AbstractHttpClientTest {
     @SuppressWarnings({"unchecked"})
     @Test
     public void testContextCleanup() throws Exception {
-        assertTrue(this.server.init());
+        assertTrue(server.init());
 
-        AbstractHttpClient client = new VerboseHttpClient();
+        AbstractHttpClient client = new DefaultHttpClient();
         client.setCleanupInactiveHostContexts(true);
         HttpConnectionTestUtil.AlwaysAvailableConnectionFactory factory =
                 new HttpConnectionTestUtil.AlwaysAvailableConnectionFactory();
@@ -221,14 +219,14 @@ public class AbstractHttpClientTest {
     @SuppressWarnings({"unchecked"})
     @Test
     public void test3ContextCleanup() throws Exception {
-        assertTrue(this.server.init());
+        assertTrue(server.init());
         DummyHttpServer server2 = new DummyHttpServer("localhost", 8082, false);
         DummyHttpServer server3 = new DummyHttpServer("localhost", 8083, false);
         assertTrue(server2.init());
         assertTrue(server3.init());
 
         try {
-            AbstractHttpClient client = new VerboseHttpClient();
+            AbstractHttpClient client = new DefaultHttpClient();
             client.setCleanupInactiveHostContexts(true);
             HttpConnectionTestUtil.AlwaysAvailableConnectionFactory factory =
                     new HttpConnectionTestUtil.AlwaysAvailableConnectionFactory();

@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.connection;
+
+import com.biasedbit.http.client.timeout.TimeoutController;
+
+import java.util.concurrent.Executor;
 
 /**
- * Factory for {@link HttpClient} instances.
- *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public interface HttpConnectionFactory {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient getClient();
+    HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
+                                    TimeoutController manager);
+
+    HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
+                                    TimeoutController manager, Executor executor);
 }

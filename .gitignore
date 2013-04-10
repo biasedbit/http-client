@@ -1,7 +1,8 @@
 # gradle
 /build
 .gradle
-# idea files
+# idea
+/out
 *.ipr
 *.iws
 *.iml

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Bruno de Carvalho
+ * Copyright 2013 BiasedBit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,9 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.CannotExecuteRequestException;
-import com.biasedbit.http.future.HttpDataSinkListener;
-import com.biasedbit.http.future.HttpRequestFuture;
-import com.biasedbit.http.processor.HttpResponseProcessor;
+import com.biasedbit.http.client.future.HttpDataSinkListener;
+import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.processor.HttpResponseProcessor;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
 /**
@@ -33,7 +32,7 @@ public interface HttpClient {
      * Initialise the instance.
      * <p/>
      * All clients must be initialised prior to their usage. Calling any of the {@code execute()} methods on a client
-     * prior to calling {@code init()} will result in a {@link com.biasedbit.http.CannotExecuteRequestException}.
+     * prior to calling {@code init()} will result in a {@link CannotExecuteRequestException}.
      *
      * @return {@code true} if successfully initialised, {@code false} otherwise.
      */
@@ -61,7 +60,7 @@ public interface HttpClient {
      *
      * @return Future associated with the operation.
      *
-     * @throws com.biasedbit.http.CannotExecuteRequestException Thrown when the request is invalid or the client can no longer accept
+     * @throws CannotExecuteRequestException Thrown when the request is invalid or the client can no longer accept
      *                                       requests, either due to termination or full queue.
      */
     <T> HttpRequestFuture<T> execute(String host, int port, HttpRequest request, HttpResponseProcessor<T> processor)

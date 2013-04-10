@@ -17,18 +17,12 @@
 package com.biasedbit.http.client;
 
 /**
- * Factory for {@link HttpClient} instances.
- *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public class CannotExecuteRequestException
+        extends RuntimeException {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient getClient();
+    // constructors ---------------------------------------------------------------------------------------------------
+
+    public CannotExecuteRequestException(String message) { super(message); }
 }

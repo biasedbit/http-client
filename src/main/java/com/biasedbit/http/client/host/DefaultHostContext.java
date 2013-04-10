@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.host;
 
 /**
- * Factory for {@link HttpClient} instances.
+ * The default and simplest implementation of the HostContext interface.
+ *
+ * This class is designed for extension as it contains boilerplate code that all implementations of HostContext would
+ * surely have as well. Typically, an implementation would only override the drainQueue() strategy
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public class DefaultHostContext extends AbstractHostContext {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient getClient();
+    // constructors ---------------------------------------------------------------------------------------------------
+
+    public DefaultHostContext(String host, int port, int maxConnections) { super(host, port, maxConnections); }
 }

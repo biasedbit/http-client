@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.host;
 
 /**
- * Factory for {@link HttpClient} instances.
- *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public class EagerDrainHostContextFactory
+        implements HostContextFactory {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient getClient();
+    // HostContextFactory ---------------------------------------------------------------------------------------------
+
+    @Override public HostContext createHostContext(String host, int port, int maxConnections) {
+        return new EagerDrainHostContext(host, port, maxConnections);
+    }
 }
+
