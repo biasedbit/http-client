@@ -35,32 +35,22 @@ import java.security.cert.X509Certificate;
  *
  * @version $Rev: 183008 $, $Date: 2008-11-18 20:44:38 -0500 (Tue, 18 Nov 2008) $
  */
-public class BogusTrustManagerFactory extends TrustManagerFactorySpi {
+public class BogusTrustManagerFactory
+        extends TrustManagerFactorySpi {
 
     // public static methods ------------------------------------------------------------------------------------------
 
-    public static TrustManager[] getTrustManagers() {
-        return new TrustManager[] { DUMMY_TRUST_MANAGER };
-    }
+    public static TrustManager[] getTrustManagers() { return new TrustManager[] { DUMMY_TRUST_MANAGER }; }
 
     // TrustManagerFactorySpi -----------------------------------------------------------------------------------------
 
-    @Override
-    protected TrustManager[] engineGetTrustManagers() {
-        return getTrustManagers();
-    }
+    @Override protected TrustManager[] engineGetTrustManagers() { return getTrustManagers(); }
 
-    @Override
-    protected void engineInit(KeyStore keystore)
-            throws KeyStoreException {
-        // Unused
-    }
+    @Override protected void engineInit(KeyStore keystore)
+            throws KeyStoreException { /* Unused */ }
 
-    @Override
-    protected void engineInit(ManagerFactoryParameters managerFactoryParameters)
-            throws InvalidAlgorithmParameterException {
-        // Unused
-    }
+    @Override protected void engineInit(ManagerFactoryParameters managerFactoryParameters)
+            throws InvalidAlgorithmParameterException { /* Unused */ }
 
     // private classes ------------------------------------------------------------------------------------------------
 
@@ -68,23 +58,12 @@ public class BogusTrustManagerFactory extends TrustManagerFactorySpi {
 
         // X509TrustManager -------------------------------------------------------------------------------------------
 
-        @Override
-        public void checkClientTrusted(X509Certificate[] arg0, String arg1)
-                throws CertificateException {
-            // Always trust - it is an example.
-            // You should do something in the real world.
-        }
+        @Override public void checkClientTrusted(X509Certificate[] arg0, String arg1)
+                throws CertificateException { /* always trust */ }
 
-        @Override
-        public void checkServerTrusted(X509Certificate[] arg0, String arg1)
-                throws CertificateException {
-            // Always trust - it is an example.
-            // You should do something in the real world.
-        }
+        @Override public void checkServerTrusted(X509Certificate[] arg0, String arg1)
+                throws CertificateException { /* always trust */ }
 
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
-        }
+        @Override public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
     };
 }

@@ -53,7 +53,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class BasicTimeoutController implements TimeoutController {
+public class BasicTimeoutController
+        implements TimeoutController {
 
     // properties -----------------------------------------------------------------------------------------------------
 
@@ -66,36 +67,25 @@ public class BasicTimeoutController implements TimeoutController {
     // constructors ---------------------------------------------------------------------------------------------------
 
     public BasicTimeoutController(int maxThreads) {
-        if (maxThreads <= 0) {
-            this.executor = Executors.newCachedThreadPool();
-        } else {
-            this.executor = Executors.newFixedThreadPool(maxThreads);
-        }
-        this.internalExecutor = true;
+        if (maxThreads <= 0) executor = Executors.newCachedThreadPool();
+        else executor = Executors.newFixedThreadPool(maxThreads);
+
+        internalExecutor = true;
     }
 
     public BasicTimeoutController(Executor executor) {
         this.executor = executor;
-        this.internalExecutor = false;
+        internalExecutor = false;
     }
 
     // TimeoutManager -------------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean init() {
-        return true;
-    }
+    @Override public boolean init() { return true; }
 
-    @Override
-    public void terminate() {
-        if (this.internalExecutor) {
-            ExecutorUtil.terminate(this.executor);
-        }
-    }
+    @Override public void terminate() { if (internalExecutor) ExecutorUtil.terminate(executor); }
 
-    @Override
-    public void manageRequestTimeout(HttpRequestContext context) {
-        this.executor.execute(new TimeoutChecker(context));
+    @Override public void manageRequestTimeout(HttpRequestContext context) {
+        executor.execute(new TimeoutChecker(context));
     }
 
     /**
@@ -115,35 +105,34 @@ public class BasicTimeoutController implements TimeoutController {
      * small performance slowdown only occurs when the request-response cycle takes 0.01~ to complete which, in real
      * scenarios, is extremely unlikely to ever happen.
      */
-    public static class TimeoutChecker implements Runnable, HttpRequestFutureListener {
+    public static class TimeoutChecker
+            implements Runnable,
+                       HttpRequestFutureListener {
 
         // internal vars ----------------------------------------------------------------------------------------------
 
         private final HttpRequestContext request;
-        private final CountDownLatch latch;
+        private final CountDownLatch     latch;
 
         // constructors -----------------------------------------------------------------------------------------------
 
         public TimeoutChecker(HttpRequestContext request) {
             this.request = request;
-            this.latch = new CountDownLatch(1);
+            latch = new CountDownLatch(1);
         }
 
         // Runnable ---------------------------------------------------------------------------------------------------
 
         @SuppressWarnings({"unchecked"})
-        @Override
-        public void run() {
-            this.request.getFuture().addListener(this);
+        @Override public void run() {
+            request.getFuture().addListener(this);
 
             // If operation completed meanwhile, operationComplete() will have been called, the latch will have been
             // counted down to zero and latch.await() will return immediately with true so everything's perfect even in
             // that twisted scenario.
             try {
-                if (this.latch.await(this.request.getTimeout(), TimeUnit.MILLISECONDS)) {
-                    // Explicitly released before timing out, nothing to do, request already executed or failed.
-                    return;
-                }
+                // If explicitly released before timing out, nothing to do, request already executed or failed.
+                if (latch.await(request.getTimeout(), TimeUnit.MILLISECONDS)) return;
             } catch (InterruptedException e) {
                 Thread.interrupted();
             }
@@ -151,14 +140,14 @@ public class BasicTimeoutController implements TimeoutController {
             // Request timed out...
             // If the future has already been unlocked, then no harm is done by calling this method as it won't produce
             // any side effects.
-            this.request.getFuture().setFailure(HttpRequestFuture.TIMED_OUT);
+            request.getFuture().setFailure(HttpRequestFuture.TIMED_OUT);
         }
 
         // HttpRequestFutureListener ----------------------------------------------------------------------------------
 
-        @Override
-        public void operationComplete(HttpRequestFuture httpRequestFuture) throws Exception {
-            this.latch.countDown();
+        @Override public void operationComplete(HttpRequestFuture httpRequestFuture)
+                throws Exception {
+            latch.countDown();
         }
     }
 }

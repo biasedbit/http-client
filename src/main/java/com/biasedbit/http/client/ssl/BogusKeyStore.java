@@ -16,6 +16,9 @@
 
 package com.biasedbit.http.client.ssl;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
@@ -36,6 +39,7 @@ import java.io.InputStream;
  *
  * @version $Rev: 2080 $, $Date: 2010-01-26 18:04:19 +0900 (Tue, 26 Jan 2010) $
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BogusKeyStore {
 
     // constants ------------------------------------------------------------------------------------------------------
@@ -300,27 +304,16 @@ public class BogusKeyStore {
             0xe6, 0x9d, 0xd9, 0x1a, 0x62, 0x1b, 0xb8, 0xd3,
             0xd6, 0x9a, 0x6d, 0xb9, 0x8e, 0x15, 0x51 };
 
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    private BogusKeyStore() {
-        // Unused
-    }
-
     // public static methods ------------------------------------------------------------------------------------------
 
     public static InputStream asInputStream() {
         byte[] data = new byte[DATA.length];
-        for (int i = 0; i < data.length; i ++) {
-            data[i] = (byte) DATA[i];
-        }
+        for (int i = 0; i < data.length; i ++) data[i] = (byte) DATA[i];
+
         return new ByteArrayInputStream(data);
     }
 
-    public static char[] getCertificatePassword() {
-        return "secret".toCharArray();
-    }
+    public static char[] getCertificatePassword() { return "secret".toCharArray(); }
 
-    public static char[] getKeyStorePassword() {
-        return "secret".toCharArray();
-    }
+    public static char[] getKeyStorePassword() { return "secret".toCharArray(); }
 }

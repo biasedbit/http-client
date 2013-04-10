@@ -29,52 +29,42 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class CleanupChannelGroup extends DefaultChannelGroup {
+public class CleanupChannelGroup
+        extends DefaultChannelGroup {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final AtomicBoolean closed;
-    private final ReentrantReadWriteLock lock;
+    private final AtomicBoolean          closed = new AtomicBoolean(false);
+    private final ReentrantReadWriteLock lock   = new ReentrantReadWriteLock();
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public CleanupChannelGroup() {
-        this.closed = new AtomicBoolean(false);
-        this.lock = new ReentrantReadWriteLock();
-    }
-
-    public CleanupChannelGroup(String name) {
-        super(name);
-        this.closed = new AtomicBoolean(false);
-        this.lock = new ReentrantReadWriteLock();
-    }
+    public CleanupChannelGroup(String name) { super(name); }
 
     // DefaultChannelGroup --------------------------------------------------------------------------------------------
 
-    @Override
-    public ChannelGroupFuture close() {
-        this.lock.writeLock().lock();
+    @Override public ChannelGroupFuture close() {
+        lock.writeLock().lock();
         try {
-            if (!this.closed.getAndSet(true)) {
+            if (!closed.getAndSet(true)) {
                 // First time close() is called.
                 return super.close();
             } else {
-                throw new IllegalStateException("close() already called on " + this.getClass().getSimpleName() +
-                                                " with name " + this.getName());
+                throw new IllegalStateException("close() already called on " + getClass().getSimpleName() +
+                                                " with name " + getName());
             }
         } finally {
-            this.lock.writeLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 
-    @Override
-    public boolean add(Channel channel) {
+    @Override public boolean add(Channel channel) {
         // Synchronization must occur to avoid add() and close() overlap (thus potentially leaving one channel open).
         // This could also be done by synchronizing the method itself but using a read lock here (rather than a
         // synchronized() block) allows multiple concurrent calls to add().
-        this.lock.readLock().lock();
+        lock.readLock().lock();
         try {
-            if (this.closed.get()) {
+            if (closed.get()) {
                 // Immediately close channel, as close() was already called.
                 channel.close();
                 return false;
@@ -82,7 +72,7 @@ public class CleanupChannelGroup extends DefaultChannelGroup {
 
             return super.add(channel);
         } finally {
-            this.lock.readLock().unlock();
+            lock.readLock().unlock();
         }
     }
 }

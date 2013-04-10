@@ -31,13 +31,13 @@ public class HostContextTestUtil {
 
     public static HttpRequestContext<Object> generateDummyContext(String host, int port, int timeout) {
         HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
-        return new HttpRequestContext<Object>(host, port, timeout, request, new DiscardProcessor(),
-                                              new DefaultHttpRequestFuture<Object>(true));
+        return new HttpRequestContext<>(host, port, timeout, request, new DiscardProcessor(),
+                                              new DefaultHttpRequestFuture<>());
     }
 
     public static HttpRequestContext<Object> generateDummyContext(String host, int port) {
         HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
-        return new HttpRequestContext<Object>(host, port, request, new DiscardProcessor(),
-                                              new DefaultHttpRequestFuture<Object>(true));
+        return new HttpRequestContext<>(host, port, request, new DiscardProcessor(),
+                                              new DefaultHttpRequestFuture<>());
     }
 }

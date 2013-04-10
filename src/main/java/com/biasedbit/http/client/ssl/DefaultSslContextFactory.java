@@ -16,6 +16,9 @@
 
 package com.biasedbit.http.client.ssl;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -30,6 +33,7 @@ import java.security.SecureRandom;
  * @author <a href="https://github.com/jerjanssen">Jeremiah Janssen</a>
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefaultSslContextFactory
         implements SslContextFactory {
 
@@ -38,24 +42,11 @@ public class DefaultSslContextFactory
     private final SSLContext serverContext;
     private final SSLContext clientContext;
 
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    private DefaultSslContextFactory(final SSLContext serverContext, final SSLContext clientContext) {
-        this.serverContext = serverContext;
-        this.clientContext = clientContext;
-    }
-
     // SslContextFactory ----------------------------------------------------------------------------------------------
 
-    @Override
-    public SSLContext getClientContext() {
-        return clientContext;
-    }
+    @Override public SSLContext getClientContext() { return clientContext; }
 
-    @Override
-    public SSLContext getServerContext() {
-        return serverContext;
-    }
+    @Override public SSLContext getServerContext() { return serverContext; }
 
     // public classes -------------------------------------------------------------------------------------------------
 
@@ -63,13 +54,12 @@ public class DefaultSslContextFactory
 
         // internal vars ----------------------------------------------------------------------------------------------
 
-        private InputStream keyAsInputStream = null;
-        private String      algorithm        = null;
-        private String      protocol         = null;
-        private KeyStore    store            = null;
-
-        private String keyStorePassword    = null;
-        private String certificatePassword = null;
+        private InputStream keyAsInputStream;
+        private String      algorithm;
+        private String      protocol;
+        private KeyStore    store;
+        private String      keyStorePassword;
+        private String      certificatePassword;
 
         // interface --------------------------------------------------------------------------------------------------
 
@@ -84,16 +74,14 @@ public class DefaultSslContextFactory
         }
 
         public Builder setKey(final InputStream key) {
-            if (null != key) {
-                this.keyAsInputStream = key;
-            } else {
-                this.setKey((byte[]) null);
-            }
+            if (null != key) keyAsInputStream = key;
+            else setKey((byte[]) null);
+
             return this;
         }
 
         public Builder setKey(final byte[] key) {
-            this.keyAsInputStream = new ByteArrayInputStream((null != key) ? key : new byte[]{});
+            keyAsInputStream = new ByteArrayInputStream((null != key) ? key : new byte[]{});
             return this;
         }
 
@@ -114,29 +102,21 @@ public class DefaultSslContextFactory
 
         public DefaultSslContextFactory build()
                 throws Exception {
-            if (this.algorithm == null) {
-                this.algorithm = "SunX509";
-            }
-            if (protocol == null) {
-                this.protocol = "TLSv1";
-            }
-            if (this.store == null) {
-                this.store = KeyStore.getInstance("JKS");
-            }
+            if (algorithm == null) algorithm = "SunX509";
+            if (protocol == null) protocol = "TLSv1";
+            if (store == null) store = KeyStore.getInstance("JKS");
 
             // Load our keystore from disk..
-            this.store.load(this.keyAsInputStream,
-                            (this.keyStorePassword == null) ? null : this.keyStorePassword.toCharArray());
+            store.load(keyAsInputStream, (keyStorePassword == null) ? null : keyStorePassword.toCharArray());
 
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(algorithm);
-            keyMgrFactory.init(this.store,
-                               (this.certificatePassword == null) ? null : this.certificatePassword.toCharArray());
+            keyMgrFactory.init(store, (certificatePassword == null) ? null : certificatePassword.toCharArray());
 
-            TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance(this.algorithm);
-            trustMgrFactory.init(this.store);
+            TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance(algorithm);
+            trustMgrFactory.init(store);
 
-            SSLContext serverContext = SSLContext.getInstance(this.protocol);
-            SSLContext clientContext = SSLContext.getInstance(this.protocol);
+            SSLContext serverContext = SSLContext.getInstance(protocol);
+            SSLContext clientContext = SSLContext.getInstance(protocol);
 
             serverContext.init(keyMgrFactory.getKeyManagers(), trustMgrFactory.getTrustManagers(), new SecureRandom());
             clientContext.init(keyMgrFactory.getKeyManagers(), trustMgrFactory.getTrustManagers(), new SecureRandom());

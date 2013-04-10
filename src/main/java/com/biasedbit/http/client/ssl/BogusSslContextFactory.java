@@ -52,9 +52,7 @@ public class BogusSslContextFactory
 
     public BogusSslContextFactory() {
         String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
-        if (algorithm == null) {
-            algorithm = "X509";
-        }
+        if (algorithm == null) algorithm = "X509";
 
         SSLContext tmpServerContext;
         SSLContext tmpClientContext;
@@ -87,25 +85,11 @@ public class BogusSslContextFactory
 
     // public static methods ------------------------------------------------------------------------------------------
 
-    public static BogusSslContextFactory getInstance() {
-        return INSTANCE;
-    }
+    public static BogusSslContextFactory getInstance() { return INSTANCE; }
 
     // SslContextFactory ----------------------------------------------------------------------------------------------
 
-    @Override
-    public SSLContext getServerContext() {
-        return serverContext;
-    }
+    @Override public SSLContext getServerContext() { return serverContext; }
 
-    @Override
-    public SSLContext getClientContext() {
-        return clientContext;
-    }
-
-    // private classes ------------------------------------------------------------------------------------------------
-
-    private static class Singleton {
-
-    }
+    @Override public SSLContext getClientContext() { return clientContext; }
 }

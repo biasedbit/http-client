@@ -43,7 +43,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class HashedWheelTimeoutController implements TimeoutController {
+public class HashedWheelTimeoutController
+        implements TimeoutController {
 
     // properties -----------------------------------------------------------------------------------------------------
 
@@ -56,55 +57,41 @@ public class HashedWheelTimeoutController implements TimeoutController {
     // constructors ---------------------------------------------------------------------------------------------------
 
     public HashedWheelTimeoutController() {
-        this.timer = new HashedWheelTimer(500, TimeUnit.MILLISECONDS, 512);
-        this.internalTimer = true;
+        timer = new HashedWheelTimer(500, TimeUnit.MILLISECONDS, 512);
+        internalTimer = true;
     }
 
     public HashedWheelTimeoutController(long tickDuration, TimeUnit unit, int ticksPerWheel) {
-        this.timer = new HashedWheelTimer(tickDuration, unit, ticksPerWheel);
-        this.internalTimer = true;
-    }
-
-    public HashedWheelTimeoutController(HashedWheelTimer timer) {
-        this.timer = timer;
-        this.internalTimer = false;
+        timer = new HashedWheelTimer(tickDuration, unit, ticksPerWheel);
+        internalTimer = true;
     }
 
     // TimeoutManager -------------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean init() {
-        if (this.internalTimer) {
-            this.timer.start();
-        }
+    @Override public boolean init() {
+        if (internalTimer) timer.start();
+
         return true;
     }
 
-    @Override
-    public void terminate() {
-        if (this.internalTimer) {
-            this.timer.stop();
-        }
-    }
+    @Override public void terminate() { if (internalTimer) timer.stop(); }
 
     @SuppressWarnings({"unchecked"})
-    @Override
-    public void manageRequestTimeout(final HttpRequestContext context) {
+    @Override public void manageRequestTimeout(final HttpRequestContext context) {
         TimerTask task = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (timeout.isExpired()) {
-                    context.getFuture().setFailure(HttpRequestFuture.TIMED_OUT);
-                }
+                if (timeout.isExpired()) context.getFuture().setFailure(HttpRequestFuture.TIMED_OUT);
             }
         };
-        Timeout t = this.timer.newTimeout(task, context.getTimeout(), TimeUnit.MILLISECONDS);
+        Timeout t = timer.newTimeout(task, context.getTimeout(), TimeUnit.MILLISECONDS);
         context.getFuture().addListener(new FutureTimeout(t));
     }
 
     // private classes ------------------------------------------------------------------------------------------------
 
-    private static class FutureTimeout<T> implements HttpRequestFutureListener<T> {
+    private static class FutureTimeout<T>
+            implements HttpRequestFutureListener<T> {
 
         // internal vars ----------------------------------------------------------------------------------------------
 
@@ -112,18 +99,14 @@ public class HashedWheelTimeoutController implements TimeoutController {
 
         // constructors -----------------------------------------------------------------------------------------------
 
-        public FutureTimeout(final Timeout t) {
-            this.httpTimeout = new WeakReference<Timeout>(t);
-        }
+        public FutureTimeout(final Timeout t) { httpTimeout = new WeakReference<>(t); }
 
         // HttpRequestFutureListener ----------------------------------------------------------------------------------
 
-        @Override
-        public void operationComplete(final HttpRequestFuture<T> future) throws Exception {
-            Timeout t = this.httpTimeout.get();
-            if (t != null) {
-                t.cancel();
-            }
+        @Override public void operationComplete(final HttpRequestFuture<T> future)
+                throws Exception {
+            Timeout t = httpTimeout.get();
+            if (t != null) t.cancel();
         }
     }
 }
