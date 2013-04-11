@@ -18,6 +18,9 @@ package com.biasedbit.http.client.event;
 
 import com.biasedbit.http.client.HttpRequestContext;
 import com.biasedbit.http.client.connection.HttpConnection;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 import java.util.Collection;
 
@@ -26,46 +29,17 @@ import java.util.Collection;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
+@ToString
 public class ConnectionClosedEvent
         implements HttpClientEvent {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final HttpConnection connection;
-    private final Collection<HttpRequestContext> retryRequests;
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public ConnectionClosedEvent(HttpConnection connection, Collection<HttpRequestContext> retryRequests) {
-        this.connection = connection;
-        this.retryRequests = retryRequests;
-    }
+    @Getter private final HttpConnection                 connection;
+    @Getter private final Collection<HttpRequestContext> retryRequests;
 
     // HttpClientEvent ------------------------------------------------------------------------------------------------
 
-    @Override
-    public EventType getEventType() {
-        return EventType.CONNECTION_CLOSED;
-    }
-
-    // getters & setters ----------------------------------------------------------------------------------------------
-
-    public HttpConnection getConnection() {
-        return this.connection;
-    }
-
-    public Collection<HttpRequestContext> getRetryRequests() {
-        return retryRequests;
-    }
-
-    // object overrides -----------------------------------------------------------------------------------------------
-
-    @Override
-    public String toString() {
-        return new StringBuilder()
-                .append("ConnectionClosedEvent{")
-                .append("connection=").append(this.connection)
-                .append(", retryRequests=").append(this.retryRequests == null ? 0 : this.retryRequests.size())
-                .append('}').toString();
-    }
+    @Override public EventType getEventType() { return EventType.CONNECTION_CLOSED; }
 }

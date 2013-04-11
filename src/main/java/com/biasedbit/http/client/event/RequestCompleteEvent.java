@@ -17,42 +17,25 @@
 package com.biasedbit.http.client.event;
 
 import com.biasedbit.http.client.HttpRequestContext;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 /**
  * Event generated when a request completes, either successfully or not.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
+@ToString
 public class RequestCompleteEvent
         implements HttpClientEvent {
 
-    // internal vars --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
-    private final HttpRequestContext context;
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public RequestCompleteEvent(HttpRequestContext context) {
-        this.context = context;
-    }
+    @Getter private final HttpRequestContext context;
 
     // HttpClientEvent ------------------------------------------------------------------------------------------------
 
-    @Override
-    public EventType getEventType() {
-        return EventType.REQUEST_COMPLETE;
-    }
-
-    // getters & setters ----------------------------------------------------------------------------------------------
-
-    public HttpRequestContext getContext() {
-        return this.context;
-    }
-
-    // object overrides -----------------------------------------------------------------------------------------------
-
-    @Override
-    public String toString() {
-        return new StringBuilder().append("RequestCompleteEvent{").append(this.context).append('}').toString();
-    }
+    @Override public EventType getEventType() { return EventType.REQUEST_COMPLETE; }
 }

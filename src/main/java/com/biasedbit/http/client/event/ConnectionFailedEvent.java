@@ -17,45 +17,25 @@
 package com.biasedbit.http.client.event;
 
 import com.biasedbit.http.client.connection.HttpConnection;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 /**
  * Event generated when an attempt to connect fails.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
+@ToString
 public class ConnectionFailedEvent
         implements HttpClientEvent {
 
-    // internal vars --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
-    private final HttpConnection connection;
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public ConnectionFailedEvent(HttpConnection connection) {
-        this.connection = connection;
-    }
+    @Getter private final HttpConnection connection;
 
     // HttpClientEvent ------------------------------------------------------------------------------------------------
 
-    @Override
-    public EventType getEventType() {
-        return EventType.CONNECTION_FAILED;
-    }
-
-    // getters & setters ----------------------------------------------------------------------------------------------
-
-    public HttpConnection getConnection() {
-        return this.connection;
-    }
-
-    // object overrides -----------------------------------------------------------------------------------------------
-
-    @Override
-    public String toString() {
-        return new StringBuilder()
-                .append("ConnectionFailedEvent{")
-                .append("connection=").append(this.connection)
-                .append('}').toString();
-    }
+    @Override public EventType getEventType() { return EventType.CONNECTION_FAILED; }
 }
