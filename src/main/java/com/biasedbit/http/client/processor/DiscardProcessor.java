@@ -16,9 +16,6 @@
 
 package com.biasedbit.http.client.processor;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-
 /**
  * {@link HttpResponseProcessor} implementation that always discards the response body
  * ({@link #willProcessResponse(org.jboss.netty.handler.codec.http.HttpResponse)} always returns {@code false}).
@@ -30,35 +27,4 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public class DiscardProcessor
-        implements HttpResponseProcessor<Object> {
-
-    // constants ------------------------------------------------------------------------------------------------------
-
-    private static final DiscardProcessor CACHED = new DiscardProcessor();
-
-    // public static methods ------------------------------------------------------------------------------------------
-
-    public static DiscardProcessor getInstance() {
-        return CACHED;
-    }
-
-    // HttpResponseProcessor ------------------------------------------------------------------------------------------
-
-    @Override
-    public boolean willProcessResponse(HttpResponse response) {
-        return false;
-    }
-
-    @Override
-    public void addData(ChannelBuffer content) throws Exception {
-    }
-
-    @Override
-    public void addLastData(ChannelBuffer content) throws Exception {
-    }
-
-    @Override
-    public Object getProcessedResponse() {
-        return null;
-    }
-}
+        extends TypedDiscardProcessor<Object> { }
