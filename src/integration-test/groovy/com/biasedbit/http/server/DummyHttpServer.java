@@ -66,12 +66,12 @@ public class DummyHttpServer {
 
     // configuration defaults -----------------------------------------------------------------------------------------
 
-    private static final boolean USE_SSL             = false;
-    private static final float   FAILURE_PROBABILITY = 0.0f;
-    private static final long    RESPONSE_LATENCY    = 0;
-    private static final boolean USE_OLD_IO          = false;
+    public static final boolean USE_SSL             = false;
+    public static final float   FAILURE_PROBABILITY = 0.0f;
+    public static final long    RESPONSE_LATENCY    = 0;
+    public static final boolean USE_OLD_IO          = false;
     // Taken from http://www.w3schools.com/XML/xml_examples.asp
-    private static final String  CONTENT             =
+    public static final String  CONTENT             =
             "<breakfast_menu> \n" +
             "\t<food> \n" +
             "\t\t<name>Belgian Waffles</name> \n" +
@@ -123,8 +123,9 @@ public class DummyHttpServer {
 
     private ServerBootstrap     bootstrap;
     private DefaultChannelGroup channelGroup;
+    private boolean             running;
+
     private final AtomicInteger errors = new AtomicInteger();
-    private boolean running;
 
     // constructors ---------------------------------------------------------------------------------------------------
 

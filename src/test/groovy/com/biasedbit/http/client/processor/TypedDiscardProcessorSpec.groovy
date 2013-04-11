@@ -16,9 +16,7 @@ import static org.jboss.netty.util.CharsetUtil.*
  */
 class TypedDiscardProcessorSpec extends Specification {
 
-  TypedDiscardProcessor<Object> processor
-
-  def setup() { processor = new TypedDiscardProcessor<Object>() }
+  def processor = new TypedDiscardProcessor<Object>()
 
   def "#getInstance returns the singleton instance"() {
     setup: def instance = TypedDiscardProcessor.instance
