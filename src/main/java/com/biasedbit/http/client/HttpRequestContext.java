@@ -19,8 +19,12 @@ package com.biasedbit.http.client;
 import com.biasedbit.http.client.future.HttpDataSinkListener;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.processor.HttpResponseProcessor;
+import lombok.Getter;
+import lombok.Setter;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
+
+import static com.biasedbit.http.client.util.Utils.ensureValue;
 
 /**
  * State holder context for a request.
@@ -30,42 +34,33 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
  * {@link org.jboss.netty.handler.codec.http.HttpRequest} to a {@link HttpResponseProcessor} and a
  * {@link com.biasedbit.http.client.future.HttpRequestFuture}.
  * <p/>
- * It also contains other information such as the host address to which this request was originally inteded for, as well
- * as its port and the timeout for the HTTP request/response operation to complete.
+ * It also contains other information such as the host address to which this request was originally inteded for,
+ * as well as its port and the timeout for the HTTP request/response operation to complete.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public class HttpRequestContext<T> {
 
-    // internal vars --------------------------------------------------------------------------------------------------
+    // properties -----------------------------------------------------------------------------------------------------
 
-    private final String host;
-    private final int port;
-    private final int timeout;
-    private final HttpRequest request;
-    private final HttpResponseProcessor<T> processor;
-    private final HttpRequestFuture<T> future;
-    private HttpDataSinkListener dataSinkListener;
+    @Getter private final String                   host;
+    @Getter private final int                      port;
+    @Getter private final int                      timeout;
+    @Getter private final HttpRequest              request;
+    @Getter private final HttpResponseProcessor<T> processor;
+    @Getter private final HttpRequestFuture<T>     future;
+
+    @Getter @Setter private HttpDataSinkListener dataSinkListener;
 
     // constructors ---------------------------------------------------------------------------------------------------
 
     public HttpRequestContext(String host, int port, int timeout, HttpRequest request,
                               HttpResponseProcessor<T> processor, HttpRequestFuture<T> future) {
-        if (host == null) {
-            throw new IllegalArgumentException("Host cannot be null");
-        }
-        if ((port <= 0) || (port > 65536)) {
-            throw new IllegalArgumentException("Invalid port: " + port);
-        }
-        if (request == null) {
-            throw new IllegalArgumentException("HttpRequest cannot be null");
-        }
-        if (processor == null) {
-            throw new IllegalArgumentException("HttpResponseProcessor cannot be null");
-        }
-        if (future == null) {
-            throw new IllegalArgumentException("HttpRequestFuture cannot be null");
-        }
+        ensureValue(host != null, "Host cannot be null");
+        ensureValue(port > 0 && port <= 65536, "Invalid port: " + port);
+        ensureValue(request != null, "HttpRequest cannot be null");
+        ensureValue(processor != null, "HttpResponseProcessor cannot be null");
+        ensureValue(future != null, "HttpRequestFuture cannot be null");
 
         this.host = host;
         this.port = port;
@@ -75,70 +70,32 @@ public class HttpRequestContext<T> {
         this.future = future;
     }
 
-    public HttpRequestContext(String host, int timeout, HttpRequest request, HttpResponseProcessor<T> processor,
-                              HttpRequestFuture<T> future) {
-        this(host, 80, timeout, request, processor, future);
-    }
-
     // interface ------------------------------------------------------------------------------------------------------
 
     /**
      * Determines (based on request method) if a request is idempotent or not, based on recommendations of the RFC.
-     *
+     * <p/>
      * Idempotent requests: GET, HEAD, PUT, DELETE, OPTIONS, TRACE
-     * Non-idempotent requests: POST, PATCH, CONNECT (not sure about this last one, couldn't find any info on it...)
+     * Non-idempotent requests: POST, PATCH, CONNECT
+     * <p/>
+     * More info: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
      *
      * @return true if request is idempotent, false otherwise.
      */
     public boolean isIdempotent() {
-        return !(this.request.getMethod().equals(HttpMethod.POST) ||
-                 this.request.getMethod().equals(HttpMethod.PATCH) ||
-                 this.request.getMethod().equals(HttpMethod.CONNECT));
-    }
-
-    // getters & setters ----------------------------------------------------------------------------------------------
-
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public int getTimeout() {
-        return timeout;
-    }
-
-    public HttpRequest getRequest() {
-        return request;
-    }
-
-    public HttpResponseProcessor<T> getProcessor() {
-        return processor;
-    }
-
-    public HttpRequestFuture<T> getFuture() {
-        return future;
-    }
-
-    public HttpDataSinkListener getDataSinkListener() {
-        return dataSinkListener;
-    }
-
-    public void setDataSinkListener(HttpDataSinkListener dataSinkListener) {
-        this.dataSinkListener = dataSinkListener;
+        return !(request.getMethod().equals(HttpMethod.POST) ||
+                 request.getMethod().equals(HttpMethod.PATCH) ||
+                 request.getMethod().equals(HttpMethod.CONNECT));
     }
 
     // object overrides -----------------------------------------------------------------------------------------------
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return new StringBuilder()
-                .append(this.request.getProtocolVersion()).append(' ')
-                .append(this.request.getMethod()).append(' ')
-                .append(this.request.getUri()).append(" (")
-                .append(this.host).append(':')
-                .append(this.port).append(')').append("@").append(Integer.toHexString(this.hashCode())).toString();
+                .append(request.getProtocolVersion()).append(' ')
+                .append(request.getMethod()).append(' ')
+                .append(request.getUri()).append(" (")
+                .append(host).append(':')
+                .append(port).append(')').append("@").append(Integer.toHexString(hashCode())).toString();
     }
 }
