@@ -82,8 +82,10 @@ public class DefaultHttpClientFactory
         client.setUseNio(useNio);
         client.setMaxIoWorkerThreads(maxIoWorkerThreads);
         client.setMaxHelperThreads(maxHelperThreads);
+
         client.setHostContextFactory(hostContextFactory);
         client.setConnectionFactory(connectionFactory);
+        client.setFutureFactory(futureFactory);
         client.setTimeoutManager(timeoutController);
         client.setCleanupInactiveHostContexts(cleanupInactiveHostContexts);
         client.setSslContextFactory(sslContextFactory);
