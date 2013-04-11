@@ -17,7 +17,6 @@
 package com.biasedbit.http.client.connection;
 
 import com.biasedbit.http.client.HttpRequestContext;
-import com.biasedbit.http.client.future.DefaultHttpRequestFuture;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.Utils;
@@ -338,7 +337,7 @@ public class PipeliningHttpConnection
         context.getFuture().attachConnection(this);
 
         // Launch a timeout checker.
-        if (context.getTimeout() > 0) timeoutController.manageRequestTimeout(context);
+        if (context.getTimeout() > 0) timeoutController.controlTimeout(context);
 
         return true;
     }

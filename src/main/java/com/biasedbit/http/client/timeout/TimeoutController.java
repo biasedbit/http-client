@@ -35,5 +35,5 @@ public interface TimeoutController {
      * @param context The request context to monitor. Timeout value is extracted from {@link
      *                com.biasedbit.http.client.HttpRequestContext#getTimeout()}.
      */
-    void manageRequestTimeout(HttpRequestContext context);
+    void controlTimeout(HttpRequestContext context);
 }

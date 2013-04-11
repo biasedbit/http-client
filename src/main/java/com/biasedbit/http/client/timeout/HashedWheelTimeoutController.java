@@ -77,7 +77,7 @@ public class HashedWheelTimeoutController
     @Override public void terminate() { if (internalTimer) timer.stop(); }
 
     @SuppressWarnings({"unchecked"})
-    @Override public void manageRequestTimeout(final HttpRequestContext context) {
+    @Override public void controlTimeout(final HttpRequestContext context) {
         TimerTask task = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {

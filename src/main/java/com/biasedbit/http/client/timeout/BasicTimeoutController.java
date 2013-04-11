@@ -84,7 +84,7 @@ public class BasicTimeoutController
 
     @Override public void terminate() { if (internalExecutor) ExecutorUtil.terminate(executor); }
 
-    @Override public void manageRequestTimeout(HttpRequestContext context) {
+    @Override public void controlTimeout(HttpRequestContext context) {
         executor.execute(new TimeoutChecker(context));
     }
 
