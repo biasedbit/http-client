@@ -30,5 +30,5 @@ public interface HttpClientFactory {
      *
      * @return A newly configured uninitialised {@link HttpClient}.
      */
-    HttpClient getClient();
+    HttpClient createClient();
 }

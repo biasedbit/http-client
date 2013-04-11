@@ -66,7 +66,7 @@ public class DefaultHttpClientFactory
 
     // HttpClientFactory ----------------------------------------------------------------------------------------------
 
-    @Override public HttpClient getClient() {
+    @Override public HttpClient createClient() {
         AbstractHttpClient client;
 
         if (gatherStats) client = new StatsGatheringHttpClient();
