@@ -24,30 +24,29 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class NamelessThreadFactory
+public class NamedThreadFactory
         implements ThreadFactory {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final ThreadGroup   group;
-    private final AtomicInteger threadNumber;
-    private final String        namePrefix;
+    private final ThreadGroup group;
+    private final String      namePrefix;
+
+    private final AtomicInteger threadNumber = new AtomicInteger(1);
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public NamelessThreadFactory() { this(String.format("ThreadPool-thread-")); }
+    public NamedThreadFactory(String namePrefix) {
+        this.namePrefix = String.format("%s-thread", namePrefix);
 
-    public NamelessThreadFactory(String namePrefix) {
         SecurityManager s = System.getSecurityManager();
         group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
-        this.namePrefix = String.format("%s-thread", namePrefix);
-        threadNumber = new AtomicInteger(1);
     }
 
     // ThreadFactory --------------------------------------------------------------------------------------------------
 
-    @Override public Thread newThread(Runnable r) {
-        Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0L);
+    @Override public Thread newThread(Runnable runnable) {
+        Thread t = new Thread(group, runnable, namePrefix + threadNumber.getAndIncrement(), 0L);
         if (t.isDaemon()) t.setDaemon(false);
         if (t.getPriority() != Thread.NORM_PRIORITY) t.setPriority(Thread.NORM_PRIORITY);
 

@@ -42,7 +42,7 @@ import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.CleanupChannelGroup;
-import com.biasedbit.http.client.util.NamelessThreadFactory;
+import com.biasedbit.http.client.util.NamedThreadFactory;
 import lombok.Getter;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
@@ -210,9 +210,9 @@ public abstract class AbstractHttpClient
 
         // TODO instead of fixed size thread pool, use a cached thread pool with size limit (limited growth cached pool)
         executor = Executors.newFixedThreadPool(maxHelperThreads,
-                                                new NamelessThreadFactory("httpHelpers"));
+                                                new NamedThreadFactory("httpHelpers"));
         Executor workerPool = Executors.newFixedThreadPool(maxIoWorkerThreads,
-                                                           new NamelessThreadFactory("httpWorkers"));
+                                                           new NamedThreadFactory("httpWorkers"));
 
         if (useNio) {
             // It's only going to create 1 thread, so no harm done here.
