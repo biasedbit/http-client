@@ -63,7 +63,9 @@ public abstract class AbstractAccumulatorProcessor<T>
 
         // No content readily available
         long length = HttpHeaders.getContentLength(response, -1);
-        if (length > Integer.MAX_VALUE) {
+        if ((length > Integer.MAX_VALUE) || (length < -1)) {
+            // Even though get/setContentLength works with longs, the value seems to be converted to an int so we need
+            // to check if overflowed (-1 is no content length, < -1 is an overflowed length)
             finished = true;
             return false;
         }
@@ -76,7 +78,7 @@ public abstract class AbstractAccumulatorProcessor<T>
 
         // If the response is chunked, then prepare the buffers for incoming data.
         if (response.isChunked()) {
-            if (length == -1) {
+            if (length < 0) {
                 // No content header, but there may be content... use a dynamic buffer (not so good for performance...)
                 buffer = ChannelBuffers.dynamicBuffer(2048);
             } else {
@@ -89,6 +91,7 @@ public abstract class AbstractAccumulatorProcessor<T>
             return true;
         }
 
+        // Non-chunked request without content
         finished = true;
         return false;
     }
