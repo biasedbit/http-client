@@ -795,21 +795,6 @@ public abstract class AbstractHttpClient
     }
 
     /**
-     * The {@link HttpConnectionFactory} that will be used to create new {@link HttpConnection}.
-     * <p/>
-     * Defaults to {@link DefaultHttpConnectionFactory} if none is provided.
-     *
-     * @param connectionFactory The {@link HttpConnectionFactory} to be used.
-     * @see com.biasedbit.http.client.connection.HttpConnectionFactory
-     * @see com.biasedbit.http.client.connection.HttpConnection
-     */
-    public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
-        ensureState(eventQueue == null, "Cannot modify property after initialization");
-
-        this.connectionFactory = connectionFactory;
-    }
-
-    /**
      * The {@link HostContextFactory} that will be used to create new {@link HostContext} instances.
      * <p/>
      * Defaults to {@link DefaultHostContextFactory} if none is provided.
@@ -822,6 +807,21 @@ public abstract class AbstractHttpClient
         ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.hostContextFactory = hostContextFactory;
+    }
+
+    /**
+     * The {@link HttpConnectionFactory} that will be used to create new {@link HttpConnection}.
+     * <p/>
+     * Defaults to {@link DefaultHttpConnectionFactory} if none is provided.
+     *
+     * @param connectionFactory The {@link HttpConnectionFactory} to be used.
+     * @see com.biasedbit.http.client.connection.HttpConnectionFactory
+     * @see com.biasedbit.http.client.connection.HttpConnection
+     */
+    public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
+        ensureState(eventQueue == null, "Cannot modify property after initialization");
+
+        this.connectionFactory = connectionFactory;
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.biasedbit.http.client.timeout
 
-import com.biasedbit.http.client.HostContextTestUtil
+
 import com.biasedbit.http.client.HttpRequestContext
 import com.biasedbit.http.client.future.DefaultHttpRequestFuture
 import com.biasedbit.http.client.future.HttpRequestFuture

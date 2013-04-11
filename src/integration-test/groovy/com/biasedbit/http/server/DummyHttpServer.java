@@ -17,6 +17,9 @@
 package com.biasedbit.http.server;
 
 import com.biasedbit.http.client.ssl.BogusSslContextFactory;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -58,6 +61,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
 public class DummyHttpServer {
 
     // configuration defaults -----------------------------------------------------------------------------------------
@@ -67,7 +71,7 @@ public class DummyHttpServer {
     private static final long    RESPONSE_LATENCY    = 0;
     private static final boolean USE_OLD_IO          = false;
     // Taken from http://www.w3schools.com/XML/xml_examples.asp
-    private static final String CONTENT =
+    private static final String  CONTENT             =
             "<breakfast_menu> \n" +
             "\t<food> \n" +
             "\t\t<name>Belgian Waffles</name> \n" +
@@ -104,38 +108,27 @@ public class DummyHttpServer {
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    private final String  host;
-    private final int     port;
-    private       boolean verbose;
-    private       boolean useSsl;
-    private       float   failureProbability;
-    private       long    responseLatency;
-    private       boolean useOldIo;
-    private       String  content;
+    @Getter private final String host;
+    @Getter private final int    port;
+
+    @Getter @Setter private boolean verbose;
+    @Getter @Setter private boolean useSsl          = USE_SSL;
+    @Getter @Setter private long    responseLatency = RESPONSE_LATENCY;
+    @Getter @Setter private boolean useOldIo        = USE_OLD_IO;
+    @Getter @Setter private String  content         = CONTENT;
+
+    @Getter private float failureProbability = FAILURE_PROBABILITY;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private       ServerBootstrap     bootstrap;
-    private       DefaultChannelGroup channelGroup;
-    private final AtomicInteger       errors;
-    private       boolean             running;
+    private ServerBootstrap     bootstrap;
+    private DefaultChannelGroup channelGroup;
+    private final AtomicInteger errors = new AtomicInteger();
+    private boolean running;
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public DummyHttpServer(String host, int port, boolean verbose) {
-        this.host = host;
-        this.port = port;
-        this.verbose = verbose;
-
-        errors = new AtomicInteger();
-        useSsl = USE_SSL;
-        failureProbability = FAILURE_PROBABILITY;
-        responseLatency = RESPONSE_LATENCY;
-        content = CONTENT;
-        useOldIo = USE_OLD_IO;
-    }
-
-    public DummyHttpServer(int port) { this(null, port, false); }
+    public DummyHttpServer(int port) { this(null, port); }
 
     // interface ------------------------------------------------------------------------------------------------------
 
@@ -164,6 +157,7 @@ public class DummyHttpServer {
                 pipeline.addLast("decoder", new HttpRequestDecoder());
                 pipeline.addLast("aggregator", new HttpChunkAggregator(5242880)); // 5MB
                 pipeline.addLast("handler", new RequestHandler());
+
                 return pipeline;
             }
         });
@@ -186,35 +180,11 @@ public class DummyHttpServer {
 
     // getters & setters ----------------------------------------------------------------------------------------------
 
-    public boolean isVerbose() { return verbose; }
-
-    public void setVerbose(boolean verbose) { this.verbose = verbose; }
-
-    public boolean isUseSsl() { return useSsl; }
-
-    public void setUseSsl(boolean useSsl) { this.useSsl = useSsl; }
-
-    public float getFailureProbability() { return failureProbability; }
-
     public void setFailureProbability(float failureProbability) {
         if (failureProbability < 0) this.failureProbability = 0;
         else if (failureProbability > 1.0) this.failureProbability = 1;
         else this.failureProbability = failureProbability;
     }
-
-    public long getResponseLatency() { return responseLatency; }
-
-    public void setResponseLatency(long responseLatency) { this.responseLatency = responseLatency; }
-
-    public boolean isUseOldIo() { return useOldIo; }
-
-    public void setUseOldIo(boolean useOldIo) { this.useOldIo = useOldIo; }
-
-    public String getContent() { return content; }
-
-    public void setContent(String content) { this.content = content; }
-
-    public boolean isRunning() { return running; }
 
     // private classes ------------------------------------------------------------------------------------------------
 
@@ -285,7 +255,8 @@ public class DummyHttpServer {
         if (args.length == 4) useOio = ("useOio".equals(args[3]));
         if (args.length == 5) verbose = ("verbose".equals(args[4]));
 
-        final DummyHttpServer server = new DummyHttpServer(host, port, verbose);
+        final DummyHttpServer server = new DummyHttpServer(host, port);
+        server.setVerbose(verbose);
         server.setFailureProbability(failureProbability);
         server.setUseOldIo(useOio);
         //server.setResponseLatency(50L);
