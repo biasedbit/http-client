@@ -31,31 +31,21 @@ public class TypedDiscardProcessor<T>
 
     // constants ------------------------------------------------------------------------------------------------------
 
-    private static final TypedDiscardProcessor CACHED = new TypedDiscardProcessor();
+    private static final TypedDiscardProcessor<Object> CACHED = new TypedDiscardProcessor<>();
 
     // public static methods ------------------------------------------------------------------------------------------
 
-    public static TypedDiscardProcessor getInstance() {
-        return CACHED;
-    }
+    public static TypedDiscardProcessor<Object> getInstance() { return CACHED; }
 
     // HttpResponseProcessor ------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean willProcessResponse(HttpResponse response) {
-        return false;
-    }
+    @Override public boolean willProcessResponse(HttpResponse response) { return false; }
 
-    @Override
-    public void addData(ChannelBuffer content) throws Exception {
-    }
+    @Override public void addData(ChannelBuffer content)
+            throws Exception { }
 
-    @Override
-    public void addLastData(ChannelBuffer content) throws Exception {
-    }
+    @Override public void addLastData(ChannelBuffer content)
+            throws Exception { }
 
-    @Override
-    public T getProcessedResponse() {
-        return null;
-    }
+    @Override public T getProcessedResponse() { return null; }
 }

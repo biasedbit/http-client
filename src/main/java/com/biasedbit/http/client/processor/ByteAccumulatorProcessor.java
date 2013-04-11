@@ -21,14 +21,15 @@ import org.jboss.netty.buffer.ChannelBuffer;
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class ByteAccumulatorProcessor extends AbstractAccumulatorProcessor<byte[]> {
+public class ByteAccumulatorProcessor
+        extends AbstractAccumulatorProcessor<byte[]> {
 
     // AbstractAccumulatorProcessor -----------------------------------------------------------------------------------
 
-    @Override
-    protected byte[] convertBufferToResult(ChannelBuffer buffer) {
+    @Override protected byte[] convertBufferToResult(ChannelBuffer buffer) {
         byte[] data = new byte[buffer.readableBytes()];
         buffer.readBytes(data);
+
         return data;
     }
 }

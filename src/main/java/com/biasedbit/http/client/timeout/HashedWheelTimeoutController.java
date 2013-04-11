@@ -38,8 +38,8 @@ import java.util.concurrent.TimeUnit;
  * periodic checks (wasted CPU).
  * <p/>
  * The default tick is 500ms. This means that in the worst case scenario, a request will be cancelled 500ms over the
- * timeout set. If this is acceptable, use this implementation rather than {@link BasicTimeoutController}. You can always
- * configure a lower tick time although for HTTP requests even 1 second over the limit is okay most of the times.
+ * timeout set. If this is acceptable, use this implementation rather than {@link BasicTimeoutController}. You can
+ * always configure a lower tick time although for HTTP requests even 1 second over the limit is okay most of the times.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */

@@ -39,46 +39,38 @@ public abstract class AbstractAccumulatorProcessor<T>
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public AbstractAccumulatorProcessor() {
-        this.acceptedCodes = null;
-    }
+    public AbstractAccumulatorProcessor() { acceptedCodes = null; }
 
-    public AbstractAccumulatorProcessor(List<Integer> acceptedCodes) {
-        this.acceptedCodes = acceptedCodes;
-    }
+    public AbstractAccumulatorProcessor(List<Integer> acceptedCodes) { this.acceptedCodes = acceptedCodes; }
 
     public AbstractAccumulatorProcessor(int... acceptedCodes) {
-        this.acceptedCodes = new ArrayList<Integer>(acceptedCodes.length);
-        for (int acceptedCode : acceptedCodes) {
-            this.acceptedCodes.add(acceptedCode);
-        }
+        this.acceptedCodes = new ArrayList<>(acceptedCodes.length);
+        for (int acceptedCode : acceptedCodes) this.acceptedCodes.add(acceptedCode);
     }
 
     // HttpResponseProcessor ------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean willProcessResponse(HttpResponse response) throws Exception {
-        if ((this.acceptedCodes != null) && !this.acceptedCodes.contains(response.getStatus().getCode())) {
-            return false;
-        }
+    @Override public boolean willProcessResponse(HttpResponse response)
+            throws Exception {
+        if (!isAcceptableResponse(response)) return false;
 
         // Content already present. Deal with it and bail out.
         if ((response.getContent() != null) && (response.getContent().readableBytes() > 0)) {
-            this.result = this.convertBufferToResult(response.getContent());
-            this.finished = true;
+            result = convertBufferToResult(response.getContent());
+            finished = true;
             return true;
         }
 
         // No content readily available
         long length = HttpHeaders.getContentLength(response, -1);
         if (length > Integer.MAX_VALUE) {
-            this.finished = true;
+            finished = true;
             return false;
         }
 
         if (length == 0) {
             // No content
-            this.finished = true;
+            finished = true;
             return false;
         }
 
@@ -86,44 +78,44 @@ public abstract class AbstractAccumulatorProcessor<T>
         if (response.isChunked()) {
             if (length == -1) {
                 // No content header, but there may be content... use a dynamic buffer (not so good for performance...)
-                this.buffer = ChannelBuffers.dynamicBuffer(2048);
+                buffer = ChannelBuffers.dynamicBuffer(2048);
             } else {
                 // When content is zipped and autoInflate is set to true, the Content-Length header remains the same
                 // even though the contents are expanded. Thus using a fixed size buffer would break with
                 // ArrayIndexOutOfBoundsException
-                this.buffer = ChannelBuffers.dynamicBuffer((int) length);
+                buffer = ChannelBuffers.dynamicBuffer((int) length);
             }
 
             return true;
         }
 
-        this.finished = true;
+        finished = true;
         return false;
     }
 
-    @Override
-    public void addData(ChannelBuffer content) throws Exception {
-        if (!this.finished) {
-            this.buffer.writeBytes(content);
+    @Override public void addData(ChannelBuffer content)
+            throws Exception {
+        if (!finished) buffer.writeBytes(content);
+    }
+
+    @Override public void addLastData(ChannelBuffer content)
+            throws Exception {
+        if (!finished) {
+            buffer.writeBytes(content);
+            result = convertBufferToResult(buffer);
+            buffer = null;
+            finished = true;
         }
     }
 
-    @Override
-    public void addLastData(ChannelBuffer content) throws Exception {
-        if (!this.finished) {
-            this.buffer.writeBytes(content);
-            this.result = this.convertBufferToResult(this.buffer);
-            this.buffer = null;
-            this.finished = true;
-        }
-    }
-
-    @Override
-    public T getProcessedResponse() {
-        return this.result;
-    }
+    @Override public T getProcessedResponse() { return result; }
 
     // protected helpers ----------------------------------------------------------------------------------------------
 
     protected abstract T convertBufferToResult(ChannelBuffer buffer);
+
+    protected boolean isAcceptableResponse(HttpResponse response) {
+        if (acceptedCodes == null) return true;
+        else return acceptedCodes.contains(response.getStatus().getCode());
+    }
 }

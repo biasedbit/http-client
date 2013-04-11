@@ -24,12 +24,12 @@ import org.jboss.netty.util.CharsetUtil;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class BodyAsStringProcessor extends AbstractAccumulatorProcessor<String> {
+public class BodyAsStringProcessor
+        extends AbstractAccumulatorProcessor<String> {
 
     // AbstractAccumulatorProcessor -----------------------------------------------------------------------------------
 
-    @Override
-    protected String convertBufferToResult(ChannelBuffer buffer) {
+    @Override protected String convertBufferToResult(ChannelBuffer buffer) {
         return buffer.toString(CharsetUtil.UTF_8);
     }
 }

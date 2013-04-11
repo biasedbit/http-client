@@ -67,7 +67,8 @@ public interface HttpResponseProcessor<T> {
      *
      * @throws Exception Thrown on underlying processing exception.
      */
-    boolean willProcessResponse(HttpResponse response) throws Exception;
+    boolean willProcessResponse(HttpResponse response)
+            throws Exception;
 
     /**
      * Append data to the processor's buffer.
@@ -76,7 +77,8 @@ public interface HttpResponseProcessor<T> {
      *
      * @throws Exception Thrown on underlying processing exception.
      */
-    void addData(ChannelBuffer content) throws Exception;
+    void addData(ChannelBuffer content)
+            throws Exception;
 
     /**
      * Append the last piece of data to the processor's buffer.
@@ -89,18 +91,22 @@ public interface HttpResponseProcessor<T> {
      *
      * @throws Exception Thrown on underlying processing exception.
      */
-    void addLastData(ChannelBuffer content) throws Exception;
+    void addLastData(ChannelBuffer content)
+            throws Exception;
 
     /**
      * Returns the result of processing the HTTP response body. Result varies according to implementation.
      * <p/>
-     * <div class="note"> <div class="header">Note:</div Implementations may choose to return non-{@code null} results
+     * <div class="note">
+     * <div class="header">Note:</div>
+     * Implementations may choose to return non-{@code null} results
      * when no data is consumed so {@link com.biasedbit.http.client.future.HttpRequestFuture#setSuccess(Object,
      * org.jboss.netty.handler.codec.http.HttpResponse)} should always be called with {@code getProcessedResponse()}
-     * rather than {@code null}. </div>
+     * rather than {@code null}.
+     * </div>
      *
-     * @return The result of processing the HTTP response body or some default value in case of failure (can be {@code
-     *         null}).
+     * @return The result of processing the HTTP response body or some default value in case of failure
+     * (can be {@code null}).
      */
     T getProcessedResponse();
 }
