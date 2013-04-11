@@ -38,9 +38,7 @@ class HashedWheelTimeoutControllerSpec extends Specification {
 
     where:
     timeout | sleepTime
-    100     | 200
-    150     | 200
-    199     | 200
+    50      | 200
   }
 
   @Unroll

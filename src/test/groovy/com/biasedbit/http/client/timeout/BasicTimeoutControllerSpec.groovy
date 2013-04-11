@@ -40,7 +40,7 @@ class BasicTimeoutControllerSpec extends Specification {
     100     | 200
     150     | 200
     199     | 200
-    200     | 200
+    200     | 210
   }
 
   @Unroll
