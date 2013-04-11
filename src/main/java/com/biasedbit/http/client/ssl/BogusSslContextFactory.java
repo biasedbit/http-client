@@ -50,7 +50,7 @@ public class BogusSslContextFactory
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public BogusSslContextFactory() {
+    private BogusSslContextFactory() {
         String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
         if (algorithm == null) algorithm = "X509";
 

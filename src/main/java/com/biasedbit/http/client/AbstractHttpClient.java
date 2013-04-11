@@ -203,7 +203,7 @@ public abstract class AbstractHttpClient
         if (connectionFactory == null) connectionFactory = new DefaultHttpConnectionFactory();
         if (futureFactory == null) futureFactory = new DefaultHttpRequestFutureFactory();
 
-        if ((sslContextFactory == null) && isHttps()) sslContextFactory = new BogusSslContextFactory();
+        if ((sslContextFactory == null) && isHttps()) sslContextFactory = BogusSslContextFactory.getInstance();
 
         eventConsumerLatch = new CountDownLatch(1);
         eventQueue = new LinkedBlockingQueue<>();

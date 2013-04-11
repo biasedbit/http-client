@@ -304,7 +304,7 @@ public class BogusKeyStore {
             0xe6, 0x9d, 0xd9, 0x1a, 0x62, 0x1b, 0xb8, 0xd3,
             0xd6, 0x9a, 0x6d, 0xb9, 0x8e, 0x15, 0x51 };
 
-    // public static methods ------------------------------------------------------------------------------------------
+    // interface ------------------------------------------------------------------------------------------------------
 
     public static InputStream asInputStream() {
         byte[] data = new byte[DATA.length];
