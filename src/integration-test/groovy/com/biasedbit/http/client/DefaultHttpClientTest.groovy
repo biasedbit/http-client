@@ -80,6 +80,38 @@ class DefaultHttpClientTest extends Specification {
     then: thrown(CannotExecuteRequestException)
   }
 
+  def "it connects with SSL"() {
+    setup: "the server accepts SSL connections"
+    server.terminate()
+    server.useSsl = true
+    assert server.init()
+
+    and: "the client is configured to use SSL"
+    client = new DefaultHttpClient()
+    client.useSsl = true
+    assert client.init()
+
+    expect: "it to successfully execute"
+    with(client.execute(host, port, request, new DiscardProcessor())) { future ->
+      future.awaitUninterruptibly()
+      future.isDone()
+      future.isSuccessful()
+    }
+  }
+
+  def "it supports Old I/O mode"() {
+    setup:
+    client = new DefaultHttpClient()
+    client.useNio = false
+    assert client.init()
+
+    expect: with(client.execute(host, port, request, new DiscardProcessor())) { future ->
+      future.awaitUninterruptibly(1000)
+      future.isDone()
+      future.isSuccessful()
+    }
+  }
+
   def "it cancels all pending request when a premature shutdown is issued"() {
     setup: "the server takes 50ms to process each response"
     server.responseLatency = 50
