@@ -85,7 +85,7 @@ public class DefaultHttpClientFactory
         client.setHostContextFactory(hostContextFactory);
         client.setConnectionFactory(connectionFactory);
         client.setFutureFactory(futureFactory);
-        client.setTimeoutManager(timeoutController);
+        client.setTimeoutController(timeoutController);
         client.setCleanupInactiveHostContexts(cleanupInactiveHostContexts);
         client.setSslContextFactory(sslContextFactory);
 

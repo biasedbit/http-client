@@ -819,7 +819,7 @@ public abstract class AbstractHttpClient
      * @param timeoutController The {@link com.biasedbit.http.client.timeout.TimeoutController} instance to use.
      * @see com.biasedbit.http.client.timeout.TimeoutController
      */
-    public void setTimeoutManager(TimeoutController timeoutController) {
+    public void setTimeoutController(TimeoutController timeoutController) {
         ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.timeoutController = timeoutController;
