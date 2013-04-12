@@ -17,7 +17,7 @@
 package com.biasedbit.http.client.event;
 
 /**
- * Definition of possible event types for {@link com.biasedbit.http.client.AbstractHttpClient}'s consumer thread.
+ * Definition of possible event types for {@link com.biasedbit.http.client.DefaultHttpClient}'s consumer thread.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */

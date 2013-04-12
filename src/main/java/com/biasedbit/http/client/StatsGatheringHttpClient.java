@@ -32,7 +32,7 @@ import lombok.Getter;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public class StatsGatheringHttpClient
-        extends AbstractHttpClient
+        extends DefaultHttpClient
         implements EventProcessorStatsProvider {
 
     // properties -----------------------------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ public class StatsGatheringHttpClient
     @Getter private long connectionFailedTime = 0;
     @Getter private int  events               = 0;
 
-    // AbstractHttpClient ---------------------------------------------------------------------------------------------
+    // DefaultHttpClient ----------------------------------------------------------------------------------------------
 
     @Override public void eventHandlingLoop() {
         while (true) {

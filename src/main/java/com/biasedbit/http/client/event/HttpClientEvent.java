@@ -17,7 +17,7 @@
 package com.biasedbit.http.client.event;
 
 /**
- * An generic event that is consumed by the consumer thread in {@link com.biasedbit.http.client.AbstractHttpClient}.
+ * An generic event that is consumed by the consumer thread in {@link com.biasedbit.http.client.DefaultHttpClient}.
  * <p/>
  * When an event is consumed it will generate actions, such as executing requests, opening connections, queueing
  * requests, etc.

@@ -24,16 +24,16 @@ import com.biasedbit.http.client.timeout.TimeoutController;
 import lombok.Getter;
 import lombok.Setter;
 
-import static com.biasedbit.http.client.AbstractHttpClient.*;
+import static com.biasedbit.http.client.DefaultHttpClient.*;
 
 /**
- * Creates subclasses of {@link AbstractHttpClient} depending on configuration parameters.
+ * Creates subclasses of {@link DefaultHttpClient} depending on configuration parameters.
  * <p/>
  * If this factory is configured with {@linkplain #setGatherStats(boolean) statistics gathering}, it will
  * generate instances of {@link StatsGatheringHttpClient}, otherwise it generates instances of
  * {@link DefaultHttpClient}.
  * <p/>
- * <strong>For the meaning of the configuration parameters, please take a look at {@link AbstractHttpClient}'s setter
+ * <strong>For the meaning of the configuration parameters, please take a look at {@link DefaultHttpClient}'s setter
  * methods.</strong>
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -66,7 +66,7 @@ public class DefaultHttpClientFactory
     // HttpClientFactory ----------------------------------------------------------------------------------------------
 
     @Override public HttpClient createClient() {
-        AbstractHttpClient client;
+        DefaultHttpClient client;
 
         if (gatherStats) client = new StatsGatheringHttpClient();
         else client = new DefaultHttpClient();
