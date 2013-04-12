@@ -5,6 +5,7 @@ import com.biasedbit.http.server.DummyHttpServer
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpRequest
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import static com.biasedbit.http.client.future.HttpRequestFuture.CANNOT_CONNECT
 import static com.biasedbit.http.client.future.HttpRequestFuture.SHUTTING_DOWN
@@ -69,6 +70,18 @@ class DefaultHttpClientTest extends Specification {
     then: thrown(CannotExecuteRequestException)
   }
 
+  def "it raises exception when trying to execute a request without initializing the client"() {
+    setup: client = new DefaultHttpClient()
+    when: client.execute(host, port, 100, request, new DiscardProcessor())
+    then: thrown(CannotExecuteRequestException)
+  }
+
+  def "it raises exception when trying to execute a request after the client has been terminated"() {
+    setup: client.terminate()
+    when: client.execute(host, port, 100, request, new DiscardProcessor())
+    then: thrown(CannotExecuteRequestException)
+  }
+
   def "it cancels all pending request when a premature shutdown is issued"() {
     setup: "the server takes 50ms to process each response"
     server.responseLatency = 50
@@ -96,5 +109,29 @@ class DefaultHttpClientTest extends Specification {
     // running the tests in different environments (IDE, command line, etc) results may actually vary a bit
     complete >= 3
     complete <= 20
+  }
+
+  @Unroll
+  def "it doesn't allow changing the '#property' property after it has been initialized"() {
+    when: client."${property}" = value
+    then: thrown(IllegalStateException)
+    where:
+    property | value
+    "connectionTimeout"           | 1000
+    "requestInactivityTimeout"    | 1000
+    "useNio"                      | false
+    "useSsl"                      | false
+    "maxConnectionsPerHost"       | 2
+    "maxQueuedRequests"           | 2
+    "maxIoWorkerThreads"          | 3
+    "maxHelperThreads"            | 3
+    "requestCompressionLevel"     | 3
+    "autoInflate"                 | false
+    "cleanupInactiveHostContexts" | true
+    "connectionFactory"           | null
+    "hostContextFactory"          | null
+    "futureFactory"               | null
+    "timeoutController"           | null
+    "sslContextFactory"           | null
   }
 }
