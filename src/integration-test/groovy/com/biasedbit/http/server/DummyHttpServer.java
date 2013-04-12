@@ -47,6 +47,7 @@ public class DummyHttpServer {
     // configuration defaults -----------------------------------------------------------------------------------------
 
     public static final boolean USE_SSL             = false;
+    public static final int     COMPRESSION_LEVEL   = 0;
     public static final float   FAILURE_PROBABILITY = 0.0f;
     public static final long    RESPONSE_LATENCY    = 0;
     public static final boolean USE_OLD_IO          = false;
@@ -92,10 +93,11 @@ public class DummyHttpServer {
     @Getter private final int    port;
 
     @Getter @Setter private boolean verbose;
-    @Getter @Setter private boolean useSsl          = USE_SSL;
-    @Getter @Setter private long    responseLatency = RESPONSE_LATENCY;
-    @Getter @Setter private boolean useOldIo        = USE_OLD_IO;
-    @Getter @Setter private String  content         = CONTENT;
+    @Getter @Setter private boolean useSsl           = USE_SSL;
+    @Getter @Setter private int     compressionLevel = COMPRESSION_LEVEL;
+    @Getter @Setter private long    responseLatency  = RESPONSE_LATENCY;
+    @Getter @Setter private boolean useOldIo         = USE_OLD_IO;
+    @Getter @Setter private String  content          = CONTENT;
 
     @Getter private float failureProbability = FAILURE_PROBABILITY;
 
@@ -136,6 +138,7 @@ public class DummyHttpServer {
 
                 pipeline.addLast("encoder", new HttpResponseEncoder());
                 pipeline.addLast("decoder", new HttpRequestDecoder());
+                if (compressionLevel > 0) pipeline.addLast("compressor", new HttpContentCompressor(compressionLevel));
                 pipeline.addLast("aggregator", new HttpChunkAggregator(5242880)); // 5MB
                 pipeline.addLast("handler", new RequestHandler());
 
