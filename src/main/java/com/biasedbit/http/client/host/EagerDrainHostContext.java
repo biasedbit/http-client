@@ -25,7 +25,7 @@ import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public class EagerDrainHostContext
-        extends AbstractHostContext {
+        extends DefaultHostContext {
 
     // constructors ---------------------------------------------------------------------------------------------------
 

@@ -34,7 +34,7 @@ import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public abstract class DefaultHostContext
+public class DefaultHostContext
         implements HostContext {
 
     // internal vars --------------------------------------------------------------------------------------------------
