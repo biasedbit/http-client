@@ -36,7 +36,6 @@ public class DefaultHttpRequestFuture<T>
 
     private T                                  result;
     private HttpResponse                       response;
-    private Object                             attachment;
     private boolean                            done;
     private List<HttpRequestFutureListener<T>> listeners;
     private Throwable                          cause;
@@ -136,7 +135,7 @@ public class DefaultHttpRequestFuture<T>
 
     @Override public boolean isDone() { return done; }
 
-    @Override public boolean isSuccessful() { return response != null; }
+    @Override public boolean isSuccessful() { return cause == null; }
 
     @Override public boolean isCancelled() { return cause == CANCELLED; }
 
@@ -178,10 +177,6 @@ public class DefaultHttpRequestFuture<T>
             if (listeners != null) listeners.remove(listener);
         }
     }
-
-    @Override public Object getAttachment() { return attachment; }
-
-    @Override public void setAttachment(Object attachment) { this.attachment = attachment; }
 
     @Override public HttpRequestFuture<T> await() throws InterruptedException {
         if (Thread.interrupted()) throw new InterruptedException();

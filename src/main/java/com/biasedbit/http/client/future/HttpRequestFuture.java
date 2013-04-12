@@ -66,10 +66,6 @@ public interface HttpRequestFuture<T> {
 
     void removeListener(HttpRequestFutureListener<T> listener);
 
-    void setAttachment(Object attachment);
-
-    Object getAttachment();
-
     HttpRequestFuture<T> await()
             throws InterruptedException;
 
