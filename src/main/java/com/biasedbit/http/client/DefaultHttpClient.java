@@ -118,7 +118,6 @@ public class DefaultHttpClient
     public static final int     MAX_QUEUED_REQUESTS            = Short.MAX_VALUE;
     public static final int     MAX_IO_WORKER_THREADS          = 50;
     public static final int     MAX_HELPER_THREADS             = 20;
-    public static final int     REQUEST_COMPRESSION_LEVEL      = 0;
     public static final boolean CLEANUP_INACTIVE_HOST_CONTEXTS = true;
 
     // properties -----------------------------------------------------------------------------------------------------
@@ -131,7 +130,6 @@ public class DefaultHttpClient
     @Getter private int     maxQueuedRequests           = MAX_QUEUED_REQUESTS;
     @Getter private int     maxIoWorkerThreads          = MAX_IO_WORKER_THREADS;
     @Getter private int     maxHelperThreads            = MAX_HELPER_THREADS;
-    @Getter private int     requestCompressionLevel     = REQUEST_COMPRESSION_LEVEL;
     @Getter private boolean autoDecompress              = AUTO_DECOMPRESS;
     @Getter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
@@ -199,10 +197,6 @@ public class DefaultHttpClient
                     SSLEngine engine = sslContextFactory.getClientContext().createSSLEngine();
                     engine.setUseClientMode(true);
                     pipeline.addLast("ssl", new SslHandler(engine));
-                }
-
-                if (requestCompressionLevel > 0) {
-                    pipeline.addLast("deflater", new HttpContentCompressor(requestCompressionLevel));
                 }
 
                 pipeline.addLast("codec", new HttpClientCodec());
@@ -697,21 +691,6 @@ public class DefaultHttpClient
         ensureValue(maxHelperThreads > 3, "maxHelperThreads must be > 3");
 
         this.maxHelperThreads = maxHelperThreads;
-    }
-
-    /**
-     * Level of compression when sending requests.
-     * <p/>
-     * Defaults to 0.
-     *
-     * @param requestCompressionLevel Level of compression between 0 and 9; 0 = off and 9 = max.
-     */
-    public void setRequestCompressionLevel(int requestCompressionLevel) {
-        ensureState(eventQueue == null, "Cannot modify property after initialization");
-        ensureValue((requestCompressionLevel >= 0) && (requestCompressionLevel <= 9),
-                    "requestCompressionLevel must be in range [0;9] (0 = none, 9 = max)");
-
-        this.requestCompressionLevel = requestCompressionLevel;
     }
 
     /**

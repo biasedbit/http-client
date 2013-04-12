@@ -32,7 +32,6 @@ class DefaultHttpClientFactorySpec extends Specification {
       client.requestInactivityTimeout == factory.requestInactivityTimeout
       client.useSsl == factory.useSsl
       client.useNio == factory.useNio
-      client.requestCompressionLevel == factory.requestCompressionLevel
       client.autoDecompress == factory.autoDecompress
       client.maxConnectionsPerHost == factory.maxConnectionsPerHost
       client.maxQueuedRequests == factory.maxQueuedRequests
