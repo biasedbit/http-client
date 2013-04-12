@@ -4,9 +4,12 @@ description = "http-client"
 version = "1.1.0-SNAPSHOT"
 repositories { mavenCentral() }
 
-apply plugin: "groovy" // sets up Java as well
-apply plugin: "idea"
+apply plugin: "groovy" // takes care of setting up Java
+
+// Add integration test sources support
 apply from: "https://raw.github.com/brunodecarvalho/gradle-plugins/master/integration-test.gradle"
+// Add a nice rspec-like colored output to the test suites
+apply from: "https://raw.github.com/brunodecarvalho/gradle-plugins/master/colored-test-output.gradle"
 
 dependencies {
   sourceCompatibility = 1.7
@@ -21,7 +24,10 @@ dependencies {
   testRuntime "cglib:cglib-nodep:2.2.2" // Required for spock to mock classes
 }
 
+
 /* --- IDEA PROJECT CONFIGURATION --- */
+
+apply plugin: "idea"
 
 idea {
   project {
@@ -41,9 +47,8 @@ idea {
     }
   }
 
-  module {
-    testSourceDirs += [file("src/integration-test/java"), file("src/integration-test/groovy")]
-  }
+  // Add the integration test directories to the project sources
+  module { testSourceDirs += [file("src/integration-test/java"), file("src/integration-test/groovy")] }
 
   workspace.iws.withXml { provider ->
     def runManager = provider.node.component.find { it.@name == 'RunManager' }
