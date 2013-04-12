@@ -21,14 +21,17 @@ import java.util.concurrent.Executors;
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
 public class UploadMirrorHttpServer {
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    private final String  host;
-    private final int     port;
-    private       boolean verbose;
-    private       boolean useSsl;
+    @Getter private final String host;
+    @Getter private final int    port;
+
+    @Getter @Setter private boolean verbose                = false;
+    @Getter @Setter private boolean useSsl                 = false;
+    @Getter @Setter private long    pauseBefore100Continue = 0;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -38,13 +41,7 @@ public class UploadMirrorHttpServer {
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public UploadMirrorHttpServer(String host, int port, boolean verbose) {
-        this.host = host;
-        this.port = port;
-        this.verbose = verbose;
-    }
-
-    public UploadMirrorHttpServer(int port) { this(null, port, false); }
+    public UploadMirrorHttpServer(int port) { this(null, port); }
 
     // interface ------------------------------------------------------------------------------------------------------
 
@@ -89,12 +86,6 @@ public class UploadMirrorHttpServer {
         bootstrap.releaseExternalResources();
     }
 
-    // getters & setters ----------------------------------------------------------------------------------------------
-
-    public boolean isUseSsl() { return useSsl; }
-
-    public void setUseSsl(boolean useSsl) { this.useSsl = useSsl; }
-
     // private classes ------------------------------------------------------------------------------------------------
 
     private final class RequestHandler
@@ -108,20 +99,16 @@ public class UploadMirrorHttpServer {
 
         @Override public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
                 throws Exception {
-            System.err.println("*** Channel open");
             channel = e.getChannel();
             channelGroup.add(e.getChannel());
-        }
-
-        @Override public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
-                throws Exception {
-            System.err.println("*** Channel closed");
         }
 
         @Override public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
                 throws Exception {
             if (e.getMessage() instanceof HttpRequest) {
                 request = (HttpRequest) e.getMessage();
+                System.out.println(request);
+                System.out.println(request.getContent().toString(CharsetUtil.UTF_8));
                 handleRequest();
             } else if (e.getMessage() instanceof HttpChunk) {
                 handleChunk((HttpChunk) e.getMessage());
@@ -150,9 +137,11 @@ public class UploadMirrorHttpServer {
             }
 
             String continueHeader = request.getHeader(HttpHeaders.Names.EXPECT);
-            if ((continueHeader != null) && HttpHeaders.Values.CONTINUE.equalsIgnoreCase(continueHeader)) {
+            if ((continueHeader != null) &&
+                HttpHeaders.Values.CONTINUE.equalsIgnoreCase(continueHeader) &&
+                (pauseBefore100Continue > 0)) {
                 System.err.println("*** Pausing before sending 100 continue...");
-                try { Thread.sleep(3000L); } catch (InterruptedException ignored) { }
+                try { Thread.sleep(pauseBefore100Continue); } catch (InterruptedException ignored) { }
                 send100Continue();
                 if (verbose) System.err.println("\n*** Sent 100 continue");
             }
@@ -210,15 +199,11 @@ public class UploadMirrorHttpServer {
         if (args.length >= 2) port = Integer.parseInt(args[1]);
         if (args.length >= 3) verbose = ("verbose".equals(args[2]));
 
-        final UploadMirrorHttpServer server = new UploadMirrorHttpServer(host, port, verbose);
-        server.verbose = true;
-        server.useSsl = true;
+        final UploadMirrorHttpServer server = new UploadMirrorHttpServer(host, port);
+        server.verbose = verbose;
 
-        if (!server.init()) {
-            System.err.println("Failed to bind server to " + (host == null ? '*' : host) + ":" + port);
-        } else {
-            System.out.println("Server bound to " + (host == null ? '*' : host) + ":" + port);
-        }
+        if (!server.init()) System.err.println("Failed to bind server to " + (host == null ? '*' : host) + ":" + port);
+        else System.out.println("Server bound to " + (host == null ? '*' : host) + ":" + port);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override public void run() { server.terminate(); }
