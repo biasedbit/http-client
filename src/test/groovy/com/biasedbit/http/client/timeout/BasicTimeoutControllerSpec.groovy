@@ -32,7 +32,7 @@ class BasicTimeoutControllerSpec extends Specification {
     and: controller.controlTimeout(context);
     when: sleep(sleepTime)
     then: context.getFuture().isDone()
-    and: !context.getFuture().isSuccess()
+    and: !context.getFuture().isSuccessful()
     and: context.getFuture().getCause() == HttpRequestFuture.TIMED_OUT
 
     where:

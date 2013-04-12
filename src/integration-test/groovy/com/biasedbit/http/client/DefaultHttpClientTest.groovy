@@ -48,7 +48,7 @@ class DefaultHttpClientTest extends Specification {
     when: def future = client.execute(host, port, 100, request, new DiscardProcessor())
     then: future.awaitUninterruptibly(5000)
     and: future.isDone()
-    and: !future.isSuccess()
+    and: !future.isSuccessful()
     and: future.getCause() == TIMED_OUT
   }
 
@@ -57,7 +57,7 @@ class DefaultHttpClientTest extends Specification {
     when: def future = client.execute(host, port, 100, request, new DiscardProcessor())
     then: future.awaitUninterruptibly(1000)
     and: future.isDone()
-    and: !future.isSuccess()
+    and: !future.isSuccessful()
     and: future.getCause() == CANNOT_CONNECT
   }
 
@@ -101,7 +101,7 @@ class DefaultHttpClientTest extends Specification {
     and: "the first 3+ requests will have finished successfully and the others will be terminated with SHUTTING_DOWN"
     long complete = 0
     futures.each {
-      if (it.isSuccess()) complete++
+      if (it.isSuccessful()) complete++
       else assert it.cause == SHUTTING_DOWN
     }
 

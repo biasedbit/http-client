@@ -56,7 +56,7 @@ public interface HttpRequestFuture<T> {
 
     boolean isDone();
 
-    boolean isSuccess();
+    boolean isSuccessful();
 
     boolean isCancelled();
 

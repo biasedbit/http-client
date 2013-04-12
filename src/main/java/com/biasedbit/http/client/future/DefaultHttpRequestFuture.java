@@ -90,7 +90,7 @@ public class DefaultHttpRequestFuture<T>
 
     @Override public boolean isDone() { return done; }
 
-    @Override public boolean isSuccess() { return response != null; }
+    @Override public boolean isSuccessful() { return response != null; }
 
     @Override public boolean isCancelled() { return cause == CANCELLED; }
 
@@ -313,7 +313,7 @@ public class DefaultHttpRequestFuture<T>
                 .append(", executionTime=").append(getExecutionTime());
 
         if (!isDone()) builder.append(", inProgress");
-        else if (isSuccess()) builder.append(", succeeded (code ").append(response.getStatus().getCode()).append(')');
+        else if (isSuccessful()) builder.append(", succeeded (code ").append(response.getStatus().getCode()).append(')');
         else builder.append(", failed (").append(cause).append(')');
 
         return builder.append('}').toString();
