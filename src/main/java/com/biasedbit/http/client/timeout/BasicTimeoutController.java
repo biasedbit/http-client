@@ -21,10 +21,7 @@ import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.future.HttpRequestFutureListener;
 import org.jboss.netty.util.internal.ExecutorUtil;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Basic implementation of a {@link TimeoutController} that launches a thread with a {@link TimeoutChecker}.

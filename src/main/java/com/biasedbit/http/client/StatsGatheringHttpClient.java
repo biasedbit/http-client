@@ -16,13 +16,7 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.client.event.ConnectionClosedEvent;
-import com.biasedbit.http.client.event.ConnectionFailedEvent;
-import com.biasedbit.http.client.event.ConnectionOpenEvent;
-import com.biasedbit.http.client.event.EventType;
-import com.biasedbit.http.client.event.ExecuteRequestEvent;
-import com.biasedbit.http.client.event.HttpClientEvent;
-import com.biasedbit.http.client.event.RequestCompleteEvent;
+import com.biasedbit.http.client.event.*;
 import lombok.Getter;
 
 /**

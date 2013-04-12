@@ -17,7 +17,6 @@
 package com.biasedbit.http.client.connection;
 
 import com.biasedbit.http.client.timeout.TimeoutController;
-import com.biasedbit.http.client.timeout.TimeoutController;
 import lombok.Getter;
 import lombok.Setter;
 

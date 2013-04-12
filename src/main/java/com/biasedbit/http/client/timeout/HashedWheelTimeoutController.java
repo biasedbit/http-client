@@ -19,9 +19,7 @@ package com.biasedbit.http.client.timeout;
 import com.biasedbit.http.client.HttpRequestContext;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.future.HttpRequestFutureListener;
-import org.jboss.netty.util.HashedWheelTimer;
-import org.jboss.netty.util.Timeout;
-import org.jboss.netty.util.TimerTask;
+import org.jboss.netty.util.*;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;

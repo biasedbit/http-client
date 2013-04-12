@@ -19,9 +19,7 @@ package com.biasedbit.http.client.ssl;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.security.KeyStore;

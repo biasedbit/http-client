@@ -18,9 +18,7 @@ package com.biasedbit.http.client.event;
 
 import com.biasedbit.http.client.HttpRequestContext;
 import com.biasedbit.http.client.connection.HttpConnection;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.Collection;
 

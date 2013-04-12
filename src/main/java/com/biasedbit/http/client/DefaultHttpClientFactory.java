@@ -21,7 +21,6 @@ import com.biasedbit.http.client.future.HttpRequestFutureFactory;
 import com.biasedbit.http.client.host.HostContextFactory;
 import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.TimeoutController;
-import com.biasedbit.http.client.timeout.TimeoutController;
 import lombok.Getter;
 import lombok.Setter;
 
