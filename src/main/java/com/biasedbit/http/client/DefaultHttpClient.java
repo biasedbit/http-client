@@ -89,7 +89,7 @@ import static com.biasedbit.http.client.util.Utils.*;
  * <div class="note">
  * <div class="header">Note:</div>
  * Calling {@linkplain #execute(String, int, HttpRequest, HttpResponseProcessor) one of the variants of {@code execute}}
- * with the client configured with {@linkplain #setAutoInflate(boolean) auto-inflation} turned on will cause a
+ * with the client configured with {@linkplain #setAutoDecompress(boolean) auto-inflation} turned on will cause a
  * 'ACCEPT_ENCODING' header to be added with value 'GZIP'.
  * </div>
  *
@@ -113,12 +113,12 @@ public class DefaultHttpClient
     public static final int     REQUEST_INACTIVITY_TIMEOUT     = 10;
     public static final boolean USE_NIO                        = false;
     public static final boolean USE_SSL                        = false;
+    public static final boolean AUTO_DECOMPRESS                = false;
     public static final int     MAX_CONNECTIONS_PER_HOST       = 3;
     public static final int     MAX_QUEUED_REQUESTS            = Short.MAX_VALUE;
     public static final int     MAX_IO_WORKER_THREADS          = 50;
     public static final int     MAX_HELPER_THREADS             = 20;
     public static final int     REQUEST_COMPRESSION_LEVEL      = 0;
-    public static final boolean AUTO_INFLATE                   = false;
     public static final boolean CLEANUP_INACTIVE_HOST_CONTEXTS = true;
 
     // properties -----------------------------------------------------------------------------------------------------
@@ -132,7 +132,7 @@ public class DefaultHttpClient
     @Getter private int     maxIoWorkerThreads          = MAX_IO_WORKER_THREADS;
     @Getter private int     maxHelperThreads            = MAX_HELPER_THREADS;
     @Getter private int     requestCompressionLevel     = REQUEST_COMPRESSION_LEVEL;
-    @Getter private boolean autoInflate                 = AUTO_INFLATE;
+    @Getter private boolean autoDecompress              = AUTO_DECOMPRESS;
     @Getter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
     @Getter private HttpConnectionFactory    connectionFactory;
@@ -206,7 +206,7 @@ public class DefaultHttpClient
                 }
 
                 pipeline.addLast("codec", new HttpClientCodec());
-                if (autoInflate) pipeline.addLast("inflater", new HttpContentDecompressor());
+                if (autoDecompress) pipeline.addLast("decompressor", new HttpContentDecompressor());
 
                 return pipeline;
             }
@@ -311,7 +311,7 @@ public class DefaultHttpClient
         }
 
         // Perform these checks on the caller thread's time rather than the event dispatcher's.
-        if (autoInflate) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
+        if (autoDecompress) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
         HttpRequestFuture<T> future = futureFactory.createFuture();
         HttpRequestContext<T> context = new HttpRequestContext<>(host, port, timeout, request, processor, future);
@@ -722,13 +722,13 @@ public class DefaultHttpClient
      * <p/>
      * Defaults to {@code true}.
      *
-     * @param autoInflate {@code true} if the connections should automatically decompress gzip content, {@code false}
-     *                    otherwise.
+     * @param autoDecompress {@code true} if the connections should automatically decompress gzip content,
+     * {@code false} otherwise.
      */
-    public void setAutoInflate(boolean autoInflate) {
+    public void setAutoDecompress(boolean autoDecompress) {
         ensureState(eventQueue == null, "Cannot modify property after initialization");
 
-        this.autoInflate = autoInflate;
+        this.autoDecompress = autoDecompress;
     }
 
     /**

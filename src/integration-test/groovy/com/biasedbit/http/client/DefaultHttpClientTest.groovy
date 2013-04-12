@@ -126,7 +126,7 @@ class DefaultHttpClientTest extends Specification {
     "maxIoWorkerThreads"          | 3
     "maxHelperThreads"            | 3
     "requestCompressionLevel"     | 3
-    "autoInflate"                 | false
+    "autoDecompress"              | false
     "cleanupInactiveHostContexts" | true
     "connectionFactory"           | null
     "hostContextFactory"          | null

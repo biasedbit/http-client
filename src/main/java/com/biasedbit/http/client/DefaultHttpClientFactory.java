@@ -50,7 +50,7 @@ public class DefaultHttpClientFactory
     @Getter @Setter private boolean useSsl                      = USE_SSL;
     @Getter @Setter private boolean useNio                      = USE_NIO;
     @Getter @Setter private int     requestCompressionLevel     = REQUEST_COMPRESSION_LEVEL;
-    @Getter @Setter private boolean autoInflate                 = AUTO_INFLATE;
+    @Getter @Setter private boolean autoDecompress              = AUTO_DECOMPRESS;
     @Getter @Setter private int     maxConnectionsPerHost       = MAX_CONNECTIONS_PER_HOST;
     @Getter @Setter private int     maxQueuedRequests           = MAX_QUEUED_REQUESTS;
     @Getter @Setter private int     maxIoWorkerThreads          = MAX_IO_WORKER_THREADS;
@@ -73,9 +73,9 @@ public class DefaultHttpClientFactory
 
         client.setUseSsl(useSsl);
         client.setRequestCompressionLevel(requestCompressionLevel);
-        client.setAutoInflate(autoInflate);
         client.setConnectionTimeout(connectionTimeout);
         client.setRequestInactivityTimeout(requestInactivityTimeout);
+        client.setAutoDecompress(autoDecompress);
         client.setMaxConnectionsPerHost(maxConnectionsPerHost);
         client.setMaxQueuedRequests(maxQueuedRequests);
         client.setUseNio(useNio);
