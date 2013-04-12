@@ -398,11 +398,6 @@ public abstract class AbstractHttpClient
         eventQueue.offer(new RequestCompleteEvent(context));
     }
 
-    // interface ------------------------------------------------------------------------------------------------------
-
-    // TODO this seems to only be necessary for unit tests so it needs to be cut off
-    public Map<String, HostContext> getContextMap() { return Collections.unmodifiableMap(contextMap); }
-
     // protected helpers ----------------------------------------------------------------------------------------------
 
     protected HttpClientEvent popNextEvent()
