@@ -81,17 +81,17 @@ class DefaultHttpClientTest extends Specification {
   }
 
   def "it connects with SSL"() {
-    setup: "the server accepts SSL connections"
+    given: "a server that accepts SSL connections"
     server.terminate()
     server.useSsl = true
     assert server.init()
 
-    and: "the client is configured to use SSL"
+    and: "a client that is configured to use SSL"
     client = new DefaultHttpClient()
     client.useSsl = true
     assert client.init()
 
-    expect: "it to successfully execute"
+    expect: "it to successfully execute its request"
     with(client.execute(host, port, request, new DiscardProcessor())) { future ->
       future.awaitUninterruptibly()
       future.isDone()
@@ -100,12 +100,13 @@ class DefaultHttpClientTest extends Specification {
   }
 
   def "it supports Old I/O mode"() {
-    setup:
+    given: "a client configured to use OIO"
     client = new DefaultHttpClient()
     client.useNio = false
     assert client.init()
 
-    expect: with(client.execute(host, port, request, new DiscardProcessor())) { future ->
+    expect: "it to successfully execute"
+    with(client.execute(host, port, request, new DiscardProcessor())) { future ->
       future.awaitUninterruptibly(1000)
       future.isDone()
       future.isSuccessful()
