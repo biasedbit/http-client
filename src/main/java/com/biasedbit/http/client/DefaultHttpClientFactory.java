@@ -70,21 +70,21 @@ public class DefaultHttpClientFactory
         if (gatherStats) client = new StatsGatheringHttpClient();
         else client = new DefaultHttpClient();
 
-        client.setUseSsl(useSsl);
         client.setConnectionTimeout(connectionTimeout);
         client.setRequestInactivityTimeout(requestInactivityTimeout);
+        client.setUseSsl(useSsl);
+        client.setUseNio(useNio);
         client.setAutoDecompress(autoDecompress);
         client.setMaxConnectionsPerHost(maxConnectionsPerHost);
         client.setMaxQueuedRequests(maxQueuedRequests);
-        client.setUseNio(useNio);
         client.setMaxIoWorkerThreads(maxIoWorkerThreads);
         client.setMaxHelperThreads(maxHelperThreads);
+        client.setCleanupInactiveHostContexts(cleanupInactiveHostContexts);
 
         client.setHostContextFactory(hostContextFactory);
         client.setConnectionFactory(connectionFactory);
         client.setFutureFactory(futureFactory);
         client.setTimeoutController(timeoutController);
-        client.setCleanupInactiveHostContexts(cleanupInactiveHostContexts);
         client.setSslContextFactory(sslContextFactory);
 
         return client;

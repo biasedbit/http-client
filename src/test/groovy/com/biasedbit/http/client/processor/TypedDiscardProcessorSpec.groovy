@@ -1,15 +1,13 @@
 package com.biasedbit.http.client.processor
 
-import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse
-import org.jboss.netty.util.CharsetUtil
 import spock.lang.Specification
 
-import static org.jboss.netty.buffer.ChannelBuffers.*
+import static org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_0
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
-import static org.jboss.netty.util.CharsetUtil.*
+import static org.jboss.netty.util.CharsetUtil.UTF_8
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>

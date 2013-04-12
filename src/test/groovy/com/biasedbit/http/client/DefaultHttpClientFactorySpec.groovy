@@ -12,7 +12,7 @@ import spock.lang.Specification
  */
 class DefaultHttpClientFactorySpec extends Specification {
 
-  HttpClientFactory factory
+  DefaultHttpClientFactory factory
 
   def setup() {
     factory = new DefaultHttpClientFactory()

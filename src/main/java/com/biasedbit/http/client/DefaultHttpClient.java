@@ -109,10 +109,10 @@ public class DefaultHttpClient
 
     // configuration defaults -----------------------------------------------------------------------------------------
 
-    public static final int     CONNECTION_TIMEOUT             = 10;
-    public static final int     REQUEST_INACTIVITY_TIMEOUT     = 10;
-    public static final boolean USE_NIO                        = false;
+    public static final int     CONNECTION_TIMEOUT             = 10000;
+    public static final int     REQUEST_INACTIVITY_TIMEOUT     = 10000;
     public static final boolean USE_SSL                        = false;
+    public static final boolean USE_NIO                        = false;
     public static final boolean AUTO_DECOMPRESS                = false;
     public static final int     MAX_CONNECTIONS_PER_HOST       = 3;
     public static final int     MAX_QUEUED_REQUESTS            = Short.MAX_VALUE;
@@ -538,11 +538,7 @@ public class DefaultHttpClient
                 future.addListener(new ChannelFutureListener() {
                     @Override public void operationComplete(ChannelFuture future)
                             throws Exception {
-                        if (future.isSuccess()) {
-                            // Don't even bother checking if client was already instructed to terminate since
-                            // CleanupChannelGroup takes care of that.
-                            channelGroup.add(future.getChannel());
-                        }
+                        if (future.isSuccess()) channelGroup.add(future.getChannel());
                     }
                 });
             }

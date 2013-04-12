@@ -1,6 +1,5 @@
 package com.biasedbit.http.client.utils
 
-import com.biasedbit.http.client.util.Utils
 import spock.lang.Specification
 
 import static com.biasedbit.http.client.util.Utils.*

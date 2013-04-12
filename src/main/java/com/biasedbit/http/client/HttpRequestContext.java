@@ -92,7 +92,6 @@ public class HttpRequestContext<T> {
 
     @Override public String toString() {
         return new StringBuilder()
-                .append(request.getProtocolVersion()).append(' ')
                 .append(request.getMethod()).append(' ')
                 .append(request.getUri()).append(" (")
                 .append(host).append(':')

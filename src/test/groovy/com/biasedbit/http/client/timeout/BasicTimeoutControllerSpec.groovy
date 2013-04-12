@@ -10,8 +10,6 @@ import org.jboss.netty.handler.codec.http.HttpVersion
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.util.concurrent.TimeUnit
-
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */

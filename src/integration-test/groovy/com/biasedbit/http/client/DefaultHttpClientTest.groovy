@@ -7,9 +7,7 @@ import org.jboss.netty.handler.codec.http.HttpRequest
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static com.biasedbit.http.client.future.HttpRequestFuture.CANNOT_CONNECT
-import static com.biasedbit.http.client.future.HttpRequestFuture.SHUTTING_DOWN
-import static com.biasedbit.http.client.future.HttpRequestFuture.TIMED_OUT
+import static com.biasedbit.http.client.future.HttpRequestFuture.*
 import static org.jboss.netty.handler.codec.http.HttpMethod.GET
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
 
@@ -20,9 +18,9 @@ class DefaultHttpClientTest extends Specification {
 
   String            host
   int               port
-  DummyHttpServer   server
   DefaultHttpClient client
   HttpRequest       request
+  DummyHttpServer   server
 
   def setup() {
     host = "localhost"
