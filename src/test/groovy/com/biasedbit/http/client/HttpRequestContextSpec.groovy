@@ -1,6 +1,6 @@
 package com.biasedbit.http.client
 
-import com.biasedbit.http.client.future.HttpRequestFuture
+import com.biasedbit.http.client.future.MutableRequestFuture
 import com.biasedbit.http.client.processor.HttpResponseProcessor
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpRequest
@@ -17,12 +17,12 @@ class HttpRequestContextSpec extends Specification {
 
   HttpRequest           request
   HttpResponseProcessor processor
-  HttpRequestFuture     future
+  MutableRequestFuture         future
 
   def setup() {
     request = Mock(HttpRequest)
     processor = Mock(HttpResponseProcessor)
-    future = Mock(HttpRequestFuture)
+    future = Mock(MutableRequestFuture)
   }
 
   def "it doesn't accept a null host"() {

@@ -24,7 +24,7 @@ class DefaultHttpConnectionFactorySpec extends Specification {
 
   def "#createConnection creates a connection with the current settings"() {
     expect: with(factory.createConnection("id", "host", 80, listener, timeoutController, executor)) { connection ->
-      connection instanceof DefaultHttpConnection
+      connection != null
 
       connection.id == "id"
       connection.host == "host"

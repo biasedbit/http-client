@@ -104,7 +104,7 @@ public class DefaultHostContext
     @Override public HttpRequestContext pollQueue() { return queue.poll(); }
 
     @Override public void failAllRequests(Throwable cause) {
-        for (HttpRequestContext context : queue) context.getFuture().setFailure(cause);
+        for (HttpRequestContext context : queue) context.getFuture().failedWithCause(cause);
 
         queue.clear();
     }

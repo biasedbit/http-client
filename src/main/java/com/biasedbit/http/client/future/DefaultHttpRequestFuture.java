@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public class DefaultHttpRequestFuture<T>
-        implements HttpRequestFuture<T> {
+        implements MutableRequestFuture<T> {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -52,10 +52,56 @@ public class DefaultHttpRequestFuture<T>
         executionStart = -1;
     }
 
-    // HttpRequestFuture ----------------------------------------------------------------------------------------------
+    // MutableRequestFuture --------------------------------------------------------------------------------------------------
 
     // TODO review this
     @Override public void attachConnection(HttpConnection connection) { this.connection = connection; }
+
+    @Override public boolean finishedSuccessfully(T processedResponse, HttpResponse response) {
+        synchronized (this) {
+            if (done) return false;
+
+            executionEnd = System.nanoTime();
+            done = true;
+            result = processedResponse;
+            this.response = response;
+            if (waiters > 0) notifyAll();
+        }
+
+        notifyListeners();
+        return true;
+    }
+
+    @Override public boolean failedWithCause(Throwable cause) {
+        synchronized (this) {
+            if (done) return false; // Allow only once.
+
+            executionEnd = System.nanoTime();
+            this.cause = cause;
+            done = true;
+            if (waiters > 0) notifyAll();
+        }
+
+        notifyListeners();
+        return true;
+    }
+
+    @Override public boolean failedWithCause(Throwable cause, HttpResponse response) {
+        synchronized (this) {
+            if (done) return false;
+
+            executionEnd = System.nanoTime();
+            this.response = response;
+            this.cause = cause;
+            done = true;
+            if (waiters > 0) notifyAll();
+        }
+
+        notifyListeners();
+        return true;
+    }
+
+    // HttpRequestFuture ----------------------------------------------------------------------------------------------
 
     @Override public T getProcessedResult() { return result; }
 
@@ -107,50 +153,6 @@ public class DefaultHttpRequestFuture<T>
             // The connection must be killed in order for the request to effectively be cancelled
             connection.terminate(CANCELLED);
 
-            if (waiters > 0) notifyAll();
-        }
-
-        notifyListeners();
-        return true;
-    }
-
-    @Override public boolean setSuccess(T processedResponse, HttpResponse response) {
-        synchronized (this) {
-            if (done) return false;
-
-            executionEnd = System.nanoTime();
-            done = true;
-            result = processedResponse;
-            this.response = response;
-            if (waiters > 0) notifyAll();
-        }
-
-        notifyListeners();
-        return true;
-    }
-
-    @Override public boolean setFailure(Throwable cause) {
-        synchronized (this) {
-            if (done) return false; // Allow only once.
-
-            executionEnd = System.nanoTime();
-            this.cause = cause;
-            done = true;
-            if (waiters > 0) notifyAll();
-        }
-
-        notifyListeners();
-        return true;
-    }
-
-    @Override public boolean setFailure(HttpResponse response, Throwable cause) {
-        synchronized (this) {
-            if (done) return false;
-
-            executionEnd = System.nanoTime();
-            this.response = response;
-            this.cause = cause;
-            done = true;
             if (waiters > 0) notifyAll();
         }
 

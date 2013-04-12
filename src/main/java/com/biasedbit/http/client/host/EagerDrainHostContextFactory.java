@@ -24,7 +24,7 @@ public class EagerDrainHostContextFactory
 
     // HostContextFactory ---------------------------------------------------------------------------------------------
 
-    @Override public HostContext createHostContext(String host, int port, int maxConnections) {
+    @Override public EagerDrainHostContext createHostContext(String host, int port, int maxConnections) {
         return new EagerDrainHostContext(host, port, maxConnections);
     }
 }

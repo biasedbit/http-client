@@ -79,7 +79,7 @@ public class HashedWheelTimeoutController
         TimerTask task = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (timeout.isExpired()) context.getFuture().setFailure(HttpRequestFuture.TIMED_OUT);
+                if (timeout.isExpired()) context.getFuture().failedWithCause(HttpRequestFuture.TIMED_OUT);
             }
         };
         Timeout t = timer.newTimeout(task, context.getTimeout(), TimeUnit.MILLISECONDS);

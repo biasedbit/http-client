@@ -37,9 +37,9 @@ public class DefaultHttpConnectionFactory
 
     // HttpConnectionFactory ------------------------------------------------------------------------------------------
 
-    @Override public HttpConnection createConnection(String id, String host, int port,
-                                                     HttpConnectionListener listener,
-                                                     TimeoutController timeoutController, Executor executor) {
+    @Override public DefaultHttpConnection createConnection(String id, String host, int port,
+                                                            HttpConnectionListener listener,
+                                                            TimeoutController timeoutController, Executor executor) {
         DefaultHttpConnection connection = new DefaultHttpConnection(id, host, port, listener,
                                                                      timeoutController, executor);
         connection.setDisconnectIfNonKeepAliveRequest(disconnectIfNonKeepAliveRequest);

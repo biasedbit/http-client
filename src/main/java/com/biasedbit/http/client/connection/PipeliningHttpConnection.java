@@ -134,7 +134,7 @@ public class PipeliningHttpConnection
         // If it's a complete response (in other words, all the data necessary to mark the request as finished is
         // present), and it's cancelled meanwhile, synch'ing this block will guarantee that the request will
         // be marked as complete *before* being cancelled. Since DefaultHttpRequestFuture only allows 1 completion
-        // event, the request will effectively be marked as complete, even though setFailure() will be called as
+        // event, the request will effectively be marked as complete, even though failedWithCause() will be called as
         // soon as this lock is released.
         // This synchronization is performed because of edge cases where the request is completing but nearly at
         // the same instant it times out, which causes another thread to issue a cancellation. With this locking in
@@ -187,7 +187,7 @@ public class PipeliningHttpConnection
         }
 
         if (current != null) {
-            current.getFuture().setFailure(e.getCause());
+            current.getFuture().failedWithCause(e.getCause());
             listener.requestFinished(this, current);
         }
 
@@ -263,7 +263,7 @@ public class PipeliningHttpConnection
 
         if (!context.isIdempotent() && !allowNonIdempotentPipelining) {
             // Immediately reject non-idempotent requests.
-            context.getFuture().setFailure(HttpRequestFuture.EXECUTION_REJECTED);
+            context.getFuture().failedWithCause(HttpRequestFuture.EXECUTION_REJECTED);
             listener.requestFinished(this, context);
             return true;
         }
@@ -273,7 +273,7 @@ public class PipeliningHttpConnection
             // immediately rejected.
             if (!isAvailable()) {
                 // Terminate request wasn't issued, connection is open but unavailable, so fail the request!
-                context.getFuture().setFailure(HttpRequestFuture.EXECUTION_REJECTED);
+                context.getFuture().failedWithCause(HttpRequestFuture.EXECUTION_REJECTED);
                 listener.requestFinished(this, context);
                 return true;
             } else if ((terminate != null) || !channel.isConnected()) {
@@ -306,7 +306,7 @@ public class PipeliningHttpConnection
                             // Needs to be synchronized to avoid concurrent mod exception.
                             requests.remove(context);
                         }
-                        context.getFuture().setFailure(e);
+                        context.getFuture().failedWithCause(e);
                     }
                 }
             });
@@ -321,7 +321,7 @@ public class PipeliningHttpConnection
                     // Needs to be synchronized to avoid concurrent mod exception.
                     requests.remove(context);
                 }
-                context.getFuture().setFailure(e);
+                context.getFuture().failedWithCause(e);
                 return true;
             }
         }
@@ -349,7 +349,7 @@ public class PipeliningHttpConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().setFailure(currentResponse, e);
+            request.getFuture().failedWithCause(e, currentResponse);
             discarding = true;
         }
     }
@@ -363,7 +363,7 @@ public class PipeliningHttpConnection
         // means that receivedResponseForRequest() already triggered the future!
         if (!discarding) {
             HttpRequestContext request = requests.peek();
-            request.getFuture().setSuccess(request.getProcessor().getProcessedResponse(), currentResponse);
+            request.getFuture().finishedSuccessfully(request.getProcessor().getProcessedResponse(), currentResponse);
         }
 
         postResponseCleanup();
@@ -393,7 +393,7 @@ public class PipeliningHttpConnection
 
                 // Even though the processor does not want to process the response, it might still return some default
                 // result, so call getProcessedResponse() on it, rather than passing null to the Future.
-                request.getFuture().setSuccess(request.getProcessor().getProcessedResponse(), response);
+                request.getFuture().finishedSuccessfully(request.getProcessor().getProcessedResponse(), response);
                 discarding = true;
             } else {
                 // Response processor wants to process the contents of this request.
@@ -402,7 +402,7 @@ public class PipeliningHttpConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().setFailure(response, e);
+            request.getFuture().failedWithCause(e, response);
             discarding = true;
         }
     }

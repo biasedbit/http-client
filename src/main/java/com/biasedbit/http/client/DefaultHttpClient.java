@@ -235,14 +235,14 @@ public class DefaultHttpClient
         for (HttpClientEvent event : pendingEvents) {
             switch (event.getEventType()) {
                 case EXECUTE_REQUEST:
-                    ((ExecuteRequestEvent) event).getContext().getFuture().setFailure(SHUTTING_DOWN);
+                    ((ExecuteRequestEvent) event).getContext().getFuture().failedWithCause(SHUTTING_DOWN);
                     break;
 
                 case CONNECTION_CLOSED:
                     ConnectionClosedEvent closedEvent = (ConnectionClosedEvent) event;
                     if ((closedEvent.getRetryRequests() != null) && !closedEvent.getRetryRequests().isEmpty()) {
                         for (HttpRequestContext context : closedEvent.getRetryRequests()) {
-                            context.getFuture().setFailure(SHUTTING_DOWN);
+                            context.getFuture().failedWithCause(SHUTTING_DOWN);
                         }
                     }
             }
@@ -251,7 +251,8 @@ public class DefaultHttpClient
         // Kill all connections (will cause failure on requests executing in those connections) and fail context-queued
         // requests.
         for (HostContext hostContext : contextMap.values()) {
-            for (HttpRequestContext context : hostContext.getQueue()) context.getFuture().setFailure(SHUTTING_DOWN);
+            for (HttpRequestContext context : hostContext.getQueue()) context.getFuture().failedWithCause(
+                    SHUTTING_DOWN);
 
             ConnectionPool pool = hostContext.getConnectionPool();
             for (HttpConnection connection : pool.getConnections()) connection.terminate(SHUTTING_DOWN);
@@ -307,7 +308,7 @@ public class DefaultHttpClient
         // Perform these checks on the caller thread's time rather than the event dispatcher's.
         if (autoDecompress) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
-        HttpRequestFuture<T> future = futureFactory.createFuture();
+        MutableRequestFuture<T> future = futureFactory.createFuture();
         HttpRequestContext<T> context = new HttpRequestContext<>(host, port, timeout, request, processor, future);
         context.setDataSinkListener(dataSinkListener);
 
@@ -332,7 +333,7 @@ public class DefaultHttpClient
                                                Collection<HttpRequestContext> retryRequests) {
         if (terminate) {
             if ((retryRequests != null) && !retryRequests.isEmpty()) {
-                for (HttpRequestContext request : retryRequests) request.getFuture().setFailure(SHUTTING_DOWN);
+                for (HttpRequestContext request : retryRequests) request.getFuture().failedWithCause(SHUTTING_DOWN);
             }
         } else {
             eventQueue.offer(new ConnectionClosedEvent(connection, retryRequests));

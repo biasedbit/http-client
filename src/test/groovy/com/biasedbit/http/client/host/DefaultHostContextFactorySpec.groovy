@@ -7,13 +7,11 @@ import spock.lang.Specification
  */
 class DefaultHostContextFactorySpec extends Specification {
 
-  HostContextFactory factory
-
-  def setup() { factory = new DefaultHostContextFactory() }
+  HostContextFactory factory = new DefaultHostContextFactory()
 
   def "#createHostContext creates a host context with input parameters"() {
     expect: with(factory.createHostContext("host", 80, 10)) { context ->
-      context instanceof DefaultHostContext
+      context != null
 
       context.host == "host"
       context.port == 80

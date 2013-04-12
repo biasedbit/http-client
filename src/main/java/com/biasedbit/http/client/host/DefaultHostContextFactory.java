@@ -24,7 +24,7 @@ public class DefaultHostContextFactory
 
     // HostContextFactory ---------------------------------------------------------------------------------------------
 
-    @Override public HostContext createHostContext(String host, int port, int maxConnections) {
+    @Override public DefaultHostContext createHostContext(String host, int port, int maxConnections) {
         return new DefaultHostContext(host, port, maxConnections);
     }
 }

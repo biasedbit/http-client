@@ -130,9 +130,9 @@ public interface HttpConnection extends ChannelHandler {
      *
      * @return {@code true} if the request was accepted, {@code false} otherwise. If a request is accepted, the
      * {@code HttpConnection} becomes responsible for calling {@link
-     * com.biasedbit.http.client.future.HttpRequestFuture#setFailure(Throwable) setFailure()} or {@link
+     * com.biasedbit.http.client.future.HttpRequestFuture#setFailure(Throwable) failedWithCause()} or {@link
      * com.biasedbit.http.client.future.HttpRequestFuture#setSuccess(Object,
-     * org.jboss.netty.handler.codec.http.HttpResponse) setSuccess()} on it.
+     * org.jboss.netty.handler.codec.http.HttpResponse) finishedSuccessfully()} on it.
      */
     boolean execute(HttpRequestContext context);
 }

@@ -16,8 +16,7 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.client.future.HttpDataSinkListener;
-import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.future.*;
 import com.biasedbit.http.client.processor.HttpResponseProcessor;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,14 +47,14 @@ public class HttpRequestContext<T> {
     @Getter private final int                      timeout;
     @Getter private final HttpRequest              request;
     @Getter private final HttpResponseProcessor<T> processor;
-    @Getter private final HttpRequestFuture<T>     future;
+    @Getter private final MutableRequestFuture<T>  future;
 
     @Getter @Setter private HttpDataSinkListener dataSinkListener;
 
     // constructors ---------------------------------------------------------------------------------------------------
 
     public HttpRequestContext(String host, int port, int timeout, HttpRequest request,
-                              HttpResponseProcessor<T> processor, HttpRequestFuture<T> future) {
+                              HttpResponseProcessor<T> processor, MutableRequestFuture<T> future) {
         ensureValue(host != null, "Host cannot be null");
         ensureValue(port > 0 && port <= 65536, "Invalid port: " + port);
         ensureValue(request != null, "HttpRequest cannot be null");

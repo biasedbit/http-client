@@ -7,9 +7,7 @@ import spock.lang.Specification
  */
 class EagerDrainHostContextFactorySpec extends Specification {
 
-  HostContextFactory factory
-
-  def setup() { factory = new EagerDrainHostContextFactory() }
+  HostContextFactory factory = new EagerDrainHostContextFactory()
 
   def "#createHostContext creates a host context with input parameters"() {
     expect: with(factory.createHostContext("host", 80, 10)) { context ->

@@ -137,7 +137,7 @@ public class BasicTimeoutController
             // Request timed out...
             // If the future has already been unlocked, then no harm is done by calling this method as it won't produce
             // any side effects.
-            request.getFuture().setFailure(HttpRequestFuture.TIMED_OUT);
+            request.getFuture().failedWithCause(HttpRequestFuture.TIMED_OUT);
         }
 
         // HttpRequestFutureListener ----------------------------------------------------------------------------------

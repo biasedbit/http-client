@@ -38,9 +38,9 @@ public class PipeliningHttpConnectionFactory
 
     // HttpConnectionFactory ------------------------------------------------------------------------------------------
 
-    @Override public HttpConnection createConnection(String id, String host, int port,
-                                                     HttpConnectionListener listener,
-                                                     TimeoutController timeoutController, Executor executor) {
+    @Override public PipeliningHttpConnection createConnection(String id, String host, int port,
+                                                               HttpConnectionListener listener,
+                                                               TimeoutController timeoutController, Executor executor) {
         PipeliningHttpConnection connection = new PipeliningHttpConnection(id, host, port, listener,
                                                                            timeoutController, executor);
         connection.setDisconnectIfNonKeepAliveRequest(disconnectIfNonKeepAliveRequest);

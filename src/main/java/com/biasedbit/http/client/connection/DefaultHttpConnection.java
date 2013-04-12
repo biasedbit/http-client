@@ -119,7 +119,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         // If it's a complete response (in other words, all the data necessary to mark the request as finished is
         // present), and it's cancelled meanwhile, synch'ing this block will guarantee that the request will
         // be marked as complete *before* being cancelled. Since DefaultHttpRequestFuture only allows 1 completion
-        // event, the request will effectively be marked as complete, even though setFailure() will be called as
+        // event, the request will effectively be marked as complete, even though failedWithCause() will be called as
         // soon as this lock is released.
         // This synchronization is performed because of edge cases where the request is completing but nearly at
         // the same instant it times out, which causes another thread to issue a cancellation. With this locking in
@@ -213,7 +213,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             listener.connectionTerminated(this, Arrays.asList(request));
         } else {
             if ((request != null) && !request.getFuture().isDone()) {
-                request.getFuture().setFailure(HttpRequestFuture.CONNECTION_LOST);
+                request.getFuture().failedWithCause(HttpRequestFuture.CONNECTION_LOST);
             }
             listener.connectionTerminated(this);
         }
@@ -242,7 +242,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             // Mark as unavailable
             available = false;
 
-            if (currentRequest != null) currentRequest.getFuture().setFailure(terminate);
+            if (currentRequest != null) currentRequest.getFuture().failedWithCause(terminate);
         }
 
         if ((channel != null) && channel.isConnected()) {
@@ -276,7 +276,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             // which isAvailable() returns false, the request is immediately rejected.
             if (!available && (terminate == null) && channel.isConnected()) {
                 // Terminate request wasn't issued, connection is open but unavailable, so fail the request!
-                context.getFuture().setFailure(HttpRequestFuture.EXECUTION_REJECTED);
+                context.getFuture().failedWithCause(HttpRequestFuture.EXECUTION_REJECTED);
                 listener.requestFinished(this, context);
                 return true;
             } else if ((terminate != null) || !channel.isConnected()) {
@@ -306,7 +306,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
                         channel.write(context.getRequest());
                     } catch (Exception e) {
                         currentRequest = null;
-                        context.getFuture().setFailure(e);
+                        context.getFuture().failedWithCause(e);
                         available = true;
                     }
                 }
@@ -319,7 +319,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             } catch (Exception e) {
                 // Some error occurred underneath, maybe ChannelClosedException or something like that.
                 currentRequest = null;
-                context.getFuture().setFailure(e);
+                context.getFuture().failedWithCause(e);
                 available = true;
                 return true;
             }
@@ -362,7 +362,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            currentRequest.getFuture().setFailure(currentResponse, e);
+            currentRequest.getFuture().failedWithCause(e, currentResponse);
             discarding = true;
         }
     }
@@ -375,8 +375,8 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         // Only unlock the future if the contents weren't being discarded. If the contents were being discarded, it
         // means that receivedResponseForCurrentRequest() already triggered the future!
         if (!discarding) {
-            currentRequest.getFuture().setSuccess(currentRequest.getProcessor().getProcessedResponse(),
-                                                  currentResponse);
+            currentRequest.getFuture().finishedSuccessfully(currentRequest.getProcessor().getProcessedResponse(),
+                                                            currentResponse);
         }
 
         currentRequestFinished();
@@ -406,8 +406,8 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
 
                 // Even though the processor does not want to process the response, it might still return some default
                 // result, so call getProcessedResponse() on it, rather than passing null to the Future.
-                currentRequest.getFuture().setSuccess(currentRequest.getProcessor().getProcessedResponse(),
-                                                      currentResponse);
+                currentRequest.getFuture().finishedSuccessfully(currentRequest.getProcessor().getProcessedResponse(),
+                                                                currentResponse);
                 discarding = true;
             } else {
                 // Response processor wants to process the contents of this request.
@@ -416,7 +416,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            currentRequest.getFuture().setFailure(response, e);
+            currentRequest.getFuture().failedWithCause(e, response);
             discarding = true;
         }
     }

@@ -12,11 +12,9 @@ import spock.lang.Specification
  */
 class DefaultHttpClientFactorySpec extends Specification {
 
-  DefaultHttpClientFactory factory
+  DefaultHttpClientFactory factory = new DefaultHttpClientFactory()
 
   def setup() {
-    factory = new DefaultHttpClientFactory()
-
     factory.hostContextFactory = Mock(HostContextFactory)
     factory.connectionFactory = Mock(HttpConnectionFactory)
     factory.futureFactory = Mock(HttpRequestFutureFactory)
@@ -26,7 +24,7 @@ class DefaultHttpClientFactorySpec extends Specification {
 
   def "#createClient creates a host context with input parameters"() {
     expect: with(factory.createClient()) { client ->
-      client instanceof DefaultHttpClient
+      client != null
 
       client.connectionTimeout == factory.connectionTimeout
       client.requestInactivityTimeout == factory.requestInactivityTimeout

@@ -36,8 +36,6 @@ public interface HttpRequestFuture<T> {
     static final Throwable TIMED_OUT          = new Throwable("Request execution timed out");
     static final Throwable INVALID_REDIRECT   = new Throwable("Redirect without Location header");
 
-    void attachConnection(HttpConnection connection);
-
     T getProcessedResult();
 
     HttpResponse getResponse();
@@ -63,12 +61,6 @@ public interface HttpRequestFuture<T> {
     Throwable getCause();
 
     boolean cancel();
-
-    boolean setSuccess(T processedResult, HttpResponse response);
-
-    boolean setFailure(Throwable cause);
-
-    boolean setFailure(HttpResponse response, Throwable cause);
 
     void addListener(HttpRequestFutureListener<T> listener);
 
