@@ -10,8 +10,13 @@ import lombok.NoArgsConstructor;
 public class Utils {
 
     public static void ensureValue(boolean condition, String description)
-        throws IllegalArgumentException {
+            throws IllegalArgumentException {
         if (!condition) throw new IllegalArgumentException(description);
+    }
+
+    public static void ensureValue(boolean condition, String description, Object... args)
+            throws IllegalArgumentException {
+        if (!condition) throw new IllegalArgumentException(String.format(description, args));
     }
 
     public static void ensureState(boolean condition, String description)

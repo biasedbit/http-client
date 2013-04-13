@@ -19,12 +19,14 @@ package com.biasedbit.http.client.host;
 import com.biasedbit.http.client.HttpRequestContext;
 import com.biasedbit.http.client.connection.ConnectionPool;
 import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.util.Utils;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.LinkedList;
 
 import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
+import static com.biasedbit.http.client.util.Utils.*;
 
 /**
  * Abstract implementation of the {@link HostContext} interface.
@@ -59,7 +61,14 @@ public class DefaultHostContext
 
     @Override public void restoreRequestsToQueue(Collection<HttpRequestContext> requests) { queue.addAll(0, requests); }
 
-    @Override public void addToQueue(HttpRequestContext request) { queue.add(request); }
+    @Override public void addToQueue(HttpRequestContext request) {
+        ensureValue(request.getHost().equals(host),
+                    "Request host (%s) and context host (%s) are different", request.getHost(), host);
+        ensureValue(request.getPort() == port,
+                    "Request port (%s) and context port (%s) are different", request.getPort(), port);
+
+        queue.add(request);
+    }
 
     @Override public DrainQueueResult drainQueue() {
         // 1. Test if there's anything to drain

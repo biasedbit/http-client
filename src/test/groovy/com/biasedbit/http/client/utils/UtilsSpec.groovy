@@ -15,6 +15,12 @@ class UtilsSpec extends Specification {
     and: e.message == "cause"
   }
 
+  def "#ensureValue throws IllegalArgumentException with formatted description if condition evaluates to false"() {
+    when: ensureValue(false, "a %s exception", "formatted")
+    then: def e = thrown(IllegalArgumentException)
+    and: e.message == "a formatted exception"
+  }
+
   def "#ensureValue does not throw any exception if condition evaluates to true"() {
     when: ensureValue(true, "cause")
     then: noExceptionThrown()
