@@ -1,11 +1,16 @@
 package com.biasedbit.http.client
 
+import com.biasedbit.http.client.connection.HttpDataSink
+import com.biasedbit.http.client.future.HttpDataSinkListener
 import com.biasedbit.http.client.processor.DiscardProcessor
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpMethod
 import org.jboss.netty.handler.codec.http.HttpVersion
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import static org.jboss.netty.handler.codec.http.HttpMethod.*
+import static org.jboss.netty.handler.codec.http.HttpVersion.*
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -15,7 +20,7 @@ class DefaultHttpClientSpec extends Specification {
   def host    = "localhost"
   def port    = 60000
   def client  = new DefaultHttpClient()
-  def request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
+  def request = new DefaultHttpRequest(HTTP_1_1, GET, "/")
 
   def setup() {
     client.maxQueuedRequests = 5
@@ -41,6 +46,35 @@ class DefaultHttpClientSpec extends Specification {
     when: client.execute(host, port, 100, request, new DiscardProcessor())
     then: thrown(CannotExecuteRequestException)
   }
+
+  @Unroll
+  def "#execute accepts a '#method' request with an HttpDataSinkListener"() {
+    given: request = new DefaultHttpRequest(HTTP_1_1, method, "/")
+    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(HttpDataSinkListener))
+    then: noExceptionThrown()
+
+    where:
+    execute = "#execute"
+    method << [POST, PUT, PATCH]
+  }
+
+  @Unroll
+  def "#execute raises exception if a '#method' request is submitted with an HttpDataSinkListener"() {
+    given: request = new DefaultHttpRequest(HTTP_1_1, method, "/")
+    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(HttpDataSinkListener))
+    then: thrown(IllegalArgumentException)
+
+    where:
+    execute = "#execute"
+    method << [OPTIONS, GET, HEAD, DELETE, TRACE, CONNECT]
+  }
+
+//  def "#execute adds an 'Accept-Encoding' header set to 'gzip' when auto decompression is enabled"() {
+//    setup:
+//    client = new DefaultHttpClient()
+//    client.autoDecompress = true
+//    ???
+//  }
 
   @Unroll
   def "it doesn't allow changing the '#property' property after it has been initialized"() {

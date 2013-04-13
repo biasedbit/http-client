@@ -292,9 +292,12 @@ public class DefaultHttpClient
         if (terminate) throw new CannotExecuteRequestException("HttpClient already terminated");
         if (eventQueue == null) throw new CannotExecuteRequestException("HttpClient was not initialised");
 
-        if ((dataSinkListener != null) &&
-            ((request.getMethod() != HttpMethod.POST) && (request.getMethod() != HttpMethod.PUT))) {
-            throw new IllegalArgumentException("Requests with HttpDataSink must be PUT or POST");
+        if (dataSinkListener != null) {
+            // Requests with data sink listener must be POST, PUT or PATCH (contain body)
+            ensureValue((request.getMethod() == HttpMethod.POST) ||
+                        (request.getMethod() == HttpMethod.PUT) ||
+                        (request.getMethod() == HttpMethod.PATCH),
+                        "Requests with HttpDataSink must be POST, PUT or PATCH");
         }
 
         if (queuedRequests.incrementAndGet() > maxQueuedRequests) {
