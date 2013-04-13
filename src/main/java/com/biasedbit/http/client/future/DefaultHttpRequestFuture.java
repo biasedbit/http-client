@@ -178,7 +178,8 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
-    @Override public HttpRequestFuture<T> await() throws InterruptedException {
+    @Override public HttpRequestFuture<T> await()
+            throws InterruptedException {
         if (Thread.interrupted()) throw new InterruptedException();
 
         synchronized (this) {
@@ -263,7 +264,8 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
-    private boolean await0(long timeoutNanos, boolean interruptable) throws InterruptedException {
+    private boolean await0(long timeoutNanos, boolean interruptable)
+            throws InterruptedException {
         if (interruptable && Thread.interrupted()) throw new InterruptedException();
 
         long startTime = timeoutNanos <= 0 ? 0 : System.nanoTime();
