@@ -460,13 +460,10 @@ public class DefaultHttpClient
         HostContext context = contextMap.get(id);
         ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
 
-        context.getConnectionPool().connectionFailed();
-        if ((context.getConnectionPool().hasConnectionFailures() &&
-             context.getConnectionPool().totalConnections() == 0)) {
-            // Connection failures occured and there are no more connections active or establishing, so its time to
-            // fail all queued requests.
-            context.failAllRequests(CANNOT_CONNECT);
-        }
+        ConnectionPool pool = context.getConnectionPool();
+        pool.connectionFailed();
+        // If there are no more connections active or establishing we need to fail all queued requests.
+        if (!pool.hasConnections()) context.failAllRequests(CANNOT_CONNECT);
     }
 
     protected void drainQueueAndProcessResult(HostContext context) {
