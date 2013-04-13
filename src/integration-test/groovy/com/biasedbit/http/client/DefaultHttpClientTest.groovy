@@ -16,24 +16,18 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
  */
 class DefaultHttpClientTest extends Specification {
 
-  String            host
-  int               port
-  DefaultHttpClient client
-  HttpRequest       request
-  DummyHttpServer   server
+  def host    = "localhost"
+  def port    = 8081
+  def client  = new DefaultHttpClient()
+  def request = new DefaultHttpRequest(HTTP_1_1, GET, "/")
+  def server  = new DummyHttpServer(host, port)
 
   def setup() {
-    host = "localhost"
-    port = 8081
-    server = new DummyHttpServer(host, port)
     assert server.init()
 
-    client = new DefaultHttpClient()
     client.connectionTimeout = 500
     client.maxQueuedRequests = 50
     assert client.init()
-
-    request = new DefaultHttpRequest(HTTP_1_1, GET, "/")
   }
 
   public void cleanup() {
@@ -57,27 +51,6 @@ class DefaultHttpClientTest extends Specification {
     and: future.isDone()
     and: !future.isSuccessful()
     and: future.getCause() == CANNOT_CONNECT
-  }
-
-  def "it raises exception when requests queue limit overflows"() {
-    setup:
-    server.terminate()
-    client.maxQueuedRequests.times { client.execute(host, port, 100, request, new DiscardProcessor()) }
-
-    when: client.execute(host, port, 100, request, new DiscardProcessor())
-    then: thrown(CannotExecuteRequestException)
-  }
-
-  def "it raises exception when trying to execute a request without initializing the client"() {
-    setup: client = new DefaultHttpClient()
-    when: client.execute(host, port, 100, request, new DiscardProcessor())
-    then: thrown(CannotExecuteRequestException)
-  }
-
-  def "it raises exception when trying to execute a request after the client has been terminated"() {
-    setup: client.terminate()
-    when: client.execute(host, port, 100, request, new DiscardProcessor())
-    then: thrown(CannotExecuteRequestException)
   }
 
   def "it connects with SSL"() {
@@ -140,28 +113,5 @@ class DefaultHttpClientTest extends Specification {
     // running the tests in different environments (IDE, command line, etc) results may actually vary a bit
     complete >= 3
     complete <= 20
-  }
-
-  @Unroll
-  def "it doesn't allow changing the '#property' property after it has been initialized"() {
-    when: client."${property}" = value
-    then: thrown(IllegalStateException)
-    where:
-    property | value
-    "connectionTimeout"           | 1000
-    "requestInactivityTimeout"    | 1000
-    "useNio"                      | false
-    "useSsl"                      | false
-    "maxConnectionsPerHost"       | 2
-    "maxQueuedRequests"           | 2
-    "maxIoWorkerThreads"          | 3
-    "maxHelperThreads"            | 3
-    "autoDecompress"              | false
-    "cleanupInactiveHostContexts" | true
-    "connectionFactory"           | null
-    "hostContextFactory"          | null
-    "futureFactory"               | null
-    "timeoutController"           | null
-    "sslContextFactory"           | null
   }
 }
