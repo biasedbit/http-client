@@ -16,6 +16,8 @@
 
 package com.biasedbit.http.client.host;
 
+import com.biasedbit.http.client.connection.ConnectionPool;
+
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
@@ -24,7 +26,7 @@ public class DefaultHostContextFactory
 
     // HostContextFactory ---------------------------------------------------------------------------------------------
 
-    @Override public DefaultHostContext createHostContext(String host, int port, int maxConnections) {
-        return new DefaultHostContext(host, port, maxConnections);
+    @Override public DefaultHostContext createHostContext(String host, int port, ConnectionPool connectionPool) {
+        return new DefaultHostContext(host, port, connectionPool);
     }
 }

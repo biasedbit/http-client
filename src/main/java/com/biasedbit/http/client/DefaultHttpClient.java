@@ -405,9 +405,9 @@ public class DefaultHttpClient
         String id = hostId(event.getContext());
         HostContext context = contextMap.get(id);
         if (context == null) {
-            context = hostContextFactory.createHostContext(event.getContext().getHost(),
-                                                           event.getContext().getPort(),
-                                                           maxConnectionsPerHost);
+            ConnectionPool pool = new ConnectionPool(maxConnectionsPerHost);
+            context = hostContextFactory
+                    .createHostContext(event.getContext().getHost(), event.getContext().getPort(), pool);
             contextMap.put(id, context);
         }
 

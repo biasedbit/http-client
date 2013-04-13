@@ -1,5 +1,6 @@
 package com.biasedbit.http.client.host
 
+import com.biasedbit.http.client.connection.ConnectionPool
 import spock.lang.Specification
 
 /**
@@ -7,15 +8,16 @@ import spock.lang.Specification
  */
 class EagerDrainHostContextFactorySpec extends Specification {
 
-  HostContextFactory factory = new EagerDrainHostContextFactory()
+  def factory = new EagerDrainHostContextFactory()
+  def pool = new ConnectionPool(3)
 
   def "#createHostContext creates a host context with input parameters"() {
-    expect: with(factory.createHostContext("host", 80, 10)) { context ->
-      context instanceof EagerDrainHostContext
+    expect: with(factory.createHostContext("host", 80, pool)) { context ->
+      context != null
 
       context.host == "host"
       context.port == 80
-      context.maxConnections == 10
+      context.connectionPool == pool
     }
   }
 }

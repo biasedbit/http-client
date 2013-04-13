@@ -16,6 +16,8 @@
 
 package com.biasedbit.http.client.host;
 
+import com.biasedbit.http.client.connection.ConnectionPool;
+
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
@@ -24,8 +26,8 @@ public class EagerDrainHostContextFactory
 
     // HostContextFactory ---------------------------------------------------------------------------------------------
 
-    @Override public EagerDrainHostContext createHostContext(String host, int port, int maxConnections) {
-        return new EagerDrainHostContext(host, port, maxConnections);
+    @Override public EagerDrainHostContext createHostContext(String host, int port, ConnectionPool connectionPool) {
+        return new EagerDrainHostContext(host, port, connectionPool);
     }
 }
 

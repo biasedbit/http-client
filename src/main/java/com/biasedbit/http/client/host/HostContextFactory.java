@@ -16,10 +16,12 @@
 
 package com.biasedbit.http.client.host;
 
+import com.biasedbit.http.client.connection.ConnectionPool;
+
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public interface HostContextFactory {
 
-    HostContext createHostContext(String host, int port, int maxConnections);
+    HostContext createHostContext(String host, int port, ConnectionPool connectionPool);
 }

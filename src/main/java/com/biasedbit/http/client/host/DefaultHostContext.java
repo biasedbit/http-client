@@ -19,7 +19,7 @@ package com.biasedbit.http.client.host;
 import com.biasedbit.http.client.HttpRequestContext;
 import com.biasedbit.http.client.connection.ConnectionPool;
 import com.biasedbit.http.client.connection.HttpConnection;
-import com.biasedbit.http.client.util.Utils;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -35,27 +35,17 @@ import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
 public class DefaultHostContext
         implements HostContext {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    protected final String host;
-    protected final int    port;
-    protected final int    maxConnections;
+    protected final String         host;
+    protected final int            port;
+    protected final ConnectionPool connectionPool;
 
-    protected final ConnectionPool                 connectionPool = new ConnectionPool();
-    protected final LinkedList<HttpRequestContext> queue          = new LinkedList<>();
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public DefaultHostContext(String host, int port, int maxConnections) {
-        Utils.ensureValue(maxConnections > 0, "maxConnections must be > 0");
-
-        this.host = host;
-        this.port = port;
-        this.maxConnections = maxConnections;
-    }
+    protected final LinkedList<HttpRequestContext> queue = new LinkedList<>();
 
     // HostContext ----------------------------------------------------------------------------------------------------
 
@@ -79,7 +69,7 @@ public class DefaultHostContext
         if (!connectionPool.hasConnections()) {
             // 2a. No connections open but there may still be connections opening, so we need to test if there is
             // still room to create a new one.
-            if (connectionPool.totalConnections() < maxConnections) return OPEN_CONNECTION;
+            if (connectionPool.hasAvailableSlots()) return OPEN_CONNECTION;
             else return NOT_DRAINED;
         }
 
@@ -104,7 +94,7 @@ public class DefaultHostContext
         }
 
         // 4. There were connections open but none of them was available; if possible, request a new one.
-        if (connectionPool.totalConnections() < maxConnections) return OPEN_CONNECTION;
+        if (connectionPool.hasAvailableSlots()) return OPEN_CONNECTION;
         else return NOT_DRAINED;
     }
 

@@ -17,6 +17,7 @@
 package com.biasedbit.http.client.connection;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -29,10 +30,12 @@ import java.util.LinkedList;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
+@RequiredArgsConstructor
 public class ConnectionPool {
 
     // properties -----------------------------------------------------------------------------------------------------
 
+    @Getter private final int maxConnections;
     @Getter private final Collection<HttpConnection> connections = new LinkedList<>();
 
     // internal vars --------------------------------------------------------------------------------------------------
@@ -73,4 +76,6 @@ public class ConnectionPool {
     public boolean hasConnectionFailures() { return connectionFailures; }
 
     public boolean hasConnections() { return !connections.isEmpty(); }
+
+    public boolean hasAvailableSlots() { return totalConnections() < maxConnections; }
 }

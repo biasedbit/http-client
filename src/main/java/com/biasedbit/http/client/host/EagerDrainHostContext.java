@@ -17,6 +17,7 @@
 package com.biasedbit.http.client.host;
 
 import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.connection.ConnectionPool;
 import com.biasedbit.http.client.connection.HttpConnection;
 
 import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
@@ -29,7 +30,7 @@ public class EagerDrainHostContext
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public EagerDrainHostContext(String host, int port, int maxConnections) { super(host, port, maxConnections); }
+    public EagerDrainHostContext(String host, int port, ConnectionPool pool) { super(host, port, pool); }
 
     // DefaultHostContext ---------------------------------------------------------------------------------------------
 
@@ -40,7 +41,7 @@ public class EagerDrainHostContext
         // 2. There are contents to drain, test if there are any connections created.
         if (!connectionPool.hasConnections()) {
             // 2a. No connections open, test if there is still room to create a new one.
-            if (connectionPool.totalConnections() < maxConnections) return OPEN_CONNECTION;
+            if (connectionPool.hasAvailableSlots()) return OPEN_CONNECTION;
             else return NOT_DRAINED;
         }
 
@@ -68,7 +69,7 @@ public class EagerDrainHostContext
         if (drained) return DRAINED;
 
         // 4. There were connections open but none of them was available; if possible, request a new one.
-        if (connectionPool.totalConnections() < maxConnections) return OPEN_CONNECTION;
+        if (connectionPool.hasAvailableSlots()) return OPEN_CONNECTION;
         else return NOT_DRAINED;
     }
 }

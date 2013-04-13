@@ -11,7 +11,7 @@ class ConnectionPoolSpec extends Specification {
   HttpConnection connection
 
   def setup() {
-    pool = new ConnectionPool()
+    pool = new ConnectionPool(3)
     connection = Mock(HttpConnection)
   }
 
