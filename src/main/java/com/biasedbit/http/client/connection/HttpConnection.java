@@ -112,11 +112,13 @@ public interface HttpConnection extends ChannelHandler {
     boolean isAvailable();
 
     /**
-     * Execute a given request context in this connection. All calls to this method should first test whether this
-     * connection is available or not by calling {@link #isAvailable()} first. If this method is called while
-     * {@link #isAvailable()} would return {@code false}, then implementations will instantly cause a failure on the
-     * request with the reason {@link com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED} and return
-     * {@code true}, meaning the request was consumed (and failed).
+     * Execute a given request context in this connection.
+     * <p/>
+     * All calls to this method should first test whether this connection is available or not by calling
+     * {@link #isAvailable()} first. Calling this methods while {@link #isAvailable()} would return {@code false} will
+     * cause the implementation to reject the request with the reason
+     * {@link com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED} and return {@code true},
+     * meaning the request was consumed (and failed).
      * <p/>
      * The exception to the above rule is when the request is submitted and the connection goes down meanwhile. In this
      * case, the request <strong>will not</strong> be marked as failed and this method will return {@code false} so that
@@ -130,8 +132,8 @@ public interface HttpConnection extends ChannelHandler {
      *
      * @return {@code true} if the request was accepted, {@code false} otherwise. If a request is accepted, the
      * {@code HttpConnection} becomes responsible for calling {@link
-     * com.biasedbit.http.client.future.HttpRequestFuture#setFailure(Throwable) failedWithCause()} or {@link
-     * com.biasedbit.http.client.future.HttpRequestFuture#setSuccess(Object,
+     * com.biasedbit.http.client.future.MutableRequestFuture#failedWithCause(Throwable) failedWithCause()} or
+     * {@link com.biasedbit.http.client.future.MutableRequestFuture#finishedSuccessfully(Object,
      * org.jboss.netty.handler.codec.http.HttpResponse) finishedSuccessfully()} on it.
      */
     boolean execute(HttpRequestContext context);

@@ -84,6 +84,12 @@ public class DefaultHostContext
 
         // 3. There is content to drain and there are connections, iterate them to find an available one.
         for (HttpConnection connection : connectionPool.getConnections()) {
+            /*
+             * TODO
+             * Just by looking at it I believe this 'while' can be replaced with an 'if' but I vaguely remember I had a
+             * reason to put it here in the first place... Need to test it with an insane amount of requests to a
+             * randomly failing server.
+             */
             while (connection.isAvailable()) {
                 // Found an available connection; peek the first request and attempt to execute it.
                 HttpRequestContext context = queue.peek();
