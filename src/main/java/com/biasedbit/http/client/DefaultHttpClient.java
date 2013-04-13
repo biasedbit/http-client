@@ -248,14 +248,11 @@ public class DefaultHttpClient
             }
         }
 
-        // Kill all connections (will cause failure on requests executing in those connections) and fail context-queued
-        // requests.
+        // Kill all connections (will cause failure on requests executing in those connections)
+        // and fail context-queued requests.
         for (HostContext hostContext : contextMap.values()) {
-            for (HttpRequestContext context : hostContext.getQueue()) context.getFuture().failedWithCause(
-                    SHUTTING_DOWN);
-
-            ConnectionPool pool = hostContext.getConnectionPool();
-            for (HttpConnection connection : pool.getConnections()) connection.terminate(SHUTTING_DOWN);
+            hostContext.failAllRequests(SHUTTING_DOWN);
+            hostContext.terminateAllConnections(SHUTTING_DOWN);
         }
         contextMap.clear();
 
@@ -451,11 +448,8 @@ public class DefaultHttpClient
         if (event.getRetryRequests() != null) context.restoreRequestsToQueue(event.getRetryRequests());
 
         // If the pool has no connections and no requests are in queue for this host, then clean it up.
-        if ((context.getConnectionPool().totalConnections() == 0) && context.getQueue().isEmpty() &&
-            cleanupInactiveHostContexts) {
-            // No requests in queue, no connections open or opening... Cleanup resources.
-            contextMap.remove(id);
-        }
+        // No requests in queue, no connections open or opening... Cleanup resources.
+        if (context.isCleanable() && cleanupInactiveHostContexts) contextMap.remove(id);
 
         drainQueueAndProcessResult(context);
     }

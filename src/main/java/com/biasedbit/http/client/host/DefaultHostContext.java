@@ -21,7 +21,8 @@ import com.biasedbit.http.client.connection.ConnectionPool;
 import com.biasedbit.http.client.connection.HttpConnection;
 import com.biasedbit.http.client.util.Utils;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
 
 import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*;
 
@@ -64,7 +65,7 @@ public class DefaultHostContext
 
     @Override public ConnectionPool getConnectionPool() { return connectionPool; }
 
-    @Override public Queue<HttpRequestContext> getQueue() { return queue; }
+    @Override public boolean isCleanable() { return !connectionPool.hasConnections() && queue.isEmpty(); }
 
     @Override public void restoreRequestsToQueue(Collection<HttpRequestContext> requests) { queue.addAll(0, requests); }
 
@@ -113,5 +114,9 @@ public class DefaultHostContext
         for (HttpRequestContext context : queue) context.getFuture().failedWithCause(cause);
 
         queue.clear();
+    }
+
+    @Override public void terminateAllConnections(Throwable cause) {
+        for (HttpConnection connection : connectionPool.getConnections()) connection.terminate(cause);
     }
 }

@@ -42,7 +42,7 @@ public interface HostContext {
 
     ConnectionPool getConnectionPool();
 
-    Queue<HttpRequestContext> getQueue();
+    boolean isCleanable();
 
     /**
      * Used to restore requests to the head of the queue.
@@ -85,4 +85,6 @@ public interface HostContext {
      * @param cause Cause to fail all queued requests.
      */
     void failAllRequests(Throwable cause);
+
+    void terminateAllConnections(Throwable shuttingDown);
 }
