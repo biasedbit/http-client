@@ -13,52 +13,10 @@ import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-class DefaultHostContextSpec extends Specification {
+class EagerDrainHostContextSpec extends Specification {
 
-  def pool = Stub(ConnectionPool, constructorArgs: [3])
-  def context = new DefaultHostContext("biasedbit.com", 80, pool)
-
-  def "#isCleanable returns true when the pool has no connections and the request queue is empty"() {
-    expect: context.cleanable
-  }
-
-  def "#isCleanable returns false when there are queued requests"() {
-    setup: context.addToQueue(createRequestContext())
-    expect: !context.cleanable
-  }
-
-  def "#isCleanable returns false when the pool has connections"() {
-    setup: pool.hasConnections() >> true
-    expect: !context.cleanable
-  }
-
-  def "#addToQueue raises exception if HttpRequestContext host doesn't match"() {
-    setup: def requestContext = createRequestContext("github.com")
-    when: context.addToQueue(requestContext)
-    then: thrown(IllegalArgumentException)
-  }
-
-  def "#addToQueue raises exception if HttpRequestContext port doesn't match"() {
-    setup: def requestContext = createRequestContext("biasedbit.com", 81)
-    when: context.addToQueue(requestContext)
-    then: thrown(IllegalArgumentException)
-  }
-
-  def "#restoreRequestsToQueue adds multiple requests to the queue"() {
-    setup:
-    def requests = [createRequestContext(), createRequestContext()]
-    def connection = Mock(HttpConnection) {
-      isAvailable() >> true
-      1 * execute(requests[0]) >> true // execute() must be called twice with both requests in order
-      1 * execute(requests[1]) >> true
-    }
-    pool.hasConnections() >> true
-    pool.connections >> [connection]
-
-    when: context.restoreRequestsToQueue(requests)
-    then: context.drainQueue() == DRAINED
-    and: context.drainQueue() == DRAINED
-  }
+  def pool    = Stub(ConnectionPool, constructorArgs: [3])
+  def context = new EagerDrainHostContext("biasedbit.com", 80, pool)
 
   def "#drainQueue returns QUEUE_EMPTY if the queue has no requests"() {
     expect: context.drainQueue() == QUEUE_EMPTY
