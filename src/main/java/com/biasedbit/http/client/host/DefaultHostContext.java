@@ -76,31 +76,36 @@ public class DefaultHostContext
 
         // 2. There are contents to drain, test if there are any connections created.
         if (!connectionPool.hasConnections()) {
-            // 2a. No connections open but there may still be connections opening, so we need to test if there is
-            // still room to create a new one.
+            // 2a. No connections open, test if there is still room to create a new one.
             if (connectionPool.hasAvailableSlots()) return OPEN_CONNECTION;
             else return NOT_DRAINED;
         }
 
-        // 3. There is content to drain and there are connections, iterate them to find an available one.
+        // 3. There is content to drain and there are connections, drain as much as possible in a single loop.
+        boolean drained = false;
         for (HttpConnection connection : connectionPool.getConnections()) {
-            /*
-             * TODO
-             * Just by looking at it I believe this 'while' can be replaced with an 'if' but I vaguely remember I had a
-             * reason to put it here in the first place... Need to test it with an insane amount of requests to a
-             * randomly failing server.
-             */
-            while (connection.isAvailable()) {
-                // Found an available connection; peek the first request and attempt to execute it.
+            // Connection not available, immediately try next one
+            if (!connection.isAvailable()) continue;
+
+            // Feed requests off the queue to the connection until it stops reporting itself as available or
+            // execution submission fails.
+            boolean executionAccepted = false;
+            do {
+                // Peek the next request and see if the connection is able to accept it.
                 HttpRequestContext context = queue.peek();
-                if (connection.execute(context)) {
-                    // If the request was executed it means the connection wasn't terminating and it's still connected.
-                    // Remove it from the queue (it was only previously peeked) and return DRAINED.
+                executionAccepted = connection.execute(context);
+                if (executionAccepted) {
+                    // Request was accepted by the connection, remove it from the queue.
                     queue.remove();
-                    return DRAINED;
+                    // Prematurely exit in case there are no further requests to execute.
+                    if (queue.isEmpty()) return DRAINED;
+
+                    // Otherwise, result will be DRAINED whether we manage do execute another request or not.
+                    drained = true;
                 }
-            }
+            } while (connection.isAvailable() && executionAccepted);
         }
+        if (drained) return DRAINED;
 
         // 4. There were connections open but none of them was available; if possible, request a new one.
         if (connectionPool.hasAvailableSlots()) return OPEN_CONNECTION;

@@ -57,7 +57,6 @@ class DefaultHostContextSpec extends Specification {
 
     when: context.restoreRequestsToQueue(requests)
     then: context.drainQueue() == DRAINED
-    and: context.drainQueue() == DRAINED
   }
 
   def "#drainQueue returns QUEUE_EMPTY if the queue has no requests"() {
@@ -76,6 +75,17 @@ class DefaultHostContextSpec extends Specification {
     and: pool.hasConnections() >> false
     and: pool.hasAvailableSlots() >> false
     expect: context.drainQueue() == NOT_DRAINED
+  }
+
+  def "#drainQueue returns DRAINED if an available connection accepts a request"() {
+    given: def request = createRequestContext()
+    and: context.addToQueue(request)
+    and: pool.hasConnections() >> true
+    and: pool.getConnections() >> [Mock(HttpConnection) {
+      isAvailable() >> true
+      1 * execute(request) >> true
+    }]
+    expect: context.drainQueue() == DRAINED
   }
 
   // TODO available connections
