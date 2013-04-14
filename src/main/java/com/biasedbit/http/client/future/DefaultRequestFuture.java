@@ -32,7 +32,7 @@ public class DefaultRequestFuture<T>
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final long creation;
+    private final long creation = System.nanoTime();
 
     private T                              result;
     private HttpResponse                   response;
@@ -40,16 +40,10 @@ public class DefaultRequestFuture<T>
     private List<RequestFutureListener<T>> listeners;
     private Throwable                      cause;
     private int                            waiters;
-    private long                           executionStart;
-    private long                           executionEnd;
     private HttpConnection                 connection;
 
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public DefaultRequestFuture() {
-        creation = System.nanoTime();
-        executionStart = -1;
-    }
+    private long executionStart = -1;
+    private long executionEnd   = -1;
 
     // RequestFuture ----------------------------------------------------------------------------------------------
 
@@ -143,6 +137,7 @@ public class DefaultRequestFuture<T>
                 }
             }
         }
+
         return this;
     }
 
@@ -180,17 +175,13 @@ public class DefaultRequestFuture<T>
     @Override public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
         try {
             return await0(unit.toNanos(timeout), false);
-        } catch (InterruptedException e) {
-            throw new InternalError();
-        }
+        } catch (InterruptedException neverHappens) { throw new InternalError(); }
     }
 
     @Override public boolean awaitUninterruptibly(long timeoutMillis) {
         try {
             return await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), false);
-        } catch (InterruptedException e) {
-            throw new InternalError();
-        }
+        } catch (InterruptedException neverHappens) { throw new InternalError(); }
     }
 
     // interface ------------------------------------------------------------------------------------------------------
@@ -266,6 +257,7 @@ public class DefaultRequestFuture<T>
 
     private boolean await0(long timeoutNanos, boolean interruptable)
             throws InterruptedException {
+        // Implementation straight out of Netty's own DefaultChannelFuture
         if (interruptable && Thread.interrupted()) throw new InterruptedException();
 
         long startTime = timeoutNanos <= 0 ? 0 : System.nanoTime();

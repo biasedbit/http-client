@@ -68,13 +68,13 @@ public interface RequestFuture<T> {
     RequestFuture<T> await()
             throws InterruptedException;
 
-    RequestFuture<T> awaitUninterruptibly();
-
     boolean await(long timeout, TimeUnit unit)
             throws InterruptedException;
 
     boolean await(long timeoutMillis)
             throws InterruptedException;
+
+    RequestFuture<T> awaitUninterruptibly();
 
     boolean awaitUninterruptibly(long timeout, TimeUnit unit);
 
