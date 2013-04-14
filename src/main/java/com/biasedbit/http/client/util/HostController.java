@@ -17,8 +17,7 @@
 package com.biasedbit.http.client.util;
 
 import com.biasedbit.http.client.connection.HttpConnection;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -27,7 +26,7 @@ import static com.biasedbit.http.client.util.HostController.DrainQueueResult.*;
 import static com.biasedbit.http.client.util.Utils.ensureValue;
 
 /**
- * HostContexts store context on a per-host basis, serving as a helper component to help keep HttpClient
+ * HostController stores context on a per-host basis, serving as a helper component to help keep HttpClient
  * implementations cleaner.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -41,9 +40,10 @@ public class HostController {
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    @Getter protected final String         host;
-    @Getter protected final int            port;
-    protected final         ConnectionPool connectionPool;
+    @Getter private final String host;
+    @Getter private final int    port;
+
+    @Delegate private final ConnectionPool connectionPool; // exposes connection pool API on this class
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -56,16 +56,6 @@ public class HostController {
     }
 
     // interface ------------------------------------------------------------------------------------------------------
-
-    public void connectionOpening() { connectionPool.connectionOpening(); }
-
-    public void connectionFailed() { connectionPool.connectionFailed(); }
-
-    public void connectionOpen(HttpConnection connection) { connectionPool.connectionOpen(connection); }
-
-    public void connectionClosed(HttpConnection connection) { connectionPool.connectionClosed(connection); }
-
-    public boolean hasConnections() { return connectionPool.hasConnections(); }
 
     public boolean isCleanable() { return !connectionPool.hasConnections() && queue.isEmpty(); }
 
