@@ -1,6 +1,5 @@
-package com.biasedbit.http.client.utils
+package com.biasedbit.http.client.util
 
-import com.biasedbit.http.client.util.CleanupChannelGroup
 import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelFuture
 import org.jboss.netty.channel.group.ChannelGroup

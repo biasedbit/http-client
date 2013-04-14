@@ -16,9 +16,9 @@
 
 package com.biasedbit.http.client.connection;
 
-import com.biasedbit.http.client.util.RequestContext;
-import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
@@ -133,7 +133,7 @@ public class PipeliningHttpConnection
         // Sync this big block, as there is a chance that it's a complete response.
         // If it's a complete response (in other words, all the data necessary to mark the request as finished is
         // present), and it's cancelled meanwhile, synch'ing this block will guarantee that the request will
-        // be marked as complete *before* being cancelled. Since DefaultHttpRequestFuture only allows 1 completion
+        // be marked as complete *before* being cancelled. Since DefaultRequestFuture only allows 1 completion
         // event, the request will effectively be marked as complete, even though failedWithCause() will be called as
         // soon as this lock is released.
         // This synchronization is performed because of edge cases where the request is completing but nearly at
@@ -207,7 +207,7 @@ public class PipeliningHttpConnection
     @Override public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
         synchronized (mutex) {
-            if (terminate == null) terminate = HttpRequestFuture.CONNECTION_LOST;
+            if (terminate == null) terminate = RequestFuture.CONNECTION_LOST;
         }
 
         listener.connectionTerminated(this, requests);
@@ -263,7 +263,7 @@ public class PipeliningHttpConnection
 
         if (!context.isIdempotent() && !allowNonIdempotentPipelining) {
             // Immediately reject non-idempotent requests.
-            context.getFuture().failedWithCause(HttpRequestFuture.EXECUTION_REJECTED);
+            context.getFuture().failedWithCause(RequestFuture.EXECUTION_REJECTED);
             listener.requestFinished(this, context);
             return true;
         }
@@ -273,7 +273,7 @@ public class PipeliningHttpConnection
             // immediately rejected.
             if (!isAvailable()) {
                 // Terminate request wasn't issued, connection is open but unavailable, so fail the request!
-                context.getFuture().failedWithCause(HttpRequestFuture.EXECUTION_REJECTED);
+                context.getFuture().failedWithCause(RequestFuture.EXECUTION_REJECTED);
                 listener.requestFinished(this, context);
                 return true;
             } else if ((terminate != null) || !channel.isConnected()) {

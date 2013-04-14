@@ -18,7 +18,8 @@ package com.biasedbit.http.client;
 
 import com.biasedbit.http.client.connection.*;
 import com.biasedbit.http.client.event.*;
-import com.biasedbit.http.client.future.*;
+import com.biasedbit.http.client.future.DataSinkListener;
+import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.processor.DiscardProcessor;
 import com.biasedbit.http.client.processor.HttpResponseProcessor;
 import com.biasedbit.http.client.ssl.BogusSslContextFactory;
@@ -42,7 +43,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.biasedbit.http.client.future.HttpRequestFuture.*;
+import static com.biasedbit.http.client.future.RequestFuture.*;
 import static com.biasedbit.http.client.util.Utils.*;
 
 /**
@@ -81,7 +82,7 @@ import static com.biasedbit.http.client.util.Utils.*;
  * </ul
  * <p/>
  * If you need to guarantee that a request B can only hit the server after a request A, you can either manually manage
- * that in your code through the {@link HttpRequestFuture} API or configure the concrete instance of this class to allow
+ * that in your code through the {@link com.biasedbit.http.client.future.RequestFuture} API or configure the concrete instance of this class to allow
  * at most 1 connection per host - although this last option will hurt performance globally.
  * <p/>
  * <div class="note">
@@ -132,7 +133,6 @@ public class DefaultHttpClient
     @Getter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
     @Getter private HttpConnectionFactory    connectionFactory;
-    @Getter private HttpRequestFutureFactory futureFactory;
     @Getter private TimeoutController        timeoutController;
     @Getter private SslContextFactory        sslContextFactory;
 
@@ -162,8 +162,6 @@ public class DefaultHttpClient
         }
 
         if (connectionFactory == null) connectionFactory = new DefaultHttpConnectionFactory();
-        if (futureFactory == null) futureFactory = new DefaultHttpRequestFutureFactory();
-
         if ((sslContextFactory == null) && isHttps()) sslContextFactory = BogusSslContextFactory.getInstance();
 
         eventConsumerLatch = new CountDownLatch(1);
@@ -261,25 +259,25 @@ public class DefaultHttpClient
         if (internalTimeoutManager) timeoutController.terminate();
     }
 
-    @Override public <T> HttpRequestFuture<T> execute(String host, int port, HttpRequest request,
+    @Override public <T> RequestFuture<T> execute(String host, int port, HttpRequest request,
                                                       HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
         return execute(host, port, requestInactivityTimeout, request, processor);
     }
 
-    @Override public HttpRequestFuture<Object> execute(String host, int port, HttpRequest request)
+    @Override public RequestFuture<Object> execute(String host, int port, HttpRequest request)
             throws CannotExecuteRequestException {
         return execute(host, port, request, DiscardProcessor.getInstance());
     }
 
-    @Override public <T> HttpRequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
+    @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
                                                       HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
         return execute(host, port, timeout, request, processor, null);
     }
 
-    @Override public <T> HttpRequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                            HttpResponseProcessor<T> processor, HttpDataSinkListener dataSinkListener)
+    @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
+                                            HttpResponseProcessor<T> processor, DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException {
 
         if (terminate) throw new CannotExecuteRequestException("HttpClient already terminated");
@@ -301,15 +299,14 @@ public class DefaultHttpClient
         // Perform these checks on the caller thread's time rather than the event dispatcher's.
         if (autoDecompress) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
-        MutableRequestFuture<T> future = futureFactory.createFuture();
-        RequestContext<T> context = new RequestContext<>(host, port, timeout, request, processor, future);
+        RequestContext<T> context = new RequestContext<>(host, port, timeout, request, processor);
         context.setDataSinkListener(dataSinkListener);
 
         if (!eventQueue.offer(new ExecuteRequestEvent(context))) {
             throw new CannotExecuteRequestException("Could not add request to queue");
         }
 
-        return future;
+        return context.getFuture();
     }
 
     @Override public boolean isHttps() { return useSsl; }
@@ -552,8 +549,8 @@ public class DefaultHttpClient
      * <p/>
      * Requests whose execution time exceeds (precision depends on the
      * {@link com.biasedbit.http.client.timeout.TimeoutController} chosen) this value will be considered failed and
-     * their {@link com.biasedbit.http.client.future.HttpRequestFuture} will be released with cause
-     * {@link com.biasedbit.http.client.future.HttpRequestFuture#TIMED_OUT}.
+     * their {@link com.biasedbit.http.client.future.RequestFuture} will be released with cause
+     * {@link com.biasedbit.http.client.future.RequestFuture#TIMED_OUT}.
      * <p/>
      * Defaults to 2000.
      *
@@ -725,22 +722,6 @@ public class DefaultHttpClient
         ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.connectionFactory = connectionFactory;
-    }
-
-    /**
-     * The {@link HttpRequestFutureFactory} that will be used to create new
-     * {@link com.biasedbit.http.client.future.HttpRequestFuture}.
-     * <p/>
-     * Defaults to {@link DefaultHttpRequestFutureFactory} if none is provided.
-     *
-     * @param futureFactory The {@link HttpRequestFutureFactory} to be used.
-     * @see com.biasedbit.http.client.future.HttpRequestFutureFactory
-     * @see com.biasedbit.http.client.future.HttpRequestFuture
-     */
-    public void setFutureFactory(HttpRequestFutureFactory futureFactory) {
-        ensureState(eventQueue == null, "Cannot modify property after initialization");
-
-        this.futureFactory = futureFactory;
     }
 
     /**

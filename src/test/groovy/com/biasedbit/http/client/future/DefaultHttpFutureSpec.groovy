@@ -12,7 +12,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
  */
 class DefaultHttpFutureSpec extends Specification {
 
-  def future = new DefaultHttpRequestFuture()
+  def future   = new DefaultRequestFuture()
   def response = new DefaultHttpResponse(HTTP_1_1, OK)
 
   // mutable request future
@@ -54,7 +54,7 @@ class DefaultHttpFutureSpec extends Specification {
     listeners.each { future.addListener(it) }
 
     expect: "it to accept being finished"
-    future.failedWithCause(HttpRequestFuture.EXECUTION_REJECTED)
+    future.failedWithCause(RequestFuture.EXECUTION_REJECTED)
 
     and: "it to be marked as completed"
     with(future) {
@@ -65,7 +65,7 @@ class DefaultHttpFutureSpec extends Specification {
       it.response == null
       it.status == null
       it.responseStatusCode == -1
-      it.cause == HttpRequestFuture.EXECUTION_REJECTED
+      it.cause == RequestFuture.EXECUTION_REJECTED
       !it.cancelled
     }
 
@@ -82,7 +82,7 @@ class DefaultHttpFutureSpec extends Specification {
     listeners.each { future.addListener(it) }
 
     expect: "it to accept being finished"
-    future.failedWithCause(HttpRequestFuture.EXECUTION_REJECTED, response)
+    future.failedWithCause(RequestFuture.EXECUTION_REJECTED, response)
 
     and: "it to be marked as completed"
     with(future) {
@@ -93,7 +93,7 @@ class DefaultHttpFutureSpec extends Specification {
       it.response == response
       it.status == response.status
       it.responseStatusCode == response.status.code
-      it.cause == HttpRequestFuture.EXECUTION_REJECTED
+      it.cause == RequestFuture.EXECUTION_REJECTED
       !it.cancelled
     }
 
@@ -167,7 +167,7 @@ class DefaultHttpFutureSpec extends Specification {
   def "#cancelled triggers completion of the future with an exception as cause and the received response"() {
     given: "a future which has been started and has an attached connection"
     future.markExecutionStart()
-    def connection = Mock(HttpConnection) { 1 * terminate(HttpRequestFuture.CANCELLED) }
+    def connection = Mock(HttpConnection) { 1 * terminate(RequestFuture.CANCELLED) }
     future.attachConnection(connection)
 
     and: "the future has a couple of listeners"
@@ -186,7 +186,7 @@ class DefaultHttpFutureSpec extends Specification {
       it.response == null
       it.status == null
       it.responseStatusCode == -1
-      it.cause == HttpRequestFuture.CANCELLED
+      it.cause == RequestFuture.CANCELLED
       it.cancelled
     }
 
@@ -196,8 +196,8 @@ class DefaultHttpFutureSpec extends Specification {
 
   def "it gracefully handles exceptions when notifiying listeners"() {
     given: "an attached listener which raises exception when notified"
-    def misbehavingListener = new HttpRequestFutureListener() {
-      @Override void operationComplete(HttpRequestFuture future) throws Exception { throw new Exception("kaboom") }
+    def misbehavingListener = new RequestFutureListener() {
+      @Override void operationComplete(RequestFuture future) throws Exception { throw new Exception("kaboom") }
     }
     future.addListener(misbehavingListener)
 
@@ -217,8 +217,8 @@ class DefaultHttpFutureSpec extends Specification {
     def success = future.toString()
 
     and: "the string representation of failed future"
-    def failedFuture = new DefaultHttpRequestFuture()
-    failedFuture.failedWithCause(HttpRequestFuture.CANCELLED)
+    def failedFuture = new DefaultRequestFuture()
+    failedFuture.failedWithCause(RequestFuture.CANCELLED)
     def failure = failedFuture.toString()
 
     expect: "them all to be different"
@@ -228,9 +228,9 @@ class DefaultHttpFutureSpec extends Specification {
   }
 
   private def createListener() {
-    return new HttpRequestFutureListener() {
+    return new RequestFutureListener() {
       def notified = false
-      @Override void operationComplete(HttpRequestFuture future) throws Exception { notified = true }
+      @Override void operationComplete(RequestFuture future) throws Exception { notified = true }
     }
   }
 }

@@ -17,7 +17,6 @@
 package com.biasedbit.http.client;
 
 import com.biasedbit.http.client.connection.HttpConnectionFactory;
-import com.biasedbit.http.client.future.HttpRequestFutureFactory;
 import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import lombok.Getter;
@@ -56,7 +55,6 @@ public class DefaultHttpClientFactory
     @Getter @Setter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
     @Getter @Setter private HttpConnectionFactory    connectionFactory;
-    @Getter @Setter private HttpRequestFutureFactory futureFactory;
     @Getter @Setter private TimeoutController        timeoutController;
     @Getter @Setter private SslContextFactory        sslContextFactory;
 
@@ -80,7 +78,6 @@ public class DefaultHttpClientFactory
         client.setCleanupInactiveHostContexts(cleanupInactiveHostContexts);
 
         client.setConnectionFactory(connectionFactory);
-        client.setFutureFactory(futureFactory);
         client.setTimeoutController(timeoutController);
         client.setSslContextFactory(sslContextFactory);
 

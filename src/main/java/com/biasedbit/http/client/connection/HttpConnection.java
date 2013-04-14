@@ -39,7 +39,7 @@ import org.jboss.netty.channel.ChannelHandler;
  * manually synchronise externally. The reason for this is that if both threads call {@link #isAvailable()} at the same
  * time, both will be able to {@linkplain #execute(com.biasedbit.http.client.util.RequestContext) submit requests}, even though
  * the implementation may not accept both (and consequently fail the last one with
- * {@link com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED}).
+ * {@link com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED}).
  * <p/>
  * Example:
  * <pre class="code">
@@ -65,7 +65,7 @@ import org.jboss.netty.channel.ChannelHandler;
  * <p/>
  * In every other scenario where {@link #isAvailable()} returns false, calling {@link #execute(com.biasedbit.http.client.util.RequestContext)
  * execute()} <strong>will fail</strong> the request (with cause {@link
- * com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED}).
+ * com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED}).
  * </div>
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -117,7 +117,7 @@ public interface HttpConnection extends ChannelHandler {
      * All calls to this method should first test whether this connection is available or not by calling
      * {@link #isAvailable()} first. Calling this methods while {@link #isAvailable()} would return {@code false} will
      * cause the implementation to reject the request with the reason
-     * {@link com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED} and return {@code true},
+     * {@link com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED} and return {@code true},
      * meaning the request was consumed (and failed).
      * <p/>
      * The exception to the above rule is when the request is submitted and the connection goes down meanwhile. In this

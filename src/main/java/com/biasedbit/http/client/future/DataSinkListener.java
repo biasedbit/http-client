@@ -16,13 +16,14 @@
 
 package com.biasedbit.http.client.future;
 
+import com.biasedbit.http.client.connection.HttpDataSink;
+
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class DefaultHttpRequestFutureFactory
-        implements HttpRequestFutureFactory {
+public interface DataSinkListener {
 
-    // HttpRequestFuture ----------------------------------------------------------------------------------------------
+    void readyToSendData(HttpDataSink sink);
 
-    @Override public <T> DefaultHttpRequestFuture<T> createFuture() { return new DefaultHttpRequestFuture<>(); }
+    void writeComplete(HttpDataSink sink, long writtenAmount);
 }

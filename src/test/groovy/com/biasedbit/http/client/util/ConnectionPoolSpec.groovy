@@ -1,7 +1,6 @@
-package com.biasedbit.http.client.utils
+package com.biasedbit.http.client.util
 
 import com.biasedbit.http.client.connection.HttpConnection
-import com.biasedbit.http.client.util.ConnectionPool
 import spock.lang.Specification
 
 /**

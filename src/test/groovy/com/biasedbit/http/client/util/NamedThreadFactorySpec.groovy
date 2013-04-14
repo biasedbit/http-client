@@ -1,6 +1,5 @@
-package com.biasedbit.http.client.utils
+package com.biasedbit.http.client.util
 
-import com.biasedbit.http.client.util.NamedThreadFactory
 import spock.lang.Specification
 
 /**

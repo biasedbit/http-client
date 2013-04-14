@@ -16,9 +16,9 @@
 
 package com.biasedbit.http.client.connection;
 
-import com.biasedbit.http.client.util.RequestContext;
-import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,7 +40,7 @@ import java.util.concurrent.Executor;
  * <p/>
  * This implementation only accepts one request at a time. If {@link
  * #execute(com.biasedbit.http.client.util.RequestContext) execute()} is called while {@link #isAvailable()} would
- * return false, the request will be accepted and immediately fail with {@link HttpRequestFuture#EXECUTION_REJECTED}
+ * return false, the request will be accepted and immediately fail with {@link com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED}
  * <strong>unless</strong> the socket has been disconnected (in which case the request will not fail but
  * {@link #execute(com.biasedbit.http.client.util.RequestContext)} will return {@code false} instead).
  *
@@ -118,7 +118,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         // Synch this big block, as there is a chance that it's a complete response.
         // If it's a complete response (in other words, all the data necessary to mark the request as finished is
         // present), and it's cancelled meanwhile, synch'ing this block will guarantee that the request will
-        // be marked as complete *before* being cancelled. Since DefaultHttpRequestFuture only allows 1 completion
+        // be marked as complete *before* being cancelled. Since DefaultRequestFuture only allows 1 completion
         // event, the request will effectively be marked as complete, even though failedWithCause() will be called as
         // soon as this lock is released.
         // This synchronization is performed because of edge cases where the request is completing but nearly at
@@ -203,7 +203,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         synchronized (mutex) {
             if (terminate != null) return;
 
-            terminate = HttpRequestFuture.CONNECTION_LOST;
+            terminate = RequestFuture.CONNECTION_LOST;
             available = false;
             request = currentRequest; // If this.currentRequest = null request will be null which is ok
         }
@@ -213,7 +213,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             listener.connectionTerminated(this, Arrays.asList(request));
         } else {
             if ((request != null) && !request.getFuture().isDone()) {
-                request.getFuture().failedWithCause(HttpRequestFuture.CONNECTION_LOST);
+                request.getFuture().failedWithCause(RequestFuture.CONNECTION_LOST);
             }
             listener.connectionTerminated(this);
         }
@@ -276,7 +276,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             // which isAvailable() returns false, the request is immediately rejected.
             if (!available && (terminate == null) && channel.isConnected()) {
                 // Terminate request wasn't issued, connection is open but unavailable, so fail the request!
-                context.getFuture().failedWithCause(HttpRequestFuture.EXECUTION_REJECTED);
+                context.getFuture().failedWithCause(RequestFuture.EXECUTION_REJECTED);
                 listener.requestFinished(this, context);
                 return true;
             } else if ((terminate != null) || !channel.isConnected()) {
@@ -340,7 +340,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         return (terminate == null) && (channel != null) && channel.isConnected();
     }
 
-    @Override public void disconnect() { terminate(HttpRequestFuture.CANCELLED); }
+    @Override public void disconnect() { terminate(RequestFuture.CANCELLED); }
 
     @Override public void sendData(ChannelBuffer data, boolean isLast) {
         if (!isConnected()) return;
@@ -442,7 +442,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         if (!available) {
             // Mark this connection as terminated, so that if we get disconnected meanwhile we don't trigger another
             // connectionTerminated() event
-            terminate = HttpRequestFuture.SHUTTING_DOWN;
+            terminate = RequestFuture.SHUTTING_DOWN;
             listener.connectionTerminated(this);
         }
 

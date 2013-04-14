@@ -16,9 +16,9 @@
 
 package com.biasedbit.http.client.timeout;
 
+import com.biasedbit.http.client.future.RequestFuture;
+import com.biasedbit.http.client.future.RequestFutureListener;
 import com.biasedbit.http.client.util.RequestContext;
-import com.biasedbit.http.client.future.HttpRequestFuture;
-import com.biasedbit.http.client.future.HttpRequestFutureListener;
 import org.jboss.netty.util.internal.ExecutorUtil;
 
 import java.util.concurrent.*;
@@ -104,7 +104,7 @@ public class BasicTimeoutController
      */
     public static class TimeoutChecker
             implements Runnable,
-                       HttpRequestFutureListener {
+                       RequestFutureListener {
 
         // internal vars ----------------------------------------------------------------------------------------------
 
@@ -137,12 +137,12 @@ public class BasicTimeoutController
             // Request timed out...
             // If the future has already been unlocked, then no harm is done by calling this method as it won't produce
             // any side effects.
-            request.getFuture().failedWithCause(HttpRequestFuture.TIMED_OUT);
+            request.getFuture().failedWithCause(RequestFuture.TIMED_OUT);
         }
 
-        // HttpRequestFutureListener ----------------------------------------------------------------------------------
+        // RequestFutureListener ----------------------------------------------------------------------------------
 
-        @Override public void operationComplete(HttpRequestFuture httpRequestFuture)
+        @Override public void operationComplete(RequestFuture requestFuture)
                 throws Exception {
             latch.countDown();
         }

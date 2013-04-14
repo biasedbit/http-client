@@ -16,7 +16,6 @@
 
 package com.biasedbit.http.client.future;
 
-import com.biasedbit.http.client.connection.HttpConnection;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
@@ -25,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpRequestFuture<T> {
+public interface RequestFuture<T> {
 
     static final Throwable INTERRUPTED        = new Throwable("Interrupted");
     static final Throwable CANCELLED          = new Throwable("Cancelled");
@@ -62,14 +61,14 @@ public interface HttpRequestFuture<T> {
 
     boolean cancel();
 
-    void addListener(HttpRequestFutureListener<T> listener);
+    void addListener(RequestFutureListener<T> listener);
 
-    void removeListener(HttpRequestFutureListener<T> listener);
+    void removeListener(RequestFutureListener<T> listener);
 
-    HttpRequestFuture<T> await()
+    RequestFuture<T> await()
             throws InterruptedException;
 
-    HttpRequestFuture<T> awaitUninterruptibly();
+    RequestFuture<T> awaitUninterruptibly();
 
     boolean await(long timeout, TimeUnit unit)
             throws InterruptedException;

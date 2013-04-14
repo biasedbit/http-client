@@ -1,4 +1,4 @@
-package com.biasedbit.http.client.utils
+package com.biasedbit.http.client.util
 
 import spock.lang.Specification
 

@@ -16,8 +16,8 @@
 
 package com.biasedbit.http.client.event;
 
-import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.util.RequestContext;
 import lombok.*;
 
 import java.util.Collection;

@@ -3,11 +3,9 @@ package com.biasedbit.http.client
 import com.biasedbit.http.client.processor.DiscardProcessor
 import com.biasedbit.http.server.DummyHttpServer
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
-import org.jboss.netty.handler.codec.http.HttpRequest
 import spock.lang.Specification
-import spock.lang.Unroll
 
-import static com.biasedbit.http.client.future.HttpRequestFuture.*
+import static com.biasedbit.http.client.future.RequestFuture.*
 import static org.jboss.netty.handler.codec.http.HttpMethod.GET
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
 

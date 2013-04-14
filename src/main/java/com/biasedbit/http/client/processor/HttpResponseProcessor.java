@@ -100,7 +100,7 @@ public interface HttpResponseProcessor<T> {
      * <div class="note">
      * <div class="header">Note:</div>
      * Implementations may choose to return non-{@code null} results
-     * when no data is consumed so {@link com.biasedbit.http.client.future.HttpRequestFuture#setSuccess(Object,
+     * when no data is consumed so {@link com.biasedbit.http.client.future.RequestFuture#setSuccess(Object,
      * org.jboss.netty.handler.codec.http.HttpResponse)} should always be called with {@code getProcessedResponse()}
      * rather than {@code null}.
      * </div>

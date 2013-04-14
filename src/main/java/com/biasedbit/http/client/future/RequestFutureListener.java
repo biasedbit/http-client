@@ -16,14 +16,13 @@
 
 package com.biasedbit.http.client.future;
 
-import com.biasedbit.http.client.connection.HttpDataSink;
+import java.util.EventListener;
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpDataSinkListener {
+public interface RequestFutureListener<T>
+        extends EventListener {
 
-    void readyToSendData(HttpDataSink sink);
-
-    void writeComplete(HttpDataSink sink, long writtenAmount);
+    void operationComplete(RequestFuture<T> future) throws Exception;
 }

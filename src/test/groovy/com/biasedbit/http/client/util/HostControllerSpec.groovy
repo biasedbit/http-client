@@ -1,11 +1,7 @@
-package com.biasedbit.http.client.utils
+package com.biasedbit.http.client.util
 
-import com.biasedbit.http.client.util.ConnectionPool
 import com.biasedbit.http.client.connection.HttpConnection
-import com.biasedbit.http.client.future.MutableRequestFuture
 import com.biasedbit.http.client.processor.HttpResponseProcessor
-import com.biasedbit.http.client.util.HostController
-import com.biasedbit.http.client.util.RequestContext
 import org.jboss.netty.handler.codec.http.HttpRequest
 import spock.lang.Specification
 
@@ -109,7 +105,6 @@ class HostControllerSpec extends Specification {
   }
 
   private RequestContext createRequestContext(String host = "biasedbit.com", int port = 80) {
-    new RequestContext(host, port, 100,
-        Mock(HttpRequest), Mock(HttpResponseProcessor), Mock(MutableRequestFuture))
+    new RequestContext(host, port, 100, Mock(HttpRequest), Mock(HttpResponseProcessor))
   }
 }

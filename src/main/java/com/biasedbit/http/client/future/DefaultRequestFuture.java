@@ -27,80 +27,31 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class DefaultHttpRequestFuture<T>
-        implements MutableRequestFuture<T> {
+public class DefaultRequestFuture<T>
+        implements RequestFuture<T> {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
     private final long creation;
 
-    private T                                  result;
-    private HttpResponse                       response;
-    private boolean                            done;
-    private List<HttpRequestFutureListener<T>> listeners;
-    private Throwable                          cause;
-    private int                                waiters;
-    private long                               executionStart;
-    private long                               executionEnd;
-    private HttpConnection                     connection;
+    private T                              result;
+    private HttpResponse                   response;
+    private boolean                        done;
+    private List<RequestFutureListener<T>> listeners;
+    private Throwable                      cause;
+    private int                            waiters;
+    private long                           executionStart;
+    private long                           executionEnd;
+    private HttpConnection                 connection;
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public DefaultHttpRequestFuture() {
+    public DefaultRequestFuture() {
         creation = System.nanoTime();
         executionStart = -1;
     }
 
-    // MutableRequestFuture --------------------------------------------------------------------------------------------------
-
-    // TODO review this
-    @Override public void attachConnection(HttpConnection connection) { this.connection = connection; }
-
-    @Override public boolean finishedSuccessfully(T processedResponse, HttpResponse response) {
-        synchronized (this) {
-            if (done) return false;
-
-            executionEnd = System.nanoTime();
-            done = true;
-            result = processedResponse;
-            this.response = response;
-            if (waiters > 0) notifyAll();
-        }
-
-        notifyListeners();
-        return true;
-    }
-
-    @Override public boolean failedWithCause(Throwable cause) {
-        synchronized (this) {
-            if (done) return false; // Allow only once.
-
-            executionEnd = System.nanoTime();
-            this.cause = cause;
-            done = true;
-            if (waiters > 0) notifyAll();
-        }
-
-        notifyListeners();
-        return true;
-    }
-
-    @Override public boolean failedWithCause(Throwable cause, HttpResponse response) {
-        synchronized (this) {
-            if (done) return false;
-
-            executionEnd = System.nanoTime();
-            this.response = response;
-            this.cause = cause;
-            done = true;
-            if (waiters > 0) notifyAll();
-        }
-
-        notifyListeners();
-        return true;
-    }
-
-    // HttpRequestFuture ----------------------------------------------------------------------------------------------
+    // RequestFuture ----------------------------------------------------------------------------------------------
 
     @Override public T getProcessedResult() { return result; }
 
@@ -159,7 +110,7 @@ public class DefaultHttpRequestFuture<T>
         return true;
     }
 
-    @Override public void addListener(HttpRequestFutureListener<T> listener) {
+    @Override public void addListener(RequestFutureListener<T> listener) {
         synchronized (this) {
             if (done) {
                 notifyListener(listener);
@@ -170,7 +121,7 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
-    @Override public void removeListener(HttpRequestFutureListener<T> listener) {
+    @Override public void removeListener(RequestFutureListener<T> listener) {
         synchronized (this) {
             if (done) return;
 
@@ -178,7 +129,7 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
-    @Override public HttpRequestFuture<T> await()
+    @Override public RequestFuture<T> await()
             throws InterruptedException {
         if (Thread.interrupted()) throw new InterruptedException();
 
@@ -205,7 +156,7 @@ public class DefaultHttpRequestFuture<T>
         return await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), true);
     }
 
-    @Override public HttpRequestFuture<T> awaitUninterruptibly() {
+    @Override public RequestFuture<T> awaitUninterruptibly() {
         boolean interrupted = false;
         synchronized (this) {
             while (!done) {
@@ -242,6 +193,55 @@ public class DefaultHttpRequestFuture<T>
         }
     }
 
+    // interface ------------------------------------------------------------------------------------------------------
+
+    // TODO review this
+    public void attachConnection(HttpConnection connection) { this.connection = connection; }
+
+    public boolean finishedSuccessfully(T processedResponse, HttpResponse response) {
+        synchronized (this) {
+            if (done) return false;
+
+            executionEnd = System.nanoTime();
+            done = true;
+            result = processedResponse;
+            this.response = response;
+            if (waiters > 0) notifyAll();
+        }
+
+        notifyListeners();
+        return true;
+    }
+
+    public boolean failedWithCause(Throwable cause) {
+        synchronized (this) {
+            if (done) return false; // Allow only once.
+
+            executionEnd = System.nanoTime();
+            this.cause = cause;
+            done = true;
+            if (waiters > 0) notifyAll();
+        }
+
+        notifyListeners();
+        return true;
+    }
+
+    public boolean failedWithCause(Throwable cause, HttpResponse response) {
+        synchronized (this) {
+            if (done) return false;
+
+            executionEnd = System.nanoTime();
+            this.response = response;
+            this.cause = cause;
+            done = true;
+            if (waiters > 0) notifyAll();
+        }
+
+        notifyListeners();
+        return true;
+    }
+
     // private helpers ------------------------------------------------------------------------------------------------
 
     private void notifyListeners() {
@@ -252,10 +252,10 @@ public class DefaultHttpRequestFuture<T>
         //    becomes true, the listener list is never modified - see add/removeListener()
         if (listeners == null) return; // Not testing for isEmpty since removing listeners is quite rare...
 
-        for (HttpRequestFutureListener<T> listener : listeners) notifyListener(listener);
+        for (RequestFutureListener<T> listener : listeners) notifyListener(listener);
     }
 
-    private void notifyListener(HttpRequestFutureListener<T> listener) {
+    private void notifyListener(RequestFutureListener<T> listener) {
         try {
             listener.operationComplete(this);
         } catch (Throwable t) {
@@ -307,7 +307,7 @@ public class DefaultHttpRequestFuture<T>
 
     @Override public String toString() {
         StringBuilder builder = new StringBuilder()
-                .append("HttpRequestFuture{")
+                .append("RequestFuture{")
                 .append("existenceTime=").append(getExistenceTime())
                 .append(", executionTime=").append(getExecutionTime());
 

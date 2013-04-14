@@ -1,6 +1,6 @@
 package com.biasedbit.http.client
 
-import com.biasedbit.http.client.future.HttpDataSinkListener
+import com.biasedbit.http.client.future.DataSinkListener
 import com.biasedbit.http.client.processor.DiscardProcessor
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import spock.lang.Specification
@@ -47,7 +47,7 @@ class DefaultHttpClientSpec extends Specification {
   @Unroll
   def "#execute accepts a '#method' request with an HttpDataSinkListener"() {
     given: request = new DefaultHttpRequest(HTTP_1_1, method, "/")
-    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(HttpDataSinkListener))
+    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(DataSinkListener))
     then: noExceptionThrown()
 
     where:
@@ -58,7 +58,7 @@ class DefaultHttpClientSpec extends Specification {
   @Unroll
   def "#execute raises exception if a '#method' request is submitted with an HttpDataSinkListener"() {
     given: request = new DefaultHttpRequest(HTTP_1_1, method, "/")
-    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(HttpDataSinkListener))
+    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(DataSinkListener))
     then: thrown(IllegalArgumentException)
 
     where:
@@ -90,7 +90,6 @@ class DefaultHttpClientSpec extends Specification {
     "autoDecompress"              | false
     "cleanupInactiveHostContexts" | true
     "connectionFactory"           | null
-    "futureFactory"               | null
     "timeoutController"           | null
     "sslContextFactory"           | null
   }

@@ -1,10 +1,8 @@
 package com.biasedbit.http.client.timeout
 
-
-import com.biasedbit.http.client.util.RequestContext
-import com.biasedbit.http.client.future.DefaultHttpRequestFuture
-import com.biasedbit.http.client.future.HttpRequestFuture
+import com.biasedbit.http.client.future.RequestFuture
 import com.biasedbit.http.client.processor.DiscardProcessor
+import com.biasedbit.http.client.util.RequestContext
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpMethod
 import org.jboss.netty.handler.codec.http.HttpVersion
@@ -34,7 +32,7 @@ class HashedWheelTimeoutControllerSpec extends Specification {
     when: sleep(sleepTime)
     then: context.getFuture().isDone()
     and: !context.getFuture().isSuccessful()
-    and: context.getFuture().getCause() == HttpRequestFuture.TIMED_OUT
+    and: context.getFuture().getCause() == RequestFuture.TIMED_OUT
 
     where:
     timeout | sleepTime
@@ -58,7 +56,6 @@ class HashedWheelTimeoutControllerSpec extends Specification {
   private static def createContext(int timeout) {
     def request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/index")
 
-    new RequestContext<>("biasedbit.com", 80, timeout, request,
-        new DiscardProcessor(), new DefaultHttpRequestFuture<>());
+    new RequestContext<>("biasedbit.com", 80, timeout, request, new DiscardProcessor());
   }
 }

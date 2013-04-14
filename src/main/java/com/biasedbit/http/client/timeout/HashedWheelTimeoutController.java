@@ -16,9 +16,9 @@
 
 package com.biasedbit.http.client.timeout;
 
+import com.biasedbit.http.client.future.RequestFuture;
+import com.biasedbit.http.client.future.RequestFutureListener;
 import com.biasedbit.http.client.util.RequestContext;
-import com.biasedbit.http.client.future.HttpRequestFuture;
-import com.biasedbit.http.client.future.HttpRequestFutureListener;
 import org.jboss.netty.util.*;
 
 import java.lang.ref.WeakReference;
@@ -79,7 +79,7 @@ public class HashedWheelTimeoutController
         TimerTask task = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (timeout.isExpired()) context.getFuture().failedWithCause(HttpRequestFuture.TIMED_OUT);
+                if (timeout.isExpired()) context.getFuture().failedWithCause(RequestFuture.TIMED_OUT);
             }
         };
         Timeout t = timer.newTimeout(task, context.getTimeout(), TimeUnit.MILLISECONDS);
@@ -89,7 +89,7 @@ public class HashedWheelTimeoutController
     // private classes ------------------------------------------------------------------------------------------------
 
     private static class FutureTimeout<T>
-            implements HttpRequestFutureListener<T> {
+            implements RequestFutureListener<T> {
 
         // internal vars ----------------------------------------------------------------------------------------------
 
@@ -99,9 +99,9 @@ public class HashedWheelTimeoutController
 
         public FutureTimeout(final Timeout t) { httpTimeout = new WeakReference<>(t); }
 
-        // HttpRequestFutureListener ----------------------------------------------------------------------------------
+        // RequestFutureListener ----------------------------------------------------------------------------------
 
-        @Override public void operationComplete(final HttpRequestFuture<T> future)
+        @Override public void operationComplete(final RequestFuture<T> future)
                 throws Exception {
             Timeout t = httpTimeout.get();
             if (t != null) t.cancel();

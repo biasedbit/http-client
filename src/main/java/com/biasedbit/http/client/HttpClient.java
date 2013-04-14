@@ -16,8 +16,8 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.client.future.HttpDataSinkListener;
-import com.biasedbit.http.client.future.HttpRequestFuture;
+import com.biasedbit.http.client.future.DataSinkListener;
+import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.processor.HttpResponseProcessor;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
@@ -63,7 +63,7 @@ public interface HttpClient {
      * @throws CannotExecuteRequestException Thrown when the request is invalid or the client can no longer accept
      *                                       requests, either due to termination or full queue.
      */
-    <T> HttpRequestFuture<T> execute(String host, int port, HttpRequest request, HttpResponseProcessor<T> processor)
+    <T> RequestFuture<T> execute(String host, int port, HttpRequest request, HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException;
 
     /**
@@ -83,12 +83,12 @@ public interface HttpClient {
      * @throws CannotExecuteRequestException Thrown when the request is invalid or the client can no longer accept
      *                                       requests, either due to termination or full queue.
      */
-    <T> HttpRequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
+    <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
                                      HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException;
 
-    <T> HttpRequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                     HttpResponseProcessor<T> processor, HttpDataSinkListener dataSinkListener)
+    <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
+                                     HttpResponseProcessor<T> processor, DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException;
 
     /**
@@ -103,7 +103,7 @@ public interface HttpClient {
      * @throws CannotExecuteRequestException Thrown when the request is invalid or the client can no longer accept
      *                                       requests, either due to termination or full queue.
      */
-    HttpRequestFuture<Object> execute(String host, int port, HttpRequest request)
+    RequestFuture<Object> execute(String host, int port, HttpRequest request)
             throws CannotExecuteRequestException;
 
     boolean isHttps();
