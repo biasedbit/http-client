@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.connection;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.Utils;
@@ -39,10 +39,10 @@ import java.util.concurrent.Executor;
  * PipeliningHttpConnection pipelining version}.
  * <p/>
  * This implementation only accepts one request at a time. If {@link
- * #execute(com.biasedbit.http.client.HttpRequestContext) execute()} is called while {@link #isAvailable()} would
+ * #execute(com.biasedbit.http.client.util.RequestContext) execute()} is called while {@link #isAvailable()} would
  * return false, the request will be accepted and immediately fail with {@link HttpRequestFuture#EXECUTION_REJECTED}
  * <strong>unless</strong> the socket has been disconnected (in which case the request will not fail but
- * {@link #execute(HttpRequestContext)} will return {@code false} instead).
+ * {@link #execute(com.biasedbit.http.client.util.RequestContext)} will return {@code false} instead).
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
@@ -76,7 +76,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
      * <p/>
      * By default, this option is disabled (safer).
      */
-    @Getter @Setter private boolean restoreNonIdempotentOperations = RESTORE_NON_IDEMPOTENT_OPERATIONS;
+    @Getter @Setter private boolean restoreNonIdempotentOperations  = RESTORE_NON_IDEMPOTENT_OPERATIONS;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -94,11 +94,11 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
     private boolean   available;
 
     // state management
-    private boolean            readingChunks;
-    private HttpRequestContext currentRequest;
-    private HttpResponse       currentResponse;
-    private boolean            discarding;
-    private boolean            continueReceived;
+    private boolean        readingChunks;
+    private RequestContext currentRequest;
+    private HttpResponse   currentResponse;
+    private boolean        discarding;
+    private boolean        continueReceived;
 
     // constructors ---------------------------------------------------------------------------------------------------
 
@@ -199,7 +199,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
             return;
         }
 
-        HttpRequestContext request;
+        RequestContext request;
         synchronized (mutex) {
             if (terminate != null) return;
 
@@ -262,8 +262,8 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
 
     @Override public boolean isAvailable() { return available; }
 
-    @Override public boolean execute(final HttpRequestContext context) {
-        Utils.ensureValue(context != null, "HttpRequestContext cannot be null");
+    @Override public boolean execute(final RequestContext context) {
+        Utils.ensureValue(context != null, "RequestContext cannot be null");
 
         // Test for cancellation or tampering.
         if (context.getFuture().isDone()) {
@@ -424,7 +424,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
     private void currentRequestFinished() {
         // Always called inside a synchronized block.
 
-        HttpRequestContext context = currentRequest;
+        RequestContext context = currentRequest;
         // Only signal as available if the connection will be kept alive and if terminate hasn't been issued AND
         // the channel is still connected.
         available = HttpHeaders.isKeepAlive(currentRequest.getRequest()) &&

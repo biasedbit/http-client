@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.connection;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.Utils;
@@ -103,8 +103,8 @@ public class PipeliningHttpConnection
     private final TimeoutController      timeoutController;
     private final Executor               executor;
 
-    private final Object                    mutex    = new Object();
-    private final Queue<HttpRequestContext> requests = new LinkedList<>();
+    private final Object                mutex    = new Object();
+    private final Queue<RequestContext> requests = new LinkedList<>();
 
     // state management
     private HttpResponse currentResponse;
@@ -179,7 +179,7 @@ public class PipeliningHttpConnection
             throws Exception {
         if (channel == null) return;
 
-        HttpRequestContext current;
+        RequestContext current;
         synchronized (mutex) {
             willClose = true;
             // Apart from this method, only postResponseCleanup() removes items from the request queue.
@@ -247,8 +247,8 @@ public class PipeliningHttpConnection
                channel.isConnected();
     }
 
-    @Override public boolean execute(final HttpRequestContext context) {
-        Utils.ensureValue(context != null, "HttpRequestContext cannot be null");
+    @Override public boolean execute(final RequestContext context) {
+        Utils.ensureValue(context != null, "RequestContext cannot be null");
 
         // Test for cancellation or tampering.
         if (context.getFuture().isDone()) {
@@ -342,7 +342,7 @@ public class PipeliningHttpConnection
         // to null during processing, since it's always called inside a synchronized() block.
         if (discarding) return;
 
-        HttpRequestContext request = requests.peek();
+        RequestContext request = requests.peek();
         try {
             if (last) request.getProcessor().addLastData(content);
             else request.getProcessor().addData(content);
@@ -362,7 +362,7 @@ public class PipeliningHttpConnection
         // Only unlock the future if the contents weren't being discarded. If the contents were being discarded, it
         // means that receivedResponseForRequest() already triggered the future!
         if (!discarding) {
-            HttpRequestContext request = requests.peek();
+            RequestContext request = requests.peek();
             request.getFuture().finishedSuccessfully(request.getProcessor().getProcessedResponse(), currentResponse);
         }
 
@@ -381,7 +381,7 @@ public class PipeliningHttpConnection
         // to null during processing, since it's always called inside a synchronized() block.
 
         currentResponse = response;
-        HttpRequestContext request = requests.peek();
+        RequestContext request = requests.peek();
         try {
             if (!request.getProcessor().willProcessResponse(response)) {
                 // Rather than waiting for the full content to arrive (which will be discarded), perform an early
@@ -411,7 +411,7 @@ public class PipeliningHttpConnection
         // Always called inside a synchronized block.
 
         // Apart from this method, only exceptionCaught() removes items from the request queue.
-        HttpRequestContext context = requests.poll();
+        RequestContext context = requests.poll();
         currentResponse = null;
         listener.requestFinished(this, context);
 

@@ -16,17 +16,17 @@
 
 package com.biasedbit.http.client.connection;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import org.jboss.netty.channel.ChannelHandler;
 
 /**
  * An HTTP connection to a server.
  * <p/>
  * HTTP requests are dispatched from the {@link com.biasedbit.http.client.HttpClient} to the {@code HttpConnection}s
- * under the form of a {@link HttpRequestContext}.
+ * under the form of a {@link com.biasedbit.http.client.util.RequestContext}.
  * <p/>
  * To execute requests in a {@code HttpConnection}, the caller must always ensure the connection can process its request
- * by calling {@link #isAvailable()} prior to {@link #execute(com.biasedbit.http.client.HttpRequestContext) execute()}.
+ * by calling {@link #isAvailable()} prior to {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()}.
  * <p/>
  * Example:
  * <pre class="code">
@@ -37,7 +37,7 @@ import org.jboss.netty.channel.ChannelHandler;
  * Implementations of this interface are thread-safe. However, it is ill-advised to used them from multiple threads in
  * order to avoid entropic behavior. If you really want to use a single connection from multiple threads, you should
  * manually synchronise externally. The reason for this is that if both threads call {@link #isAvailable()} at the same
- * time, both will be able to {@linkplain #execute(com.biasedbit.http.client.HttpRequestContext) submit requests}, even though
+ * time, both will be able to {@linkplain #execute(com.biasedbit.http.client.util.RequestContext) submit requests}, even though
  * the implementation may not accept both (and consequently fail the last one with
  * {@link com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED}).
  * <p/>
@@ -50,7 +50,7 @@ import org.jboss.netty.channel.ChannelHandler;
  *     }
  * }</pre>
  * The reason for this implementation decision is making the common case fast: a vast majority of the times that
- * {@link #isAvailable()} is called, {@link #execute(HttpRequestContext) execute()} will accept the
+ * {@link #isAvailable()} is called, {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} will accept the
  * request. So rather than having only execute returning {@code true} or {@code false} based on the connection
  * availibility, this quicker call is a very reliable heuristic to determine if requests can be submitted or not.
  *
@@ -58,12 +58,12 @@ import org.jboss.netty.channel.ChannelHandler;
  * <div class="header">Note:</div>
  * There is no guarantee that a request will be approved if {@link #isAvailable()} returned true. Even though the
  * odds are extremely slim, the connection may go down between the call to {@link #isAvailable()} and {@link
- * #execute(HttpRequestContext) execute()}.
- * <p/>For such cases (and only for such cases) {@link #execute(HttpRequestContext) execute()} will return {@code false}
+ * #execute(com.biasedbit.http.client.util.RequestContext) execute()}.
+ * <p/>For such cases (and only for such cases) {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} will return {@code false}
  * rather than fail, the request in order for the caller to be given the chance to retry the same request in another
  * connection.
  * <p/>
- * In every other scenario where {@link #isAvailable()} returns false, calling {@link #execute(HttpRequestContext)
+ * In every other scenario where {@link #isAvailable()} returns false, calling {@link #execute(com.biasedbit.http.client.util.RequestContext)
  * execute()} <strong>will fail</strong> the request (with cause {@link
  * com.biasedbit.http.client.future.HttpRequestFuture#EXECUTION_REJECTED}).
  * </div>
@@ -136,5 +136,5 @@ public interface HttpConnection extends ChannelHandler {
      * {@link com.biasedbit.http.client.future.MutableRequestFuture#finishedSuccessfully(Object,
      * org.jboss.netty.handler.codec.http.HttpResponse) finishedSuccessfully()} on it.
      */
-    boolean execute(HttpRequestContext context);
+    boolean execute(RequestContext context);
 }

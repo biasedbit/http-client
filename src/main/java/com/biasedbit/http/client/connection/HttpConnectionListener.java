@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.connection;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 
 import java.util.Collection;
 
@@ -44,7 +44,7 @@ public interface HttpConnectionListener {
      * @param connection Connection that was disconnected.
      * @param retryRequests List of pending submitted requests that should be retried in a new connection, if possible.
      */
-    void connectionTerminated(HttpConnection connection, Collection<HttpRequestContext> retryRequests);
+    void connectionTerminated(HttpConnection connection, Collection<RequestContext> retryRequests);
 
     /**
      * Connection terminated event, called by the {@link HttpConnection} when an active connection disconnects.
@@ -72,5 +72,5 @@ public interface HttpConnectionListener {
      * @param connection Connection in which the event finished.
      * @param context Request context containing the request that has completed.
      */
-    void requestFinished(HttpConnection connection, HttpRequestContext context);
+    void requestFinished(HttpConnection connection, RequestContext context);
 }

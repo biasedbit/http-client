@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.timeout;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 
 /**
  * Facility to manage timeouts for requests.
@@ -33,7 +33,7 @@ public interface TimeoutController {
      * Manage the timeout for the provided context.
      *
      * @param context The request context to monitor. Timeout value is extracted from {@link
-     *                com.biasedbit.http.client.HttpRequestContext#getTimeout()}.
+     *                com.biasedbit.http.client.util.RequestContext#getTimeout()}.
      */
-    void controlTimeout(HttpRequestContext context);
+    void controlTimeout(RequestContext context);
 }

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client.connection;
+package com.biasedbit.http.client.util;
 
+import com.biasedbit.http.client.connection.HttpConnection;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

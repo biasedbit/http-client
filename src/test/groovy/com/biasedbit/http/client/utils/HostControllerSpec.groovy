@@ -1,22 +1,23 @@
-package com.biasedbit.http.client.host
+package com.biasedbit.http.client.utils
 
-import com.biasedbit.http.client.HttpRequestContext
-import com.biasedbit.http.client.connection.ConnectionPool
+import com.biasedbit.http.client.util.ConnectionPool
 import com.biasedbit.http.client.connection.HttpConnection
 import com.biasedbit.http.client.future.MutableRequestFuture
 import com.biasedbit.http.client.processor.HttpResponseProcessor
+import com.biasedbit.http.client.util.HostController
+import com.biasedbit.http.client.util.RequestContext
 import org.jboss.netty.handler.codec.http.HttpRequest
 import spock.lang.Specification
 
-import static com.biasedbit.http.client.host.HostContext.DrainQueueResult.*
+import static com.biasedbit.http.client.util.HostController.DrainQueueResult.*
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-class DefaultHostContextSpec extends Specification {
+class HostControllerSpec extends Specification {
 
   def pool = Stub(ConnectionPool, constructorArgs: [3])
-  def context = new DefaultHostContext("biasedbit.com", 80, pool)
+  def context = new HostController("biasedbit.com", 80, pool)
 
   def "#isCleanable returns true when the pool has no connections and the request queue is empty"() {
     expect: context.cleanable
@@ -33,7 +34,8 @@ class DefaultHostContextSpec extends Specification {
   }
 
   def "#addToQueue raises exception if HttpRequestContext host doesn't match"() {
-    setup: def requestContext = createRequestContext("github.com")
+    setup:
+    def requestContext = createRequestContext("github.com")
     when: context.addToQueue(requestContext)
     then: thrown(IllegalArgumentException)
   }
@@ -106,8 +108,8 @@ class DefaultHostContextSpec extends Specification {
     expect: context.drainQueue() == NOT_DRAINED
   }
 
-  private HttpRequestContext createRequestContext(String host = "biasedbit.com", int port = 80) {
-    new HttpRequestContext(host, port, 100,
+  private RequestContext createRequestContext(String host = "biasedbit.com", int port = 80) {
+    new RequestContext(host, port, 100,
         Mock(HttpRequest), Mock(HttpResponseProcessor), Mock(MutableRequestFuture))
   }
 }

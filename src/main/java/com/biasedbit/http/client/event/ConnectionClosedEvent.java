@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.event;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.connection.HttpConnection;
 import lombok.*;
 
@@ -34,8 +34,8 @@ public class ConnectionClosedEvent
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    @Getter private final HttpConnection                 connection;
-    @Getter private final Collection<HttpRequestContext> retryRequests;
+    @Getter private final HttpConnection             connection;
+    @Getter private final Collection<RequestContext> retryRequests;
 
     // HttpClientEvent ------------------------------------------------------------------------------------------------
 

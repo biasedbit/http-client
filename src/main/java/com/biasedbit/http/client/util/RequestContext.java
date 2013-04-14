@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.util;
 
 import com.biasedbit.http.client.future.*;
 import com.biasedbit.http.client.processor.HttpResponseProcessor;
@@ -38,7 +38,7 @@ import static com.biasedbit.http.client.util.Utils.ensureValue;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class HttpRequestContext<T> {
+public class RequestContext<T> {
 
     // properties -----------------------------------------------------------------------------------------------------
 
@@ -53,8 +53,8 @@ public class HttpRequestContext<T> {
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public HttpRequestContext(String host, int port, int timeout, HttpRequest request,
-                              HttpResponseProcessor<T> processor, MutableRequestFuture<T> future) {
+    public RequestContext(String host, int port, int timeout, HttpRequest request,
+                          HttpResponseProcessor<T> processor, MutableRequestFuture<T> future) {
         ensureValue(host != null, "Host cannot be null");
         ensureValue(port > 0 && port <= 65536, "Invalid port: " + port);
         ensureValue(request != null, "HttpRequest cannot be null");

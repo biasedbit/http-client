@@ -19,15 +19,13 @@ package com.biasedbit.http.client;
 import com.biasedbit.http.client.connection.*;
 import com.biasedbit.http.client.event.*;
 import com.biasedbit.http.client.future.*;
-import com.biasedbit.http.client.host.*;
 import com.biasedbit.http.client.processor.DiscardProcessor;
 import com.biasedbit.http.client.processor.HttpResponseProcessor;
 import com.biasedbit.http.client.ssl.BogusSslContextFactory;
 import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
 import com.biasedbit.http.client.timeout.TimeoutController;
-import com.biasedbit.http.client.util.CleanupChannelGroup;
-import com.biasedbit.http.client.util.NamedThreadFactory;
+import com.biasedbit.http.client.util.*;
 import lombok.Getter;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
@@ -134,15 +132,14 @@ public class DefaultHttpClient
     @Getter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
     @Getter private HttpConnectionFactory    connectionFactory;
-    @Getter private HostContextFactory       hostContextFactory;
     @Getter private HttpRequestFutureFactory futureFactory;
     @Getter private TimeoutController        timeoutController;
     @Getter private SslContextFactory        sslContextFactory;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final Map<String, HostContext> contextMap     = new HashMap<>();
-    private final AtomicInteger            queuedRequests = new AtomicInteger(0);
+    private final Map<String, HostController> hostControllers = new HashMap<>();
+    private final AtomicInteger               queuedRequests  = new AtomicInteger(0);
 
     private Executor                       executor;
     private ChannelFactory                 channelFactory;
@@ -164,7 +161,6 @@ public class DefaultHttpClient
             internalTimeoutManager = true;
         }
 
-        if (hostContextFactory == null) hostContextFactory = new DefaultHostContextFactory();
         if (connectionFactory == null) connectionFactory = new DefaultHttpConnectionFactory();
         if (futureFactory == null) futureFactory = new DefaultHttpRequestFutureFactory();
 
@@ -241,7 +237,7 @@ public class DefaultHttpClient
                 case CONNECTION_CLOSED:
                     ConnectionClosedEvent closedEvent = (ConnectionClosedEvent) event;
                     if ((closedEvent.getRetryRequests() != null) && !closedEvent.getRetryRequests().isEmpty()) {
-                        for (HttpRequestContext context : closedEvent.getRetryRequests()) {
+                        for (RequestContext context : closedEvent.getRetryRequests()) {
                             context.getFuture().failedWithCause(SHUTTING_DOWN);
                         }
                     }
@@ -250,11 +246,8 @@ public class DefaultHttpClient
 
         // Kill all connections (will cause failure on requests executing in those connections)
         // and fail context-queued requests.
-        for (HostContext hostContext : contextMap.values()) {
-            hostContext.failAllRequests(SHUTTING_DOWN);
-            hostContext.terminateAllConnections(SHUTTING_DOWN);
-        }
-        contextMap.clear();
+        for (HostController controller : hostControllers.values()) controller.shutdown(SHUTTING_DOWN);
+        hostControllers.clear();
 
         try {
             channelGroup.close().await(1000);
@@ -309,7 +302,7 @@ public class DefaultHttpClient
         if (autoDecompress) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
         MutableRequestFuture<T> future = futureFactory.createFuture();
-        HttpRequestContext<T> context = new HttpRequestContext<>(host, port, timeout, request, processor, future);
+        RequestContext<T> context = new RequestContext<>(host, port, timeout, request, processor, future);
         context.setDataSinkListener(dataSinkListener);
 
         if (!eventQueue.offer(new ExecuteRequestEvent(context))) {
@@ -330,10 +323,10 @@ public class DefaultHttpClient
     }
 
     @Override public void connectionTerminated(HttpConnection connection,
-                                               Collection<HttpRequestContext> retryRequests) {
+                                               Collection<RequestContext> retryRequests) {
         if (terminate) {
             if ((retryRequests != null) && !retryRequests.isEmpty()) {
-                for (HttpRequestContext request : retryRequests) request.getFuture().failedWithCause(SHUTTING_DOWN);
+                for (RequestContext request : retryRequests) request.getFuture().failedWithCause(SHUTTING_DOWN);
             }
         } else {
             eventQueue.offer(new ConnectionClosedEvent(connection, retryRequests));
@@ -352,7 +345,7 @@ public class DefaultHttpClient
         eventQueue.offer(new ConnectionFailedEvent(connection));
     }
 
-    @Override public void requestFinished(HttpConnection connection, HttpRequestContext context) {
+    @Override public void requestFinished(HttpConnection connection, RequestContext context) {
         if (terminate) return;
 
         eventQueue.offer(new RequestCompleteEvent(context));
@@ -398,17 +391,15 @@ public class DefaultHttpClient
         }
     }
 
-    // private helpers --------------------------------------------------------------------------------------------
+    // protected helpers ----------------------------------------------------------------------------------------------
 
     protected void handleExecuteRequest(ExecuteRequestEvent event) {
         // First, add it to the queue (or create a queue for given host if one does not exist)
         String id = hostId(event.getContext());
-        HostContext context = contextMap.get(id);
+        HostController context = hostControllers.get(id);
         if (context == null) {
-            ConnectionPool pool = new ConnectionPool(maxConnectionsPerHost);
-            context = hostContextFactory
-                    .createHostContext(event.getContext().getHost(), event.getContext().getPort(), pool);
-            contextMap.put(id, context);
+            context = HostController.createContextForRequest(event.getContext(), maxConnectionsPerHost);
+            hostControllers.put(id, context);
         }
 
         context.addToQueue(event.getContext());
@@ -418,22 +409,19 @@ public class DefaultHttpClient
     protected void handleRequestComplete(RequestCompleteEvent event) {
         queuedRequests.decrementAndGet();
 
-        HostContext context = contextMap.get(hostId(event.getContext()));
-        // Can only happen if context is cleaned meanwhile... ignore and bail out.
-        if (context == null) return;
+        HostController controller = hostControllers.get(hostId(event.getContext()));
+        if (controller == null) return; // Can only happen if controller is cleaned meanwhile; just ignore.
 
-        drainQueueAndProcessResult(context);
+        drainQueueAndProcessResult(controller);
     }
 
     protected void handleConnectionOpen(ConnectionOpenEvent event) {
         String id = hostId(event.getConnection());
-        HostContext context = contextMap.get(id);
-        ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
-
-        context.getConnectionPool().connectionOpen(event.getConnection());
+        HostController controller = hostControllers.get(id);
+        controller.connectionOpen(event.getConnection());
         // Rather than go through the whole process of drainQueue(), simply poll a single element from the head of
         // the queue into this connection (a newly opened connection is ALWAYS available).
-        HttpRequestContext nextRequest = context.pollQueue();
+        RequestContext nextRequest = controller.pollQueue();
 
         if (nextRequest != null) event.getConnection().execute(nextRequest);
     }
@@ -441,39 +429,37 @@ public class DefaultHttpClient
     protected void handleConnectionClosed(ConnectionClosedEvent event) {
         // Update the list of available connections for the same host:port.
         String id = hostId(event.getConnection());
-        HostContext context = contextMap.get(id);
-        ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
-
-        context.getConnectionPool().connectionClosed(event.getConnection());
+        HostController controller = hostControllers.get(id);
+        controller.connectionClosed(event.getConnection());
 
         // Restore the requests to the queue prior to cleanup check - avoids unnecessary cleanup when there are request
         // to be retried.
-        if (event.getRetryRequests() != null) context.restoreRequestsToQueue(event.getRetryRequests());
+        if (event.getRetryRequests() != null) controller.restoreRequestsToQueue(event.getRetryRequests());
 
         // If the pool has no connections and no requests are in queue for this host, then clean it up.
         // No requests in queue, no connections open or opening... Cleanup resources.
-        if (context.isCleanable() && cleanupInactiveHostContexts) contextMap.remove(id);
+        if (controller.isCleanable() && cleanupInactiveHostContexts) hostControllers.remove(id);
 
-        drainQueueAndProcessResult(context);
+        drainQueueAndProcessResult(controller);
     }
 
     protected void handleConnectionFailed(ConnectionFailedEvent event) {
         // Update the list of available connections for the same host:port.
         String id = hostId(event.getConnection());
-        HostContext context = contextMap.get(id);
-        ensureState(context != null, "Context for id '%s' does not exist (may have been incorrectly cleaned up)", id);
+        HostController controller = hostControllers.get(id);
+        controller.connectionFailed();
 
-        ConnectionPool pool = context.getConnectionPool();
-        pool.connectionFailed();
         // If there are no more connections active or establishing we need to fail all queued requests.
-        if (!pool.hasConnections()) context.failAllRequests(CANNOT_CONNECT);
+        if (!controller.hasConnections()) controller.failAllRequests(CANNOT_CONNECT);
     }
 
-    protected void drainQueueAndProcessResult(HostContext context) {
-        HostContext.DrainQueueResult result = context.drainQueue();
+    // private helpers ------------------------------------------------------------------------------------------------
+
+    private void drainQueueAndProcessResult(HostController controller) {
+        HostController.DrainQueueResult result = controller.drainQueue();
         switch (result) {
             case OPEN_CONNECTION:
-                openConnection(context);
+                openConnection(controller);
                 break;
 
             case QUEUE_EMPTY:
@@ -483,15 +469,15 @@ public class DefaultHttpClient
         }
     }
 
-    protected String hostId(HttpConnection connection) { return hostId(connection.getHost(), connection.getPort()); }
+    private String hostId(HttpConnection connection) { return hostId(connection.getHost(), connection.getPort()); }
 
-    protected String hostId(HttpRequestContext context) { return hostId(context.getHost(), context.getPort()); }
+    private String hostId(RequestContext context) { return hostId(context.getHost(), context.getPort()); }
 
-    protected String hostId(HostContext context) { return hostId(context.getHost(), context.getPort()); }
+    private String hostId(HostController context) { return hostId(context.getHost(), context.getPort()); }
 
-    protected String hostId(String host, int port) { return string(host, ":", port); }
+    private String hostId(String host, int port) { return string(host, ":", port); }
 
-    protected void openConnection(final HostContext context) {
+    private void openConnection(final HostController controller) {
         // No need to recheck whether a connection can be opened or not, that was done already inside the HttpContext.
 
         // Try to create a pipeline before signalling a new connection is being open.
@@ -508,16 +494,17 @@ public class DefaultHttpClient
         }
 
         // Signal that a new connection is opening.
-        context.getConnectionPool().connectionOpening();
+        controller.connectionOpening();
 
         // server:port-X
-        String id = new StringBuilder().append(hostId(context)).append("-").append(connectionCounter++).toString();
+        String id = new StringBuilder().append(hostId(controller)).append("-").append(connectionCounter++).toString();
 
         // If not using NIO, then delegate the blocking write() call to the executor.
         Executor writeDelegator = useNio ? null : executor;
 
         final HttpConnection connection = connectionFactory
-                .createConnection(id, context.getHost(), context.getPort(), this, timeoutController, writeDelegator);
+                .createConnection(id, controller.getHost(), controller.getPort(),
+                                  this, timeoutController, writeDelegator);
 
         pipeline.addLast("handler", connection);
 
@@ -529,7 +516,8 @@ public class DefaultHttpClient
                 bootstrap.setOption("connectTimeoutMillis", connectionTimeout);
                 bootstrap.setPipeline(pipeline);
 
-                ChannelFuture future = bootstrap.connect(new InetSocketAddress(context.getHost(), context.getPort()));
+                InetSocketAddress address = new InetSocketAddress(controller.getHost(), controller.getPort());
+                ChannelFuture future = bootstrap.connect(address);
                 future.addListener(new ChannelFutureListener() {
                     @Override public void operationComplete(ChannelFuture future)
                             throws Exception {
@@ -702,11 +690,11 @@ public class DefaultHttpClient
     }
 
     /**
-     * Whether empty {@link HostContext}s should be immediately cleaned up.
+     * Whether empty {@link HostController}s should be immediately cleaned up.
      * <p/>
-     * When a {@linkplain HostContext host context} has no more queued requests nor active connections nor connections
-     * opening, it is eligible for cleanup. Setting this flag to {@code true} will cause them to be instantly reaped
-     * when such conditions are met.
+     * When a {@linkplain HostController host controller} has no more queued requests nor active connections nor
+     * connections opening, it is eligible for cleanup. Setting this flag to {@code true} will cause them to be
+     * instantly reaped when such conditions are met.
      * <p/>
      * Unless your client will be performing requests to many different host/port combinations, you should set this flag
      * to {@code false}. While the overhead of creating/cleaning these contexts is minimal, it can be avoided in these
@@ -716,27 +704,12 @@ public class DefaultHttpClient
      *
      * @param cleanupInactiveHostContexts {@code true} if inactive host contexts should be cleaned up, {@code false}
      *                                    otherwise.
-     * @see com.biasedbit.http.client.host.HostContext
+     * @see com.biasedbit.http.client.util.HostController
      */
     public void setCleanupInactiveHostContexts(boolean cleanupInactiveHostContexts) {
         ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.cleanupInactiveHostContexts = cleanupInactiveHostContexts;
-    }
-
-    /**
-     * The {@link HostContextFactory} that will be used to create new {@link HostContext} instances.
-     * <p/>
-     * Defaults to {@link DefaultHostContextFactory} if none is provided.
-     *
-     * @param hostContextFactory The {@link HostContextFactory} to be used.
-     * @see com.biasedbit.http.client.host.HostContextFactory
-     * @see com.biasedbit.http.client.host.HostContext
-     */
-    public void setHostContextFactory(HostContextFactory hostContextFactory) {
-        ensureState(eventQueue == null, "Cannot modify property after initialization");
-
-        this.hostContextFactory = hostContextFactory;
     }
 
     /**

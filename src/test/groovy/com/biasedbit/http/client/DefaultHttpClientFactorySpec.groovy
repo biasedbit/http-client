@@ -2,7 +2,7 @@ package com.biasedbit.http.client
 
 import com.biasedbit.http.client.connection.HttpConnectionFactory
 import com.biasedbit.http.client.future.HttpRequestFutureFactory
-import com.biasedbit.http.client.host.HostContextFactory
+
 import com.biasedbit.http.client.ssl.SslContextFactory
 import com.biasedbit.http.client.timeout.TimeoutController
 import spock.lang.Specification
@@ -15,7 +15,6 @@ class DefaultHttpClientFactorySpec extends Specification {
   DefaultHttpClientFactory factory = new DefaultHttpClientFactory()
 
   def setup() {
-    factory.hostContextFactory = Mock(HostContextFactory)
     factory.connectionFactory = Mock(HttpConnectionFactory)
     factory.futureFactory = Mock(HttpRequestFutureFactory)
     factory.timeoutController = Mock(TimeoutController)
@@ -37,7 +36,6 @@ class DefaultHttpClientFactorySpec extends Specification {
       client.maxHelperThreads == factory.maxHelperThreads
       client.cleanupInactiveHostContexts == factory.cleanupInactiveHostContexts
 
-      client.hostContextFactory == factory.hostContextFactory
       client.connectionFactory == factory.connectionFactory
       client.futureFactory == factory.futureFactory
       client.timeoutController == factory.timeoutController

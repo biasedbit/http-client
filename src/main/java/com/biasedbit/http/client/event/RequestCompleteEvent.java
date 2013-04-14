@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.event;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import lombok.*;
 
 /**
@@ -31,7 +31,7 @@ public class RequestCompleteEvent
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    @Getter private final HttpRequestContext context;
+    @Getter private final RequestContext context;
 
     // HttpClientEvent ------------------------------------------------------------------------------------------------
 

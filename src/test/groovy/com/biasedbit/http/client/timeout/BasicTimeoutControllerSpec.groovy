@@ -1,9 +1,9 @@
 package com.biasedbit.http.client.timeout
 
-import com.biasedbit.http.client.HttpRequestContext
 import com.biasedbit.http.client.future.DefaultHttpRequestFuture
 import com.biasedbit.http.client.future.HttpRequestFuture
 import com.biasedbit.http.client.processor.DiscardProcessor
+import com.biasedbit.http.client.util.RequestContext
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpMethod
 import org.jboss.netty.handler.codec.http.HttpVersion
@@ -71,7 +71,7 @@ class BasicTimeoutControllerSpec extends Specification {
   private static def createContext(int timeout) {
     def request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/index")
 
-    new HttpRequestContext<>("biasedbit.com", 80, timeout, request,
+    new RequestContext<>("biasedbit.com", 80, timeout, request,
         new DiscardProcessor(), new DefaultHttpRequestFuture<>());
   }
 }

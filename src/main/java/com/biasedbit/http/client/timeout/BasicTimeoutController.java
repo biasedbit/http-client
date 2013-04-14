@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.timeout;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.future.HttpRequestFutureListener;
 import org.jboss.netty.util.internal.ExecutorUtil;
@@ -81,7 +81,7 @@ public class BasicTimeoutController
 
     @Override public void terminate() { if (internalExecutor) ExecutorUtil.terminate(executor); }
 
-    @Override public void controlTimeout(HttpRequestContext context) {
+    @Override public void controlTimeout(RequestContext context) {
         executor.execute(new TimeoutChecker(context));
     }
 
@@ -89,7 +89,7 @@ public class BasicTimeoutController
      * Checks if a given request times out before its execution completes.
      * <p/>
      * When the {@link #run()} method is called, the timeout checker binds itself as a listener to the provided {@link
-     * com.biasedbit.http.client.HttpRequestContext}.
+     * com.biasedbit.http.client.util.RequestContext}.
      * <p/>
      * The motive behind using a {@code TimeoutChecker} instead of having some internal thread in each connection that
      * shares state variables is that on some rare occasions, while executing runs with client and server on the same
@@ -108,12 +108,12 @@ public class BasicTimeoutController
 
         // internal vars ----------------------------------------------------------------------------------------------
 
-        private final HttpRequestContext request;
-        private final CountDownLatch     latch;
+        private final RequestContext request;
+        private final CountDownLatch latch;
 
         // constructors -----------------------------------------------------------------------------------------------
 
-        public TimeoutChecker(HttpRequestContext request) {
+        public TimeoutChecker(RequestContext request) {
             this.request = request;
             latch = new CountDownLatch(1);
         }

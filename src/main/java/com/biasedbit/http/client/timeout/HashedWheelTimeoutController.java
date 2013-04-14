@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.timeout;
 
-import com.biasedbit.http.client.HttpRequestContext;
+import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.future.HttpRequestFuture;
 import com.biasedbit.http.client.future.HttpRequestFutureListener;
 import org.jboss.netty.util.*;
@@ -75,7 +75,7 @@ public class HashedWheelTimeoutController
     @Override public void terminate() { if (internalTimer) timer.stop(); }
 
     @SuppressWarnings({"unchecked"})
-    @Override public void controlTimeout(final HttpRequestContext context) {
+    @Override public void controlTimeout(final RequestContext context) {
         TimerTask task = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {

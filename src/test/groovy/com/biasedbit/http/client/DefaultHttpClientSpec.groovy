@@ -1,16 +1,13 @@
 package com.biasedbit.http.client
 
-import com.biasedbit.http.client.connection.HttpDataSink
 import com.biasedbit.http.client.future.HttpDataSinkListener
 import com.biasedbit.http.client.processor.DiscardProcessor
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
-import org.jboss.netty.handler.codec.http.HttpMethod
-import org.jboss.netty.handler.codec.http.HttpVersion
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.jboss.netty.handler.codec.http.HttpMethod.*
-import static org.jboss.netty.handler.codec.http.HttpVersion.*
+import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -93,7 +90,6 @@ class DefaultHttpClientSpec extends Specification {
     "autoDecompress"              | false
     "cleanupInactiveHostContexts" | true
     "connectionFactory"           | null
-    "hostContextFactory"          | null
     "futureFactory"               | null
     "timeoutController"           | null
     "sslContextFactory"           | null
