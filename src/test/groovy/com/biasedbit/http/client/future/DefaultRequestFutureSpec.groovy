@@ -10,7 +10,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-class DefaultHttpFutureSpec extends Specification {
+class DefaultRequestFutureSpec extends Specification {
 
   def future   = new DefaultRequestFuture()
   def response = new DefaultHttpResponse(HTTP_1_1, OK)
@@ -192,6 +192,10 @@ class DefaultHttpFutureSpec extends Specification {
 
     and: "all the listeners to have been notified"
     listeners.each { assert it.notified }
+  }
+
+  def "#await bla bla bla"() {
+
   }
 
   def "it gracefully handles exceptions when notifiying listeners"() {
