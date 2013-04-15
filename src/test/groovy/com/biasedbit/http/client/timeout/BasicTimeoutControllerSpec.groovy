@@ -16,13 +16,9 @@ import java.util.concurrent.Executors
  */
 class BasicTimeoutControllerSpec extends Specification {
 
-  TimeoutController controller
+  def controller = new BasicTimeoutController(0)
 
-  def setup() {
-    controller = new BasicTimeoutController(0)
-    assert controller.init()
-  }
-
+  def setup() { assert controller.init() }
   def cleanup() { controller.terminate() }
 
   def "it accepts N > 0 as constructor argument and creates a fixed size thread pool"() {
@@ -64,7 +60,7 @@ class BasicTimeoutControllerSpec extends Specification {
     where:
     timeout | sleepTime
     500     | 100
-    500     | 499
+    500     | 490
   }
 
   private static def createContext(int timeout) {
