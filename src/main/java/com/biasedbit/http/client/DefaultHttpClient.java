@@ -255,15 +255,15 @@ public class DefaultHttpClient
         if (internalTimeoutManager) timeoutController.terminate();
     }
 
-    @Override public <T> RequestFuture<T> execute(String host, int port, HttpRequest request,
-                                                      HttpResponseProcessor<T> processor)
-            throws CannotExecuteRequestException {
-        return execute(host, port, requestInactivityTimeout, request, processor, null);
-    }
-
     @Override public RequestFuture<Object> execute(String host, int port, HttpRequest request)
             throws CannotExecuteRequestException {
         return execute(host, port, requestInactivityTimeout, request, DiscardProcessor.getInstance(), null);
+    }
+
+    @Override public <T> RequestFuture<T> execute(String host, int port, HttpRequest request,
+                                                  HttpResponseProcessor<T> processor)
+            throws CannotExecuteRequestException {
+        return execute(host, port, requestInactivityTimeout, request, processor, null);
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
@@ -273,7 +273,7 @@ public class DefaultHttpClient
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                            HttpResponseProcessor<T> processor, DataSinkListener dataSinkListener)
+                                                  HttpResponseProcessor<T> processor, DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException {
 
         if (terminate) throw new CannotExecuteRequestException("HttpClient already terminated");
