@@ -7,7 +7,7 @@ import spock.lang.Timeout
 
 import java.util.concurrent.TimeUnit
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
 
 /**
@@ -165,6 +165,18 @@ class DefaultRequestFutureSpec extends Specification {
 
     then: "the listener is not notified"
     !listener.notified
+  }
+
+  def "#isSuccessfulResponse only returns true if the status code of the response is in the range 200-299"() {
+    setup: response = new DefaultHttpResponse(HTTP_1_1, status)
+    when: future.finishedSuccessfully("finished", response)
+    then: future.successfulResponse == successfulResponse
+    where:
+    status                     | successfulResponse
+    PROCESSING /* 102 */       | false
+    OK /* 200 */               | true
+    CREATED /* 201*/           | true
+    MULTIPLE_CHOICES /* 300 */ | false
   }
 
   def "#cancelled triggers completion of the future with an exception as cause and the received response"() {
