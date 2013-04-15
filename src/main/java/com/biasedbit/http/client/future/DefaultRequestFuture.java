@@ -17,6 +17,7 @@
 package com.biasedbit.http.client.future;
 
 import com.biasedbit.http.client.connection.HttpConnection;
+import lombok.SneakyThrows;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
@@ -172,16 +173,14 @@ public class DefaultRequestFuture<T>
         return this;
     }
 
+    @SneakyThrows(InterruptedException.class)
     @Override public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
-        try {
-            return await0(unit.toNanos(timeout), false);
-        } catch (InterruptedException neverHappens) { throw new InternalError(); }
+        return await0(unit.toNanos(timeout), false);
     }
 
+    @SneakyThrows(InterruptedException.class)
     @Override public boolean awaitUninterruptibly(long timeoutMillis) {
-        try {
-            return await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), false);
-        } catch (InterruptedException neverHappens) { throw new InternalError(); }
+        return await0(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), false);
     }
 
     // interface ------------------------------------------------------------------------------------------------------

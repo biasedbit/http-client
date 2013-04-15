@@ -16,6 +16,8 @@
 
 package com.biasedbit.http.client.ssl;
 
+import lombok.*;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import java.security.KeyStore;
@@ -28,13 +30,11 @@ import java.security.Security;
  *
  * You will have to create your context differently in a real world application.
  *
- * @author The Netty Project (netty-dev@lists.jboss.org)
  * @author Trustin Lee (tlee@redhat.com)
  * @author <a href="https://github.com/jerjanssen">Jeremiah Janssen</a>
  * @author <a href="http://biasedbit.com">Bruno de Carvalho</a>
- *
- * @version $Rev: 183008 $, $Date: 2008-11-18 20:44:38 -0500 (Tue, 18 Nov 2008) $
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BogusSslContextFactory
         implements SslContextFactory {
 
@@ -45,43 +45,8 @@ public class BogusSslContextFactory
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final SSLContext serverContext;
-    private final SSLContext clientContext;
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    private BogusSslContextFactory() {
-        String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
-        if (algorithm == null) algorithm = "X509";
-
-        SSLContext tmpServerContext;
-        SSLContext tmpClientContext;
-        try {
-            // If you're on android, use BKS here instead of JKS
-            KeyStore ks = KeyStore.getInstance("JKS");
-            ks.load(BogusKeyStore.asInputStream(), BogusKeyStore.getKeyStorePassword());
-
-            // Set up key manager factory to use our key store
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance(algorithm);
-            kmf.init(ks, BogusKeyStore.getCertificatePassword());
-
-            // Initialize the SSLContext to work with our key managers.
-            tmpServerContext = SSLContext.getInstance(PROTOCOL);
-            tmpServerContext.init(kmf.getKeyManagers(), BogusTrustManagerFactory.getTrustManagers(), null);
-        } catch (Exception e) {
-            throw new Error("Failed to initialize the server-side SSLContext", e);
-        }
-
-        try {
-            tmpClientContext = SSLContext.getInstance(PROTOCOL);
-            tmpClientContext.init(null, BogusTrustManagerFactory.getTrustManagers(), null);
-        } catch (Exception e) {
-            throw new Error("Failed to initialize the client-side SSLContext", e);
-        }
-
-        serverContext = tmpServerContext;
-        clientContext = tmpClientContext;
-    }
+    private final SSLContext serverContext = createServerContext();
+    private final SSLContext clientContext = createClientContext();
 
     // public static methods ------------------------------------------------------------------------------------------
 
@@ -92,4 +57,32 @@ public class BogusSslContextFactory
     @Override public SSLContext getServerContext() { return serverContext; }
 
     @Override public SSLContext getClientContext() { return clientContext; }
+
+    // private static helpers -----------------------------------------------------------------------------------------
+
+    @SneakyThrows(Exception.class) private static SSLContext createServerContext() {
+        String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
+        if (algorithm == null) algorithm = "X509";
+
+        // If you're on android, use BKS here instead of JKS
+        KeyStore ks = KeyStore.getInstance("JKS");
+        ks.load(BogusKeyStore.asInputStream(), BogusKeyStore.getKeyStorePassword());
+
+        // Set up key manager factory to use our key store
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(algorithm);
+        kmf.init(ks, BogusKeyStore.getCertificatePassword());
+
+        // Initialize the SSLContext to work with our key managers.
+        SSLContext serverContext = SSLContext.getInstance(PROTOCOL);
+        serverContext.init(kmf.getKeyManagers(), BogusTrustManagerFactory.getTrustManagers(), null);
+
+        return serverContext;
+    }
+
+    @SneakyThrows(Exception.class) private static SSLContext createClientContext() {
+        SSLContext clientContext = SSLContext.getInstance(PROTOCOL);
+        clientContext.init(null, BogusTrustManagerFactory.getTrustManagers(), null);
+
+        return clientContext;
+    }
 }

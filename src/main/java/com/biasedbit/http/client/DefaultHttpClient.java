@@ -28,6 +28,7 @@ import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.*;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.group.ChannelGroup;
@@ -475,16 +476,7 @@ public class DefaultHttpClient
 
         // Try to create a pipeline before signalling a new connection is being open.
         // This should never throw exceptions but who knows...
-        final ChannelPipeline pipeline;
-        try {
-            pipeline = pipelineFactory.getPipeline();
-        } catch (Exception e) {
-            // This should only happen in development mode so err.println isn't a big deal...
-            System.err.println("Could not create pipeline.");
-            e.printStackTrace();
-            // bail out before marking a connection as opening.
-            return;
-        }
+        final ChannelPipeline pipeline = createChannelPipeline();
 
         // Signal that a new connection is opening.
         controller.connectionOpening();
@@ -520,6 +512,10 @@ public class DefaultHttpClient
             }
         });
     }
+
+
+    @SneakyThrows(Exception.class) // IDE still reports error, but it's OK...
+    private ChannelPipeline createChannelPipeline() { return pipelineFactory.getPipeline(); }
 
     // getters & setters ----------------------------------------------------------------------------------------------
 
