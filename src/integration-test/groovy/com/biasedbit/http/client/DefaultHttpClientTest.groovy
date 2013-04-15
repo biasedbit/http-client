@@ -57,7 +57,7 @@ class DefaultHttpClientTest extends Specification {
 
   def "it fails with CANNOT_CONNECT if connection fails"() {
     setup: server.terminate()
-    when: def future = client.execute(host, port, request)
+    when: def future = client.execute(host, port, request, new DiscardProcessor())
     then: future.awaitUninterruptibly(1000)
     and: future.isDone()
     and: !future.isSuccessful()

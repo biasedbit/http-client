@@ -307,7 +307,7 @@ public class DefaultHttpConnection
             try {
                 channel.write(context.getRequest());
             } catch (Exception e) {
-                // Some error occurred underneath, maybe ChannelClosedException or something like that.
+                // Some error occurred underneath, maybe ChannelClosedException.
                 currentRequest = null;
                 context.getFuture().failedWithCause(e);
                 available = true;
