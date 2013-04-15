@@ -52,5 +52,7 @@ public interface EventProcessorStatsProvider {
      * @return Total of processed events.
      */
     long getProcessedEvents();
+
+    long getProcessedEvents(EventType event);
 }
 

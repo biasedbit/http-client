@@ -1,8 +1,13 @@
 package com.biasedbit.http.client
 
+import com.biasedbit.http.client.connection.DefaultHttpConnection
+import com.biasedbit.http.client.connection.HttpConnection
+import com.biasedbit.http.client.connection.HttpConnectionFactory
 import com.biasedbit.http.client.future.DataSinkListener
 import com.biasedbit.http.client.processor.DiscardProcessor
+import com.biasedbit.http.client.util.RequestContext
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
+import org.jboss.netty.handler.codec.http.HttpHeaders
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -66,19 +71,12 @@ class DefaultHttpClientSpec extends Specification {
     method << [OPTIONS, GET, HEAD, DELETE, TRACE, CONNECT]
   }
 
-//  def "#execute adds an 'Accept-Encoding' header set to 'gzip' when auto decompression is enabled"() {
-//    setup:
-//    client = new DefaultHttpClient()
-//    client.autoDecompress = true
-//    ???
-//  }
-
   @Unroll
   def "it doesn't allow changing the '#property' property after it has been initialized"() {
     when: client."${property}" = value
     then: thrown(IllegalStateException)
     where:
-    property | value
+    property                      | value
     "connectionTimeout"           | 1000
     "requestInactivityTimeout"    | 1000
     "useNio"                      | false

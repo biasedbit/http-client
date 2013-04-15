@@ -26,7 +26,7 @@ import lombok.Getter;
  * calls. Even though these add neglectable overhead, for production scenarios where stats gathering is not vital, you
  * should use {@link DefaultHttpClient} rather than this one.
  * <p/>
- * This is only useful if you're implementing your own {@link com.biasedbit.http.client.host.HostContext} or
+ * This is only useful if you're implementing your own {@link com.biasedbit.http.client.util.HostController} or
  * {@link com.biasedbit.http.client.connection.HttpConnection} and want to test the impact of your changes.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -45,6 +45,14 @@ public class StatsGatheringHttpClient
     @Getter private long connectionFailedTime = 0;
     @Getter private int  events               = 0;
 
+    // internal vars --------------------------------------------------------------------------------------------------
+
+    private long executeRequestCount;
+    private long requestCompleteCount;
+    private long connectionOpenCount;
+    private long connectionClosedCount;
+    private long connectionFailedCount;
+
     // DefaultHttpClient ----------------------------------------------------------------------------------------------
 
     @Override public void eventHandlingLoop() {
@@ -61,22 +69,27 @@ public class StatsGatheringHttpClient
                 switch (event.getEventType()) {
                     case EXECUTE_REQUEST:
                         handleExecuteRequest((ExecuteRequestEvent) event);
+                        executeRequestCount++;
                         executeRequestTime += System.nanoTime() - start;
                         break;
                     case REQUEST_COMPLETE:
                         handleRequestComplete((RequestCompleteEvent) event);
+                        requestCompleteCount++;
                         requestCompleteTime += System.nanoTime() - start;
                         break;
                     case CONNECTION_OPEN:
                         handleConnectionOpen((ConnectionOpenEvent) event);
+                        connectionOpenCount++;
                         connectionOpenTime += System.nanoTime() - start;
                         break;
                     case CONNECTION_CLOSED:
                         handleConnectionClosed((ConnectionClosedEvent) event);
+                        connectionClosedCount++;
                         connectionClosedTime += System.nanoTime() - start;
                         break;
                     case CONNECTION_FAILED:
                         handleConnectionFailed((ConnectionFailedEvent) event);
+                        connectionFailedCount++;
                         connectionFailedTime += System.nanoTime() - start;
                         break;
                     default: // Consume and do nothing, unknown event.
@@ -113,4 +126,15 @@ public class StatsGatheringHttpClient
     }
 
     @Override public long getProcessedEvents() { return events; }
+
+    @Override public long getProcessedEvents(EventType event) {
+        switch (event) {
+            case EXECUTE_REQUEST: return executeRequestCount;
+            case REQUEST_COMPLETE: return requestCompleteCount;
+            case CONNECTION_OPEN: return connectionOpenCount;
+            case CONNECTION_CLOSED: return connectionClosedCount;
+            case CONNECTION_FAILED: return connectionFailedCount;
+            default: throw new IllegalArgumentException("Unsupported event type: " + event);
+        }
+    }
 }
