@@ -28,7 +28,7 @@ import java.util.List;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public abstract class AbstractAccumulatorProcessor<T>
-        implements HttpResponseProcessor<T> {
+        implements ResponseProcessor<T> {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ public abstract class AbstractAccumulatorProcessor<T>
         for (int acceptedCode : acceptedCodes) this.acceptedCodes.add(acceptedCode);
     }
 
-    // HttpResponseProcessor ------------------------------------------------------------------------------------------
+    // ResponseProcessor ------------------------------------------------------------------------------------------
 
     @Override public boolean willProcessResponse(HttpResponse response)
             throws Exception {

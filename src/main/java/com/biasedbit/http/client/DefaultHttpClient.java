@@ -21,7 +21,7 @@ import com.biasedbit.http.client.event.*;
 import com.biasedbit.http.client.future.DataSinkListener;
 import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.processor.DiscardProcessor;
-import com.biasedbit.http.client.processor.HttpResponseProcessor;
+import com.biasedbit.http.client.processor.ResponseProcessor;
 import com.biasedbit.http.client.ssl.BogusSslContextFactory;
 import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.HashedWheelTimeoutController;
@@ -62,7 +62,7 @@ import static com.biasedbit.http.client.util.Utils.*;
  * <h3>Event queue (producer/consumer)</h3> When this implementation is initialised, it fires up an auxilliary thread,
  * the consumer.
  * <p/>
- * Every time one of the variants of the method {@code execute()} is called, a new {@link HttpClientEvent} is generated
+ * Every time one of the variants of the method {@code execute()} is called, a new {@link com.biasedbit.http.client.event.ClientEvent} is generated
  * and introduced in a blocking event queue (on the caller's thread execution time). The consumer then grabs that
  * request and acts accordingly - it can either queue the request so that it is later executed in an available
  * connection, request a new connection in case no connections are available, directly execute this request, etc.
@@ -88,7 +88,7 @@ import static com.biasedbit.http.client.util.Utils.*;
  * <p/>
  * <div class="note">
  * <div class="header">Note:</div>
- * Calling {@linkplain #execute(String, int, HttpRequest, HttpResponseProcessor) one of the variants of {@code execute}}
+ * Calling {@linkplain #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor) one of the variants of {@code execute}}
  * with the client configured with {@linkplain #setAutoDecompress(boolean) auto-inflation} turned on will cause a
  * 'ACCEPT_ENCODING' header to be added with value 'GZIP'.
  * </div>
@@ -97,11 +97,11 @@ import static com.biasedbit.http.client.util.Utils.*;
  */
 public class DefaultHttpClient
         implements HttpClient,
-                   HttpConnectionListener {
+                   ConnectionListener {
 
     // constants ------------------------------------------------------------------------------------------------------
 
-    protected static final HttpClientEvent POISON = new HttpClientEvent() {
+    protected static final ClientEvent POISON = new ClientEvent() {
         @Override public EventType getEventType() { return null; }
     };
 
@@ -131,23 +131,23 @@ public class DefaultHttpClient
     @Getter private boolean autoDecompress              = AUTO_DECOMPRESS;
     @Getter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
-    @Getter private HttpConnectionFactory    connectionFactory;
-    @Getter private TimeoutController        timeoutController;
-    @Getter private SslContextFactory        sslContextFactory;
+    @Getter private ConnectionFactory connectionFactory;
+    @Getter private TimeoutController timeoutController;
+    @Getter private SslContextFactory sslContextFactory;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
     private final Map<String, HostController> hostControllers = new HashMap<>();
     private final AtomicInteger               queuedRequests  = new AtomicInteger(0);
 
-    private Executor                       executor;
-    private ChannelFactory                 channelFactory;
-    private ChannelPipelineFactory         pipelineFactory;
-    private ChannelGroup                   channelGroup;
-    private BlockingQueue<HttpClientEvent> eventQueue;
-    private int                            connectionCounter;
-    private CountDownLatch                 eventConsumerLatch;
-    private boolean                        internalTimeoutManager;
+    private Executor                   executor;
+    private ChannelFactory             channelFactory;
+    private ChannelPipelineFactory     pipelineFactory;
+    private ChannelGroup               channelGroup;
+    private BlockingQueue<ClientEvent> eventQueue;
+    private int                        connectionCounter;
+    private CountDownLatch             eventConsumerLatch;
+    private boolean                    internalTimeoutManager;
 
     private volatile boolean terminate;
 
@@ -160,7 +160,7 @@ public class DefaultHttpClient
             internalTimeoutManager = true;
         }
 
-        if (connectionFactory == null) connectionFactory = new DefaultHttpConnectionFactory();
+        if (connectionFactory == null) connectionFactory = new DefaultConnectionFactory();
         if ((sslContextFactory == null) && isHttps()) sslContextFactory = BogusSslContextFactory.getInstance();
 
         eventConsumerLatch = new CountDownLatch(1);
@@ -214,7 +214,7 @@ public class DefaultHttpClient
         // Stop accepting requests.
         terminate = true;
         // Copy any pending operations in order to signal execution request failures.
-        Collection<HttpClientEvent> pendingEvents = new ArrayList<>(eventQueue);
+        Collection<ClientEvent> pendingEvents = new ArrayList<>(eventQueue);
         // Clear the queue and kill the consumer thread by "poisoning" the event queue.
         eventQueue.clear();
         eventQueue.add(POISON);
@@ -223,7 +223,7 @@ public class DefaultHttpClient
         } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
         // Fail all requests that were still in the event queue.
-        for (HttpClientEvent event : pendingEvents) {
+        for (ClientEvent event : pendingEvents) {
             switch (event.getEventType()) {
                 case EXECUTE_REQUEST:
                     ExecuteRequestEvent executeEvent = (ExecuteRequestEvent) event;
@@ -262,19 +262,19 @@ public class DefaultHttpClient
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, HttpRequest request,
-                                                  HttpResponseProcessor<T> processor)
+                                                  ResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
         return execute(host, port, requestInactivityTimeout, request, processor, null);
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                                      HttpResponseProcessor<T> processor)
+                                                      ResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
         return execute(host, port, timeout, request, processor, null);
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                                  HttpResponseProcessor<T> processor, DataSinkListener dataSinkListener)
+                                                  ResponseProcessor<T> processor, DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException {
 
         if (terminate) throw new CannotExecuteRequestException("HttpClient already terminated");
@@ -285,7 +285,7 @@ public class DefaultHttpClient
             ensureValue((request.getMethod() == HttpMethod.POST) ||
                         (request.getMethod() == HttpMethod.PUT) ||
                         (request.getMethod() == HttpMethod.PATCH),
-                        "Requests with HttpDataSink must be POST, PUT or PATCH");
+                        "Requests with DataSink must be POST, PUT or PATCH");
         }
 
         if (queuedRequests.incrementAndGet() > maxQueuedRequests) {
@@ -308,15 +308,15 @@ public class DefaultHttpClient
 
     @Override public boolean isHttps() { return useSsl; }
 
-    // HttpConnectionListener -----------------------------------------------------------------------------------------
+    // ConnectionListener -----------------------------------------------------------------------------------------
 
-    @Override public void connectionOpened(HttpConnection connection) {
+    @Override public void connectionOpened(Connection connection) {
         if (terminate) return;
 
         eventQueue.offer(new ConnectionOpenEvent(connection));
     }
 
-    @Override public void connectionTerminated(HttpConnection connection,
+    @Override public void connectionTerminated(Connection connection,
                                                Collection<RequestContext> retryRequests) {
         if (terminate) {
             if ((retryRequests != null) && !retryRequests.isEmpty()) {
@@ -327,19 +327,19 @@ public class DefaultHttpClient
         }
     }
 
-    @Override public void connectionTerminated(HttpConnection connection) {
+    @Override public void connectionTerminated(Connection connection) {
         if (terminate) return;
 
         eventQueue.offer(new ConnectionClosedEvent(connection, null));
     }
 
-    @Override public void connectionFailed(HttpConnection connection) {
+    @Override public void connectionFailed(Connection connection) {
         if (terminate) return;
 
         eventQueue.offer(new ConnectionFailedEvent(connection));
     }
 
-    @Override public void requestFinished(HttpConnection connection, RequestContext context) {
+    @Override public void requestFinished(Connection connection, RequestContext context) {
         if (terminate) return;
 
         eventQueue.offer(new RequestCompleteEvent(context));
@@ -347,7 +347,7 @@ public class DefaultHttpClient
 
     // protected helpers ----------------------------------------------------------------------------------------------
 
-    protected HttpClientEvent popNextEvent()
+    protected ClientEvent popNextEvent()
             throws InterruptedException {
         return eventQueue.take();
     }
@@ -357,7 +357,7 @@ public class DefaultHttpClient
     protected void eventHandlingLoop() {
         while (true) {
             try {
-                HttpClientEvent event = popNextEvent();
+                ClientEvent event = popNextEvent();
                 if (event == POISON) {
                     eventQueuePoisoned();
                     return;
@@ -463,7 +463,7 @@ public class DefaultHttpClient
         }
     }
 
-    private String hostId(HttpConnection connection) { return hostId(connection.getHost(), connection.getPort()); }
+    private String hostId(Connection connection) { return hostId(connection.getHost(), connection.getPort()); }
 
     private String hostId(RequestContext context) { return hostId(context.getHost(), context.getPort()); }
 
@@ -487,7 +487,7 @@ public class DefaultHttpClient
         // If not using NIO, then delegate the blocking write() call to the executor.
         Executor writeDelegator = useNio ? null : executor;
 
-        final HttpConnection connection = connectionFactory
+        final Connection connection = connectionFactory
                 .createConnection(id, controller.getHost(), controller.getPort(),
                                   this, timeoutController, writeDelegator);
 
@@ -536,7 +536,7 @@ public class DefaultHttpClient
     /**
      * Sets the default request timeout, in milliseconds.
      * <p/>
-     * When {@link #execute(String, int, HttpRequest, HttpResponseProcessor)} is called (i.e. the variant without
+     * When {@link #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor)} is called (i.e. the variant without
      * explicit request timeout) then this value is applied as the request timeout.
      * <p/>
      * Requests whose execution time exceeds (precision depends on the
@@ -615,7 +615,7 @@ public class DefaultHttpClient
      * Sets the maximum number of queued requests for this client.
      * <p/>
      * If the number of queued requests is exceeded, calling
-     * {@linkplain #execute(String, int, HttpRequest, HttpResponseProcessor) one of the variants of {@code execute()}}
+     * {@linkplain #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor) one of the variants of {@code execute()}}
      * will throw a {@link CannotExecuteRequestException}.
      * <p/>
      * Defaults to {@link Short#MAX_VALUE}.
@@ -702,15 +702,15 @@ public class DefaultHttpClient
     }
 
     /**
-     * The {@link HttpConnectionFactory} that will be used to create new {@link HttpConnection}.
+     * The {@link com.biasedbit.http.client.connection.ConnectionFactory} that will be used to create new {@link com.biasedbit.http.client.connection.Connection}.
      * <p/>
-     * Defaults to {@link DefaultHttpConnectionFactory} if none is provided.
+     * Defaults to {@link com.biasedbit.http.client.connection.DefaultConnectionFactory} if none is provided.
      *
-     * @param connectionFactory The {@link HttpConnectionFactory} to be used.
-     * @see com.biasedbit.http.client.connection.HttpConnectionFactory
-     * @see com.biasedbit.http.client.connection.HttpConnection
+     * @param connectionFactory The {@link com.biasedbit.http.client.connection.ConnectionFactory} to be used.
+     * @see com.biasedbit.http.client.connection.ConnectionFactory
+     * @see com.biasedbit.http.client.connection.Connection
      */
-    public void setConnectionFactory(HttpConnectionFactory connectionFactory) {
+    public void setConnectionFactory(ConnectionFactory connectionFactory) {
         ensureState(eventQueue == null, "Cannot modify property after initialization");
 
         this.connectionFactory = connectionFactory;

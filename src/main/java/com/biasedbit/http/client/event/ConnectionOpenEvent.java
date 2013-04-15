@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.event;
 
-import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.connection.Connection;
 import lombok.*;
 
 /**
@@ -27,13 +27,13 @@ import lombok.*;
 @RequiredArgsConstructor
 @ToString
 public class ConnectionOpenEvent
-        implements HttpClientEvent {
+        implements ClientEvent {
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    @Getter private final HttpConnection connection;
+    @Getter private final Connection connection;
 
-    // HttpClientEvent ------------------------------------------------------------------------------------------------
+    // ClientEvent ------------------------------------------------------------------------------------------------
 
     @Override public EventType getEventType() { return EventType.CONNECTION_OPEN; }
 }

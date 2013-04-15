@@ -93,7 +93,7 @@ public class BasicTimeoutController
      * The motive behind using a {@code TimeoutChecker} instead of having some internal thread in each connection that
      * shares state variables is that on some rare occasions, while executing runs with client and server on the same
      * host, the responseses are actually received faster than the timeout checker thread is launched. If this happens,
-     * it means that the {@link com.biasedbit.http.client.connection.HttpConnection} will probably have accepted
+     * it means that the {@link com.biasedbit.http.client.connection.Connection} will probably have accepted
      * another request and the timeout checker will actually be timing out a different request than the one originally
      * intended.
      * <p/>

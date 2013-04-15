@@ -22,13 +22,13 @@ import lombok.Setter;
 
 import java.util.concurrent.Executor;
 
-import static com.biasedbit.http.client.connection.PipeliningHttpConnection.*;
+import static com.biasedbit.http.client.connection.PipeliningConnection.*;
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class PipeliningHttpConnectionFactory
-        implements HttpConnectionFactory {
+public class PipeliningConnectionFactory
+        implements ConnectionFactory {
 
     // properties -----------------------------------------------------------------------------------------------------
 
@@ -36,12 +36,12 @@ public class PipeliningHttpConnectionFactory
     @Getter @Setter private boolean allowNonIdempotentPipelining    = ALLOW_POST_PIPELINING;
     @Getter @Setter private int     maxRequestsInPipeline           = MAX_REQUESTS_IN_PIPELINE;
 
-    // HttpConnectionFactory ------------------------------------------------------------------------------------------
+    // ConnectionFactory ------------------------------------------------------------------------------------------
 
-    @Override public PipeliningHttpConnection createConnection(String id, String host, int port,
-                                                               HttpConnectionListener listener,
+    @Override public PipeliningConnection createConnection(String id, String host, int port,
+                                                               ConnectionListener listener,
                                                                TimeoutController timeoutController, Executor executor) {
-        PipeliningHttpConnection connection = new PipeliningHttpConnection(id, host, port, listener,
+        PipeliningConnection connection = new PipeliningConnection(id, host, port, listener,
                                                                            timeoutController, executor);
         connection.setDisconnectIfNonKeepAliveRequest(disconnectIfNonKeepAliveRequest);
         connection.setAllowNonIdempotentPipelining(allowNonIdempotentPipelining);

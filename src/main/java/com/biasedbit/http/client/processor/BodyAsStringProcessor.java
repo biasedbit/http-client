@@ -20,7 +20,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.util.CharsetUtil;
 
 /**
- * {@link HttpResponseProcessor} that consumes a body and transforms it into a UTF8 string.
+ * {@link ResponseProcessor} that consumes a body and transforms it into a UTF8 string.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */

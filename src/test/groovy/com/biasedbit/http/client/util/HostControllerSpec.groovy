@@ -1,7 +1,7 @@
 package com.biasedbit.http.client.util
 
-import com.biasedbit.http.client.connection.HttpConnection
-import com.biasedbit.http.client.processor.HttpResponseProcessor
+import com.biasedbit.http.client.connection.Connection
+import com.biasedbit.http.client.processor.ResponseProcessor
 import org.jboss.netty.handler.codec.http.HttpRequest
 import spock.lang.Specification
 
@@ -45,7 +45,7 @@ class HostControllerSpec extends Specification {
   def "#restoreRequestsToQueue adds multiple requests to the queue"() {
     setup:
     def requests = [createRequestContext(), createRequestContext()]
-    def connection = Mock(HttpConnection) {
+    def connection = Mock(Connection) {
       isAvailable() >> true
       1 * execute(requests[0]) >> true // execute() must be called twice with both requests in order
       1 * execute(requests[1]) >> true
@@ -79,7 +79,7 @@ class HostControllerSpec extends Specification {
     given: def request = createRequestContext()
     and: context.addToQueue(request)
     and: pool.hasConnections() >> true
-    and: pool.getConnections() >> [Mock(HttpConnection) {
+    and: pool.getConnections() >> [Mock(Connection) {
       isAvailable() >> true
       1 * execute(request) >> true
     }]
@@ -91,7 +91,7 @@ class HostControllerSpec extends Specification {
   def "#drainQueue returns OPEN_CONNECTION when no established connections are available but pool has room for more"() {
     given: context.addToQueue(createRequestContext())
     and: pool.hasConnections() >> true
-    and: pool.getConnections() >> [Mock(HttpConnection) { isAvailable() >> false }]
+    and: pool.getConnections() >> [Mock(Connection) { isAvailable() >> false }]
     and: pool.hasAvailableSlots() >> true
     expect: context.drainQueue() == OPEN_CONNECTION
   }
@@ -99,12 +99,12 @@ class HostControllerSpec extends Specification {
   def "#drainQueue returns NOT_DRAINED when no established connections are available nor pool has room for more"() {
     given: context.addToQueue(createRequestContext())
     and: pool.hasConnections() >> true
-    and: pool.getConnections() >> [Mock(HttpConnection) { isAvailable() >> false }]
+    and: pool.getConnections() >> [Mock(Connection) { isAvailable() >> false }]
     and: pool.hasAvailableSlots() >> false
     expect: context.drainQueue() == NOT_DRAINED
   }
 
   private RequestContext createRequestContext(String host = "biasedbit.com", int port = 80) {
-    new RequestContext(host, port, 100, Mock(HttpRequest), Mock(HttpResponseProcessor))
+    new RequestContext(host, port, 100, Mock(HttpRequest), Mock(ResponseProcessor))
   }
 }

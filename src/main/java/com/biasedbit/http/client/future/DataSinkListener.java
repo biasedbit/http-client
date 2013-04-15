@@ -16,14 +16,14 @@
 
 package com.biasedbit.http.client.future;
 
-import com.biasedbit.http.client.connection.HttpDataSink;
+import com.biasedbit.http.client.connection.DataSink;
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public interface DataSinkListener {
 
-    void readyToSendData(HttpDataSink sink);
+    void readyToSendData(DataSink sink);
 
-    void writeComplete(HttpDataSink sink, long writtenAmount);
+    void writeComplete(DataSink sink, long writtenAmount);
 }

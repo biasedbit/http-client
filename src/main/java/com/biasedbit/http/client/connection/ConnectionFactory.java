@@ -23,8 +23,8 @@ import java.util.concurrent.Executor;
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpConnectionFactory {
+public interface ConnectionFactory {
 
-    HttpConnection createConnection(String id, String host, int port, HttpConnectionListener listener,
+    Connection createConnection(String id, String host, int port, ConnectionListener listener,
                                     TimeoutController timeoutController, Executor executor);
 }

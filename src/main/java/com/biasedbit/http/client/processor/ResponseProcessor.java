@@ -6,7 +6,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 /**
  * HTTP response body consumer.
  * <p/>
- * A {@code HttpResponseProcessor} is a class the is fed with the contents of the HTTP response body and returns the
+ * A {@code ResponseProcessor} is a class the is fed with the contents of the HTTP response body and returns the
  * result of converting that body into an object.
  * <p/>
  * A response processor is given the choice to decide whether it wants to process the response body for a given request
@@ -42,10 +42,10 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
  * provide a simple way to append data that is not fully available when the request headers are read.
  * <div class="note">
  * <div class="header">Note:</div>
- * A {@code HttpResponseProcessor} is tipically stateful. Unless you're using a completely stateless response processor
+ * A {@code ResponseProcessor} is tipically stateful. Unless you're using a completely stateless response processor
  * such as {@link DiscardProcessor}, you <strong>must</strong> provide a different instance for each {@link
  * com.biasedbit.http.client.HttpClient#execute(String, int, org.jboss.netty.handler.codec.http.HttpRequest,
- * HttpResponseProcessor)} call.
+ * ResponseProcessor)} call.
  * </div>
  *
  * @see DiscardProcessor
@@ -53,7 +53,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpResponseProcessor<T> {
+public interface ResponseProcessor<T> {
 
     /**
      * Query to determine if this processor has the necessary conditions to process this response.

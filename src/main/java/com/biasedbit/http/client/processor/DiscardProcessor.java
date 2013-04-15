@@ -17,7 +17,7 @@
 package com.biasedbit.http.client.processor;
 
 /**
- * {@link HttpResponseProcessor} implementation that always discards the response body
+ * {@link ResponseProcessor} implementation that always discards the response body
  * ({@link #willProcessResponse(org.jboss.netty.handler.codec.http.HttpResponse)} always returns {@code false}).
  * <p/>
  * Always returns {@code null} when  {@link #getProcessedResponse()} is called and performs no action when

@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.util;
 
-import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.connection.Connection;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -37,7 +37,7 @@ public class ConnectionPool {
     // properties -----------------------------------------------------------------------------------------------------
 
     @Getter private final int maxConnections;
-    @Getter private final Collection<HttpConnection> connections = new LinkedList<>();
+    @Getter private final Collection<Connection> connections = new LinkedList<>();
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ public class ConnectionPool {
         connectionsOpening--;
     }
 
-    public void connectionOpen(HttpConnection connection) {
+    public void connectionOpen(Connection connection) {
         // Decrease opening connections indicator.
         if (connectionsOpening > 0) connectionsOpening--;
 
@@ -65,7 +65,7 @@ public class ConnectionPool {
         connections.add(connection);
     }
 
-    public void connectionClosed(HttpConnection connection) { connections.remove(connection); }
+    public void connectionClosed(Connection connection) { connections.remove(connection); }
 
     /**
      * Returns the number of both active and opening connections.

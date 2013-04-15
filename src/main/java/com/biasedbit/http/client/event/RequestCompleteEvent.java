@@ -27,13 +27,13 @@ import lombok.*;
 @RequiredArgsConstructor
 @ToString
 public class RequestCompleteEvent
-        implements HttpClientEvent {
+        implements ClientEvent {
 
     // properties -----------------------------------------------------------------------------------------------------
 
     @Getter private final RequestContext context;
 
-    // HttpClientEvent ------------------------------------------------------------------------------------------------
+    // ClientEvent ------------------------------------------------------------------------------------------------
 
     @Override public EventType getEventType() { return EventType.REQUEST_COMPLETE; }
 }

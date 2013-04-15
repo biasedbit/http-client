@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client.connection;
-
-import org.jboss.netty.buffer.ChannelBuffer;
+package com.biasedbit.http.client.event;
 
 /**
+ * An generic event that is consumed by the consumer thread in {@link com.biasedbit.http.client.DefaultHttpClient}.
+ * <p/>
+ * When an event is consumed it will generate actions, such as executing requests, opening connections, queueing
+ * requests, etc.
+ *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpDataSink {
+public interface ClientEvent {
 
-    boolean isConnected();
-
-    void disconnect();
-
-    void sendData(ChannelBuffer data, boolean isLast);
+    /**
+     * @return Type of the event.
+     */
+    EventType getEventType();
 }

@@ -1,7 +1,7 @@
 package com.biasedbit.http.client
 
-import com.biasedbit.http.client.connection.DefaultHttpConnection
-import com.biasedbit.http.client.connection.HttpConnection
+import com.biasedbit.http.client.connection.Connection
+import com.biasedbit.http.client.connection.DefaultConnection
 import com.biasedbit.http.client.event.ExecuteRequestEvent
 import com.biasedbit.http.client.future.DataSinkListener
 import com.biasedbit.http.client.future.RequestFuture
@@ -60,7 +60,7 @@ class DefaultHttpClientSpec extends Specification {
     client.terminate()
 
     when: "the connection is closed"
-    client.connectionTerminated(Mock(HttpConnection), requests)
+    client.connectionTerminated(Mock(Connection), requests)
 
     then: "both requests will have SHUTTING_DOWN as failure cause"
     requests.each { it.future.cause == RequestFuture.SHUTTING_DOWN }
@@ -68,7 +68,7 @@ class DefaultHttpClientSpec extends Specification {
 
   def "it fails all retry requests with SHUTTING_DOWN if a client is terminated after a connection closes"() {
     given: "a couple of requests to retry after a connection is closed"
-    def connection = new DefaultHttpConnection("id", "biasedbit.com", 80, null, null, null)
+    def connection = new DefaultConnection("id", "biasedbit.com", 80, null, null, null)
     def requests = [
         new RequestContext("biasedbit.com", 80, 100, request, new DiscardProcessor()),
         new RequestContext("biasedbit.com", 80, 100, request, new DiscardProcessor()),

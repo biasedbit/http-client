@@ -1,7 +1,6 @@
 package com.biasedbit.http.client.util
 
-
-import com.biasedbit.http.client.processor.HttpResponseProcessor
+import com.biasedbit.http.client.processor.ResponseProcessor
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpRequest
 import org.jboss.netty.handler.codec.http.HttpVersion
@@ -16,7 +15,7 @@ import static org.jboss.netty.handler.codec.http.HttpMethod.*
 class RequestContextSpec extends Specification {
 
   def request   = Mock(HttpRequest)
-  def processor = Mock(HttpResponseProcessor)
+  def processor = Mock(ResponseProcessor)
 
   def "it doesn't accept a null host"() {
     when: new RequestContext(null, 80, 500, request, processor)

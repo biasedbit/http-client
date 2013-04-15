@@ -1,6 +1,6 @@
 package com.biasedbit.http.client.util
 
-import com.biasedbit.http.client.connection.HttpConnection
+import com.biasedbit.http.client.connection.Connection
 import spock.lang.Specification
 
 /**
@@ -9,11 +9,11 @@ import spock.lang.Specification
 class ConnectionPoolSpec extends Specification {
 
   ConnectionPool pool
-  HttpConnection connection
+  Connection connection
 
   def setup() {
     pool = new ConnectionPool(3)
-    connection = Mock(HttpConnection)
+    connection = Mock(Connection)
   }
 
   def "#connectionOpening increments the number of connections"() {

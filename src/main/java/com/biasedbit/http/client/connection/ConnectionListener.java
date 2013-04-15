@@ -21,56 +21,56 @@ import com.biasedbit.http.client.util.RequestContext;
 import java.util.Collection;
 
 /**
- * {@link HttpConnection} listener.
+ * {@link Connection} listener.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpConnectionListener {
+public interface ConnectionListener {
 
     /**
-     * Connection opened event, called by the {@link HttpConnection} when a requested connection establishes.
+     * Connection opened event, called by the {@link Connection} when a requested connection establishes.
      *
      * @param connection Connection that just established.
      */
-    void connectionOpened(HttpConnection connection);
+    void connectionOpened(Connection connection);
 
     /**
-     * Connection terminated event, called by the {@link HttpConnection} when an active connection disconnects.
+     * Connection terminated event, called by the {@link Connection} when an active connection disconnects.
      *
-     * This is the event that {@link HttpConnection}s that support submission of multiple parallel requests call to
+     * This is the event that {@link Connection}s that support submission of multiple parallel requests call to
      * signal disconnection, since some of the requests may still be executed in another connection (e.g. a pipelining
      * connection that goes down after a couple of requests but still has some more idempotent requests queued).
      *
      * @param connection Connection that was disconnected.
      * @param retryRequests List of pending submitted requests that should be retried in a new connection, if possible.
      */
-    void connectionTerminated(HttpConnection connection, Collection<RequestContext> retryRequests);
+    void connectionTerminated(Connection connection, Collection<RequestContext> retryRequests);
 
     /**
-     * Connection terminated event, called by the {@link HttpConnection} when an active connection disconnects.
+     * Connection terminated event, called by the {@link Connection} when an active connection disconnects.
      *
-     * This is the event that {@link HttpConnection}s that only support a single request at a time use to signal
-     * disconnection. It can also be used by {@link HttpConnection}s that support submission of multiple parallel
+     * This is the event that {@link Connection}s that only support a single request at a time use to signal
+     * disconnection. It can also be used by {@link Connection}s that support submission of multiple parallel
      * requests (e.g. a pipelining connection) when they disconnect and have no requests that should be retried (i.e.
      * all pipelined requests executed successfully).
      *
      * @param connection Connection that was disconnected.
      */
-    void connectionTerminated(HttpConnection connection);
+    void connectionTerminated(Connection connection);
 
     /**
-     * Connection failed event, called by the {@link HttpConnection} when a connection attempt fails.
+     * Connection failed event, called by the {@link Connection} when a connection attempt fails.
      *
      * @param connection Connection that failed.
      */
-    void connectionFailed(HttpConnection connection);
+    void connectionFailed(Connection connection);
 
     /**
-     * Request complete event, called by the {@link HttpConnection} when a response to a request allocated to it is
+     * Request complete event, called by the {@link Connection} when a response to a request allocated to it is
      * either received or fails for some reason.
      *
      * @param connection Connection in which the event finished.
      * @param context Request context containing the request that has completed.
      */
-    void requestFinished(HttpConnection connection, RequestContext context);
+    void requestFinished(Connection connection, RequestContext context);
 }

@@ -22,10 +22,10 @@ import org.jboss.netty.channel.ChannelHandler;
 /**
  * An HTTP connection to a server.
  * <p/>
- * HTTP requests are dispatched from the {@link com.biasedbit.http.client.HttpClient} to the {@code HttpConnection}s
+ * HTTP requests are dispatched from the {@link com.biasedbit.http.client.HttpClient} to the {@code Connection}s
  * under the form of a {@link com.biasedbit.http.client.util.RequestContext}.
  * <p/>
- * To execute requests in a {@code HttpConnection}, the caller must always ensure the connection can process its request
+ * To execute requests in a {@code Connection}, the caller must always ensure the connection can process its request
  * by calling {@link #isAvailable()} prior to {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()}.
  * <p/>
  * Example:
@@ -70,7 +70,7 @@ import org.jboss.netty.channel.ChannelHandler;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpConnection
+public interface Connection
         extends ChannelHandler {
 
     /**
@@ -132,7 +132,7 @@ public interface HttpConnection
      * @param context Request execution context.
      *
      * @return {@code true} if the request was accepted, {@code false} otherwise. If a request is accepted, the
-     * {@code HttpConnection} becomes responsible for calling {@link
+     * {@code Connection} becomes responsible for calling {@link
      * com.biasedbit.http.client.future.DefaultRequestFuture#failedWithCause(Throwable) failedWithCause()} or
      * {@link com.biasedbit.http.client.future.DefaultRequestFuture#finishedSuccessfully(Object,
      * org.jboss.netty.handler.codec.http.HttpResponse) finishedSuccessfully()} on it.

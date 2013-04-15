@@ -18,7 +18,7 @@ package com.biasedbit.http.client.util;
 
 import com.biasedbit.http.client.future.DataSinkListener;
 import com.biasedbit.http.client.future.DefaultRequestFuture;
-import com.biasedbit.http.client.processor.HttpResponseProcessor;
+import com.biasedbit.http.client.processor.ResponseProcessor;
 import lombok.Getter;
 import lombok.Setter;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -30,8 +30,8 @@ import static com.biasedbit.http.client.util.Utils.ensureValue;
  * State holder context for a request.
  * <p/>
  * This structure is passed between the {@link com.biasedbit.http.client.HttpClient} and the {@link
- * com.biasedbit.http.client.connection.HttpConnection} and associates a
- * {@link org.jboss.netty.handler.codec.http.HttpRequest} to a {@link HttpResponseProcessor} and a
+ * com.biasedbit.http.client.connection.Connection} and associates a
+ * {@link org.jboss.netty.handler.codec.http.HttpRequest} to a {@link com.biasedbit.http.client.processor.ResponseProcessor} and a
  * {@link com.biasedbit.http.client.future.RequestFuture}.
  * <p/>
  * It also contains other information such as the host address to which this request was originally inteded for,
@@ -43,11 +43,11 @@ public class RequestContext<T> {
 
     // properties -----------------------------------------------------------------------------------------------------
 
-    @Getter private final String                   host;
-    @Getter private final int                      port;
-    @Getter private final int                      timeout;
-    @Getter private final HttpRequest              request;
-    @Getter private final HttpResponseProcessor<T> processor;
+    @Getter private final String               host;
+    @Getter private final int                  port;
+    @Getter private final int                  timeout;
+    @Getter private final HttpRequest          request;
+    @Getter private final ResponseProcessor<T> processor;
 
     @Getter private final DefaultRequestFuture<T> future = new DefaultRequestFuture<>();
 
@@ -55,11 +55,11 @@ public class RequestContext<T> {
 
     // constructors ---------------------------------------------------------------------------------------------------
 
-    public RequestContext(String host, int port, int timeout, HttpRequest request, HttpResponseProcessor<T> processor) {
+    public RequestContext(String host, int port, int timeout, HttpRequest request, ResponseProcessor<T> processor) {
         ensureValue(host != null, "Host cannot be null");
         ensureValue(port > 0 && port <= 65536, "Invalid port: " + port);
         ensureValue(request != null, "HttpRequest cannot be null");
-        ensureValue(processor != null, "HttpResponseProcessor cannot be null");
+        ensureValue(processor != null, "ResponseProcessor cannot be null");
 
         this.host = host;
         this.port = port;

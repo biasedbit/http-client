@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.event;
 
-import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.connection.Connection;
 import com.biasedbit.http.client.util.RequestContext;
 import lombok.*;
 
@@ -30,14 +30,14 @@ import java.util.Collection;
 @RequiredArgsConstructor
 @ToString
 public class ConnectionClosedEvent
-        implements HttpClientEvent {
+        implements ClientEvent {
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    @Getter private final HttpConnection             connection;
+    @Getter private final Connection                 connection;
     @Getter private final Collection<RequestContext> retryRequests;
 
-    // HttpClientEvent ------------------------------------------------------------------------------------------------
+    // ClientEvent ------------------------------------------------------------------------------------------------
 
     @Override public EventType getEventType() { return EventType.CONNECTION_CLOSED; }
 

@@ -27,7 +27,7 @@ import lombok.Getter;
  * should use {@link DefaultHttpClient} rather than this one.
  * <p/>
  * This is only useful if you're implementing your own {@link com.biasedbit.http.client.util.HostController} or
- * {@link com.biasedbit.http.client.connection.HttpConnection} and want to test the impact of your changes.
+ * {@link com.biasedbit.http.client.connection.Connection} and want to test the impact of your changes.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
@@ -58,7 +58,7 @@ public class StatsGatheringHttpClient
     @Override public void eventHandlingLoop() {
         while (true) {
             try {
-                HttpClientEvent event = popNextEvent();
+                ClientEvent event = popNextEvent();
                 if (event == POISON) {
                     eventQueuePoisoned();
                     return;

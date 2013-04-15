@@ -1,18 +1,14 @@
 package com.biasedbit.http.client
 
-import com.biasedbit.http.client.connection.DefaultHttpConnection
-import com.biasedbit.http.client.connection.HttpConnection
-import com.biasedbit.http.client.connection.HttpConnectionFactory
-import com.biasedbit.http.client.connection.PipeliningHttpConnectionFactory
+import com.biasedbit.http.client.connection.Connection
+import com.biasedbit.http.client.connection.ConnectionFactory
+import com.biasedbit.http.client.connection.DefaultConnection
 import com.biasedbit.http.client.event.EventType
-import com.biasedbit.http.client.future.RequestFuture
-import com.biasedbit.http.client.future.RequestFutureListener
 import com.biasedbit.http.client.processor.DiscardProcessor
 import com.biasedbit.http.server.DummyHttpServer
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpHeaders
 import spock.lang.Specification
-import spock.lang.Timeout
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -48,7 +44,8 @@ class DefaultHttpClientTest extends Specification {
 
   def "it fails requests with TIMED_OUT cause if server doesn't respond within the configured request timeout"() {
     setup: server.responseLatency = 1000
-    when: def future = client.execute(host, port, 100, request, new DiscardProcessor())
+    when:
+    def future = client.execute(host, port, 100, request, new DiscardProcessor())
     then: future.awaitUninterruptibly(5000)
     and: future.isDone()
     and: !future.isSuccessful()
@@ -57,7 +54,8 @@ class DefaultHttpClientTest extends Specification {
 
   def "it fails with CANNOT_CONNECT if connection fails"() {
     setup: server.terminate()
-    when: def future = client.execute(host, port, request, new DiscardProcessor())
+    when:
+    def future = client.execute(host, port, request, new DiscardProcessor())
     then: future.awaitUninterruptibly(1000)
     and: future.isDone()
     and: !future.isSuccessful()
@@ -151,13 +149,13 @@ class DefaultHttpClientTest extends Specification {
 
     client = new DefaultHttpClient()
     client.autoDecompress = true
-    HttpConnection connection = null
+    Connection connection = null
     // This is kind of hard to test, given all the stuff that goes on...
     // This test has *a lot* of implementation knowledge, which is a natural code smell but re-structuring the whole
     // thing just to make it more testable on such a minor feature seems kind of overkill.
-    client.connectionFactory = Mock(HttpConnectionFactory) {
+    client.connectionFactory = Mock(ConnectionFactory) {
       createConnection(_, _, _, _, _, _) >> { args ->
-        connection = Spy(DefaultHttpConnection, constructorArgs: args)
+        connection = Spy(DefaultConnection, constructorArgs: args)
         connection.execute(_) >> { a ->
           assert a[0].request == request
           assert a[0].request.getHeader(HttpHeaders.Names.ACCEPT_ENCODING) == HttpHeaders.Values.GZIP

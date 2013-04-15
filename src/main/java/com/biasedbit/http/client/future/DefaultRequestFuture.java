@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.future;
 
-import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.connection.Connection;
 import lombok.SneakyThrows;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -41,7 +41,7 @@ public class DefaultRequestFuture<T>
     private List<RequestFutureListener<T>> listeners;
     private Throwable                      cause;
     private int                            waiters;
-    private HttpConnection                 connection;
+    private Connection                     connection;
 
     private long executionStart = -1;
     private long executionEnd   = -1;
@@ -186,7 +186,7 @@ public class DefaultRequestFuture<T>
     // interface ------------------------------------------------------------------------------------------------------
 
     // TODO review this
-    public void attachConnection(HttpConnection connection) { this.connection = connection; }
+    public void attachConnection(Connection connection) { this.connection = connection; }
 
     public boolean finishedSuccessfully(T processedResponse, HttpResponse response) {
         synchronized (this) {

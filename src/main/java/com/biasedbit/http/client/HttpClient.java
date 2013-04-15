@@ -18,7 +18,7 @@ package com.biasedbit.http.client;
 
 import com.biasedbit.http.client.future.DataSinkListener;
 import com.biasedbit.http.client.future.RequestFuture;
-import com.biasedbit.http.client.processor.HttpResponseProcessor;
+import com.biasedbit.http.client.processor.ResponseProcessor;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
 /**
@@ -63,7 +63,7 @@ public interface HttpClient {
      * @throws CannotExecuteRequestException Thrown when the request is invalid or the client can no longer accept
      *                                       requests, either due to termination or full queue.
      */
-    <T> RequestFuture<T> execute(String host, int port, HttpRequest request, HttpResponseProcessor<T> processor)
+    <T> RequestFuture<T> execute(String host, int port, HttpRequest request, ResponseProcessor<T> processor)
             throws CannotExecuteRequestException;
 
     /**
@@ -84,11 +84,11 @@ public interface HttpClient {
      *                                       requests, either due to termination or full queue.
      */
     <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                     HttpResponseProcessor<T> processor)
+                                     ResponseProcessor<T> processor)
             throws CannotExecuteRequestException;
 
     <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                     HttpResponseProcessor<T> processor, DataSinkListener dataSinkListener)
+                                     ResponseProcessor<T> processor, DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException;
 
     /**

@@ -27,7 +27,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
 public class TypedDiscardProcessor<T>
-        implements HttpResponseProcessor<T> {
+        implements ResponseProcessor<T> {
 
     // constants ------------------------------------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ public class TypedDiscardProcessor<T>
 
     public static TypedDiscardProcessor<Object> getInstance() { return CACHED; }
 
-    // HttpResponseProcessor ------------------------------------------------------------------------------------------
+    // ResponseProcessor ------------------------------------------------------------------------------------------
 
     @Override public boolean willProcessResponse(HttpResponse response) { return false; }
 

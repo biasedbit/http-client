@@ -22,25 +22,25 @@ import lombok.Setter;
 
 import java.util.concurrent.Executor;
 
-import static com.biasedbit.http.client.connection.DefaultHttpConnection.*;
+import static com.biasedbit.http.client.connection.DefaultConnection.*;
 
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class DefaultHttpConnectionFactory
-        implements HttpConnectionFactory {
+public class DefaultConnectionFactory
+        implements ConnectionFactory {
 
     // properties -----------------------------------------------------------------------------------------------------
 
     @Getter @Setter public boolean disconnectIfNonKeepAliveRequest = DISCONNECT_IF_NON_KEEP_ALIVE_REQUEST;
     @Getter @Setter public boolean restoreNonIdempotentOperations  = RESTORE_NON_IDEMPOTENT_OPERATIONS;
 
-    // HttpConnectionFactory ------------------------------------------------------------------------------------------
+    // ConnectionFactory ------------------------------------------------------------------------------------------
 
-    @Override public DefaultHttpConnection createConnection(String id, String host, int port,
-                                                            HttpConnectionListener listener,
+    @Override public DefaultConnection createConnection(String id, String host, int port,
+                                                            ConnectionListener listener,
                                                             TimeoutController timeoutController, Executor executor) {
-        DefaultHttpConnection connection = new DefaultHttpConnection(id, host, port, listener,
+        DefaultConnection connection = new DefaultConnection(id, host, port, listener,
                                                                      timeoutController, executor);
         connection.setDisconnectIfNonKeepAliveRequest(disconnectIfNonKeepAliveRequest);
 

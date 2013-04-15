@@ -20,48 +20,43 @@ import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.util.Utils;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 
 /**
- * Pipelining implementation of {@link HttpConnection} interface.
+ * Non-pipelining implementation of {@link Connection} interface.
  * <p/>
- * This version accepts up N idempotent HTTP 1.1 operations. Should an error occur during the execution of the pipelined
- * requests, <strong>all</strong> the currently pipelined requests will fail - and will <strong>not</strong> be
- * retried.
+ * Since some server implementations aren't fully <a href="http://tools.ietf.org/html/rfc2616">RFC 2616</a> compliant
+ * when it comes to pipelining, this is the default implementation.
  * <p/>
- * This version can yield faster throughput than {@link DefaultHttpConnection} implementation for bursts up to N
- * requests of idempotent HTTP 1.1 operations, since it will batch requests and receive batch responses, potentially
- * taking advantage of being able to fit several HTTP requests in the same TCP frame.
+ * If you are sure the servers you will be connecting to support pipelining correctly, you can use the {@linkplain
+ * PipeliningConnection pipelining version}.
  * <p/>
- * When the limit of pipelined requests is hit, this connection presents the same behavior as {@link
- * DefaultHttpConnection} - it starts returning {@code false} on {@code isAvailable()} and immediately failing any
- * requests that are submitted while {@code isAvailable()} would return {@code false}.
- * <p/>
- * Please note that if a connection to a host is likely to have all types of HTTP operations mixed (PUT, GET, POST, etc)
- * or also requests with version 1.0, this connection will not present any advantage over the default non-pipelining
- * implementation. Since it contains more complex logic, it will potentially be a little bit slower.
- * <p/>
- * Use this implementation when you know beforehand that you'll be performing mostly idempotent HTTP 1.1 operations.
+ * This implementation only accepts one request at a time. If {@link
+ * #execute(com.biasedbit.http.client.util.RequestContext) execute()} is called while {@link #isAvailable()} would
+ * return false, the request will be accepted and immediately fail with
+ * {@link com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED} <strong>unless</strong> the socket has
+ * been disconnected (in which case the request will not fail but
+ * {@link #execute(com.biasedbit.http.client.util.RequestContext)} will return {@code false} instead).
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class PipeliningHttpConnection
+@RequiredArgsConstructor
+@ToString(of = {"id", "host", "port"})
+public class DefaultConnection
         extends SimpleChannelUpstreamHandler
-        implements HttpConnection {
+        implements Connection,
+                   DataSink {
 
     // configuration defaults -----------------------------------------------------------------------------------------
 
     public static final boolean DISCONNECT_IF_NON_KEEP_ALIVE_REQUEST = false;
-    public static final boolean ALLOW_POST_PIPELINING                = false;
-    public static final int     MAX_REQUESTS_IN_PIPELINE             = 50;
+    public static final boolean RESTORE_NON_IDEMPOTENT_OPERATIONS    = false;
 
     // properties -----------------------------------------------------------------------------------------------------
 
@@ -70,67 +65,49 @@ public class PipeliningHttpConnection
      * <p/>
      * Use this only if the server you're connecting to doesn't follow standards and keeps HTTP/1.0 connections open or
      * doesn't close HTTP/1.1 connections with 'Connection: close' header.
-     * <p/>
-     * Defaults to {@code false}.
      */
     @Getter @Setter private boolean disconnectIfNonKeepAliveRequest = DISCONNECT_IF_NON_KEEP_ALIVE_REQUEST;
-
     /**
-     * Enables or disables processing of non-idempotent operations.
+     * Explicitly enables or disables recovery of non-idempotent operations when connections go down.
      * <p/>
-     * Keep in mind that the RFC clearly states that non-idempotent operations SHOULD NOT be pipelined, so enable this
-     * feature at your own peril.
+     * When a connection goes down while executing a request it can restore that request by sending it back to the
+     * listener inside the {@link ConnectionListener#connectionTerminated(Connection, java.util.Collection)}
+     * call.
      * <p/>
-     * Defaults to {@code false}.
+     * This can be dangerous for non-idempotent operations, because there is no guarantee that the request reached the
+     * server and executed.
+     * <p/>
+     * By default, this option is disabled (safer).
      */
-    @Getter @Setter private boolean allowNonIdempotentPipelining = ALLOW_POST_PIPELINING;
-
-    /**
-     * Maximum number of pipelined requests active in a single connection.
-     * <p/>
-     * When this number is reached, the connection will start returning {@code false} on {@link #isAvailable()}.
-     * <p/>
-     * Defaults to 50.
-     */
-    @Getter @Setter private int maxRequestsInPipeline = MAX_REQUESTS_IN_PIPELINE;
+    @Getter @Setter private boolean restoreNonIdempotentOperations  = RESTORE_NON_IDEMPOTENT_OPERATIONS;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
-    private final String                 id;
-    private final String                 host;
-    private final int                    port;
-    private final HttpConnectionListener listener;
-    private final TimeoutController      timeoutController;
-    private final Executor               executor;
+    private final String             id;
+    private final String             host;
+    private final int                port;
+    private final ConnectionListener listener;
+    private final TimeoutController  timeoutController;
+    private final Executor           executor;
 
-    private final Object                mutex    = new Object();
-    private final Queue<RequestContext> requests = new LinkedList<>();
+    private final Object mutex = new Object();
+
+    private Channel   channel;
+    private Throwable terminate;
+    private boolean   available;
 
     // state management
-    private HttpResponse currentResponse;
-    private boolean      readingChunks;
-    private boolean      discarding;
-    private Channel      channel;
-    private Throwable    terminate;
-    private boolean      willClose;
-
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public PipeliningHttpConnection(String id, String host, int port, HttpConnectionListener listener,
-                                    TimeoutController timeoutController, Executor executor) {
-        this.id = id;
-        this.host = host;
-        this.port = port;
-        this.listener = listener;
-        this.timeoutController = timeoutController;
-        this.executor = executor;
-    }
+    private boolean        readingChunks;
+    private RequestContext currentRequest;
+    private HttpResponse   currentResponse;
+    private boolean        discarding;
+    private boolean        continueReceived;
 
     // SimpleChannelUpstreamHandler -----------------------------------------------------------------------------------
 
     @Override public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
             throws Exception {
-        // Sync this big block, as there is a chance that it's a complete response.
+        // Synch this big block, as there is a chance that it's a complete response.
         // If it's a complete response (in other words, all the data necessary to mark the request as finished is
         // present), and it's cancelled meanwhile, synch'ing this block will guarantee that the request will
         // be marked as complete *before* being cancelled. Since DefaultRequestFuture only allows 1 completion
@@ -140,12 +117,22 @@ public class PipeliningHttpConnection
         // the same instant it times out, which causes another thread to issue a cancellation. With this locking in
         // place, the request will either cancel before this block executes or after - never during.
         synchronized (mutex) {
-            // Terminated or no current request; discard any incoming data as there is no one to feed it to.
-            if ((terminate != null) || requests.isEmpty()) return;
+            // When terminated or no current request, discard any incoming data as there is no one to feed it to.
+            if ((terminate != null) || (currentRequest == null)) return;
 
             if (!readingChunks) {
                 HttpResponse response = (HttpResponse) e.getMessage();
-                receivedResponseForRequest(response);
+
+                // Ignore CONTINUE responses, unless we have a data sink listener
+                if (HttpResponseStatus.CONTINUE.equals(response.getStatus())) {
+                    continueReceived = true;
+                    if (currentRequest.getDataSinkListener() != null) {
+                        currentRequest.getDataSinkListener().readyToSendData(this);
+                    }
+                    return;
+                }
+
+                receivedResponseForCurrentRequest(response);
 
                 // Chunked flag is set *even if chunk agreggation occurs*. When chunk aggregation occurs, the content
                 // of the message will be present and flag will still be true so all conditions must be checked!
@@ -154,10 +141,10 @@ public class PipeliningHttpConnection
                     readingChunks = true;
                 } else {
                     ChannelBuffer content = response.getContent();
-                    if (content.readable()) receivedContentForRequest(content, true);
+                    if (content.readable()) receivedContentForCurrentRequest(content, true);
 
                     // Non-chunked responses are always complete.
-                    responseForRequestComplete();
+                    responseForCurrentRequestComplete();
                 }
             } else {
                 HttpChunk chunk = (HttpChunk) e.getMessage();
@@ -166,10 +153,10 @@ public class PipeliningHttpConnection
                     // Same considerations as above. This lock will ensure the request will either be cancelled before
                     // this lock is obtained or the request will succeed (this is the last chunk, which means it's
                     // complete).
-                    receivedContentForRequest(chunk.getContent(), true);
-                    responseForRequestComplete();
+                    receivedContentForCurrentRequest(chunk.getContent(), true);
+                    responseForCurrentRequestComplete();
                 } else {
-                    receivedContentForRequest(chunk.getContent(), false);
+                    receivedContentForCurrentRequest(chunk.getContent(), false);
                 }
             }
         }
@@ -177,60 +164,85 @@ public class PipeliningHttpConnection
 
     @Override public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
             throws Exception {
+        // Didn't even connect...
         if (channel == null) return;
 
-        RequestContext current;
-        synchronized (mutex) {
-            willClose = true;
-            // Apart from this method, only postResponseCleanup() removes items from the request queue.
-            current = requests.poll();
-        }
-
-        if (current != null) {
-            current.getFuture().failedWithCause(e.getCause());
-            listener.requestFinished(this, current);
-        }
-
-        if (channel.isConnected()) channel.close();
+        terminate(e.getCause());
     }
 
     @Override public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
         channel = e.getChannel();
         synchronized (mutex) {
-            // Testing terminate == null just in case terminate was issued meanwhile... will hardly ever happen.
+            // Just in case terminate was issued meanwhile... will hardly ever happen.
             if (terminate != null) return;
+
+            available = true;
         }
         listener.connectionOpened(this);
     }
 
-    @Override public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e)
-            throws Exception {
-        synchronized (mutex) {
-            if (terminate == null) terminate = RequestFuture.CONNECTION_LOST;
-        }
-
-        listener.connectionTerminated(this, requests);
-    }
-
     @Override public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
-        // No need for any extra steps since isAvailable only turns true when channel connects.
-        // Simply notify the listener that the connection failed.
-        if (channel == null) listener.connectionFailed(this);
-    }
+        if (channel == null) {
+            // No need for any extra steps since available only turns true when channel connects.
+            // Simply notify the listener that the connection failed.
+            listener.connectionFailed(this);
+            return;
+        }
 
-    // HttpConnection -------------------------------------------------------------------------------------------------
-
-    @Override public void terminate(Throwable reason) {
+        RequestContext request;
         synchronized (mutex) {
             if (terminate != null) return;
 
-            terminate = reason;
-            willClose = true;
+            terminate = RequestFuture.CONNECTION_LOST;
+            available = false;
+            request = currentRequest; // If this.currentRequest = null request will be null which is ok
         }
 
-        if ((channel != null) && channel.isConnected()) channel.close();
+        if ((request != null) && !request.getFuture().isDone() &&
+            (request.isIdempotent() || restoreNonIdempotentOperations)) {
+            listener.connectionTerminated(this, Arrays.asList(request));
+        } else {
+            if ((request != null) && !request.getFuture().isDone()) {
+                request.getFuture().failedWithCause(RequestFuture.CONNECTION_LOST);
+            }
+            listener.connectionTerminated(this);
+        }
+    }
+
+    @Override public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e)
+            throws Exception {
+        if ((currentRequest == null) ||
+            (currentRequest.getDataSinkListener() == null) ||
+            (!continueReceived)) {
+            return;
+        }
+
+        currentRequest.getDataSinkListener().writeComplete(this, e.getWrittenAmount());
+    }
+
+    // Connection -------------------------------------------------------------------------------------------------
+
+    @Override public void terminate(Throwable reason) {
+        synchronized (mutex) {
+            // Already terminated, nothing to do here.
+            if (terminate != null) return;
+
+            terminate = reason;
+            // Mark as unavailable
+            available = false;
+
+            if (currentRequest != null) currentRequest.getFuture().failedWithCause(terminate);
+        }
+
+        if ((channel != null) && channel.isConnected()) {
+            try {
+                channel.close();
+            } catch (Exception ignored) {
+                // may happen if channel closes between passing the condition checks and the call to close() executes.
+            }
+        }
     }
 
     @Override public String getId() { return id; }
@@ -239,13 +251,7 @@ public class PipeliningHttpConnection
 
     @Override public int getPort() { return port; }
 
-    @Override public boolean isAvailable() {
-        return !willClose &&
-               (requests.size() < maxRequestsInPipeline) &&
-               (terminate == null) &&
-               (channel != null) &&
-               channel.isConnected();
-    }
+    @Override public boolean isAvailable() { return available; }
 
     @Override public boolean execute(final RequestContext context) {
         Utils.ensureValue(context != null, "RequestContext cannot be null");
@@ -256,38 +262,26 @@ public class PipeliningHttpConnection
             return true;
         }
 
-        // This implementation allows multiple requests active at the same time if:
-        // 1. The last submitted request is not a keep-alive request (HTTP/1.0 or Connection: close)
-        // 2. Requests are non-idempotent
-        // 3. Requests are non-idempotent and allowNonIdempotentPipelining is set to true
-
-        if (!context.isIdempotent() && !allowNonIdempotentPipelining) {
-            // Immediately reject non-idempotent requests.
-            context.getFuture().failedWithCause(RequestFuture.EXECUTION_REJECTED);
-            listener.requestFinished(this, context);
-            return true;
-        }
-
         synchronized (mutex) {
-            // If requests are performed during the period in which isAvailable() returns false, the request is
-            // immediately rejected.
-            if (!isAvailable()) {
+            // This implementation only allows one execution at a time. If requests are performed during the period in
+            // which isAvailable() returns false, the request is immediately rejected.
+            if (!available && (terminate == null) && channel.isConnected()) {
                 // Terminate request wasn't issued, connection is open but unavailable, so fail the request!
                 context.getFuture().failedWithCause(RequestFuture.EXECUTION_REJECTED);
                 listener.requestFinished(this, context);
                 return true;
             } else if ((terminate != null) || !channel.isConnected()) {
                 // Terminate was issued or channel is no longer connected, don't accept execution and leave request
-                // untouched.
+                // untouched. Switching available to false isn't really necessary but...
+                available = false;
                 return false;
             }
 
-            requests.add(context);
-
-            // If it's a non-keep alive request mark this connection as unavailable to receive new requests.
-            if (!HttpHeaders.isKeepAlive(context.getRequest())) willClose = true;
+            // Mark connection as unavailable.
+            available = false;
         }
 
+        currentRequest = context;
         context.getFuture().markExecutionStart();
 
         // Now, it's theorethically possible that terminate() is called by other thread while this one is still "stuck"
@@ -302,11 +296,9 @@ public class PipeliningHttpConnection
                     try {
                         channel.write(context.getRequest());
                     } catch (Exception e) {
-                        synchronized (mutex) {
-                            // Needs to be synchronized to avoid concurrent mod exception.
-                            requests.remove(context);
-                        }
+                        currentRequest = null;
                         context.getFuture().failedWithCause(e);
+                        available = true;
                     }
                 }
             });
@@ -316,12 +308,10 @@ public class PipeliningHttpConnection
             try {
                 channel.write(context.getRequest());
             } catch (Exception e) {
-                // Some error occurred underneath, maybe ChannelClosedException or something like that.
-                synchronized (mutex) {
-                    // Needs to be synchronized to avoid concurrent mod exception.
-                    requests.remove(context);
-                }
+                // Some error occurred underneath, maybe ChannelClosedException.
+                currentRequest = null;
                 context.getFuture().failedWithCause(e);
+                available = true;
                 return true;
             }
         }
@@ -335,38 +325,50 @@ public class PipeliningHttpConnection
         return true;
     }
 
+    // DataSink ---------------------------------------------------------------------------------------------------
+
+    @Override public boolean isConnected() { return (terminate == null) && (channel != null) && channel.isConnected(); }
+
+    @Override public void disconnect() { terminate(RequestFuture.CANCELLED); }
+
+    @Override public void sendData(ChannelBuffer data, boolean isLast) {
+        if (!isConnected()) return;
+
+        if ((data != null) && (data.readableBytes() > 0)) channel.write(new DefaultHttpChunk(data));
+        if (isLast) channel.write(new DefaultHttpChunkTrailer());
+    }
+
     // private helpers ------------------------------------------------------------------------------------------------
 
-    private void receivedContentForRequest(ChannelBuffer content, boolean last) {
+    private void receivedContentForCurrentRequest(ChannelBuffer content, boolean last) {
         // This method does not need any particular synchronization to ensure currentRequest doesn't change its state
         // to null during processing, since it's always called inside a synchronized() block.
         if (discarding) return;
 
-        RequestContext request = requests.peek();
         try {
-            if (last) request.getProcessor().addLastData(content);
-            else request.getProcessor().addData(content);
+            if (last) currentRequest.getProcessor().addLastData(content);
+            else currentRequest.getProcessor().addData(content);
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().failedWithCause(e, currentResponse);
+            currentRequest.getFuture().failedWithCause(e, currentResponse);
             discarding = true;
         }
     }
 
     @SuppressWarnings({"unchecked"})
-    private void responseForRequestComplete() {
+    private void responseForCurrentRequestComplete() {
         // This method does not need any particular synchronization to ensure currentRequest doesn't change its state
         // to null during processing, since it's always called inside a synchronized() block.
 
         // Only unlock the future if the contents weren't being discarded. If the contents were being discarded, it
-        // means that receivedResponseForRequest() already triggered the future!
+        // means that receivedResponseForCurrentRequest() already triggered the future!
         if (!discarding) {
-            RequestContext request = requests.peek();
-            request.getFuture().finishedSuccessfully(request.getProcessor().getProcessedResponse(), currentResponse);
+            currentRequest.getFuture().finishedSuccessfully(currentRequest.getProcessor().getProcessedResponse(),
+                                                            currentResponse);
         }
 
-        postResponseCleanup();
+        currentRequestFinished();
     }
 
     /**
@@ -376,24 +378,25 @@ public class PipeliningHttpConnection
      * @param response HttpResponse received
      */
     @SuppressWarnings({"unchecked"})
-    private void receivedResponseForRequest(HttpResponse response) {
+    private void receivedResponseForCurrentRequest(HttpResponse response) {
         // This method does not need any particular synchronization to ensure currentRequest doesn't change its state
         // to null during processing, since it's always called inside a synchronized() block.
 
         currentResponse = response;
-        RequestContext request = requests.peek();
         try {
-            if (!request.getProcessor().willProcessResponse(response)) {
+            if (!currentRequest.getProcessor().willProcessResponse(response)) {
                 // Rather than waiting for the full content to arrive (which will be discarded), perform an early
-                // trigger on the Future, signalling request is finished. Note that postResponseCleanup() is *not*
+                // trigger on the Future, signalling request is finished. Note that currentRequestFinished() is *not*
                 // called in this method, which means that execution of other requests will not be allowed, even though
                 // the current request has been terminated. The reason for this is that all incoming data must be safely
                 // consumed (and discarded) before another request hits the network - this avoids possible response data
-                // mixing.
+                // mixing. When you *KNOW* for sure that the server supports HTTP/1.1 pipelining, then use the
+                // pipelining implementation, PipeliningConnection.
 
                 // Even though the processor does not want to process the response, it might still return some default
                 // result, so call getProcessedResponse() on it, rather than passing null to the Future.
-                request.getFuture().finishedSuccessfully(request.getProcessor().getProcessedResponse(), response);
+                currentRequest.getFuture().finishedSuccessfully(currentRequest.getProcessor().getProcessedResponse(),
+                                                                currentResponse);
                 discarding = true;
             } else {
                 // Response processor wants to process the contents of this request.
@@ -402,30 +405,38 @@ public class PipeliningHttpConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().failedWithCause(e, response);
+            currentRequest.getFuture().failedWithCause(e, response);
             discarding = true;
         }
     }
 
-    private void postResponseCleanup() {
+    private void currentRequestFinished() {
         // Always called inside a synchronized block.
 
-        // Apart from this method, only exceptionCaught() removes items from the request queue.
-        RequestContext context = requests.poll();
+        RequestContext context = currentRequest;
+        // Only signal as available if the connection will be kept alive and if terminate hasn't been issued AND
+        // the channel is still connected.
+        available = HttpHeaders.isKeepAlive(currentRequest.getRequest()) &&
+                    HttpHeaders.isKeepAlive(currentResponse) &&
+                    terminate == null &&
+                    channel.isConnected();
+
+        currentRequest = null;
         currentResponse = null;
+        continueReceived = false;
+
         listener.requestFinished(this, context);
 
-        // Close non-keep alive connections if configured to do so...
-        if (disconnectIfNonKeepAliveRequest && !HttpHeaders.isKeepAlive(currentResponse)) channel.close();
-    }
+        // If it's a non-keepalive connection, mark it as terminated, even though it may not be immediately closed.
+        if (!available) {
+            // Mark this connection as terminated, so that if we get disconnected meanwhile we don't trigger another
+            // connectionTerminated() event
+            terminate = RequestFuture.SHUTTING_DOWN;
+            listener.connectionTerminated(this);
+        }
 
-    // object overrides -----------------------------------------------------------------------------------------------
-
-    @Override public String toString() {
-        return new StringBuilder()
-                .append("PipeliningHttpConnection{")
-                .append("id='").append(id).append('\'')
-                .append('(').append(host).append(':').append(port)
-                .append(")}").toString();
+        // If configured to do so, don't wait for the server to gracefully shutdown the connection
+        // and shut it down ourselves...
+        if (disconnectIfNonKeepAliveRequest && !available) channel.close();
     }
 }

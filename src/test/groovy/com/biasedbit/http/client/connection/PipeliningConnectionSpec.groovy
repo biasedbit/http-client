@@ -8,16 +8,16 @@ import java.util.concurrent.Executor
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-class DefaultHttpConnectionFactorySpec extends Specification {
+class PipeliningConnectionSpec extends Specification {
 
-  DefaultHttpConnectionFactory factory
-  HttpConnectionListener       listener
-  TimeoutController            timeoutController
-  Executor                     executor
+  PipeliningConnectionFactory factory
+  ConnectionListener          listener
+  TimeoutController               timeoutController
+  Executor                        executor
 
   def setup() {
-    factory = new DefaultHttpConnectionFactory()
-    listener = Mock(HttpConnectionListener)
+    factory = new PipeliningConnectionFactory()
+    listener = Mock(ConnectionListener)
     timeoutController = Mock(TimeoutController)
     executor = Mock(Executor)
   }
@@ -34,7 +34,8 @@ class DefaultHttpConnectionFactorySpec extends Specification {
       connection.executor == executor
 
       connection.disconnectIfNonKeepAliveRequest == factory.disconnectIfNonKeepAliveRequest
-      connection.restoreNonIdempotentOperations == factory.restoreNonIdempotentOperations
+      connection.allowNonIdempotentPipelining == factory.allowNonIdempotentPipelining
+      connection.maxRequestsInPipeline == factory.maxRequestsInPipeline
     }
   }
 }

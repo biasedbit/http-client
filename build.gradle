@@ -1,7 +1,7 @@
 /* A Java high performance throughput-oriented HTTP client library built with Netty */
 description = "http-client"
 
-version = "1.1.0-SNAPSHOT"
+version = "2.0.0-SNAPSHOT"
 repositories { mavenCentral() }
 
 apply plugin: "groovy" // takes care of setting up Java
@@ -23,6 +23,9 @@ dependencies {
   testCompile "org.spockframework:spock-core:0.7-groovy-2.0"
   testRuntime "cglib:cglib-nodep:2.2.2" // Required for spock to mock classes
 }
+
+
+/* --- MUTATION TESTING CONFIGURATION --- */
 
 buildscript {
   repositories {

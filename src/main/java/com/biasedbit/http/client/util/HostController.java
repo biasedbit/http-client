@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client.util;
 
-import com.biasedbit.http.client.connection.HttpConnection;
+import com.biasedbit.http.client.connection.Connection;
 import lombok.*;
 
 import java.util.Collection;
@@ -105,7 +105,7 @@ public class HostController {
 
         // 3. There is content to drain and there are connections, drain as much as possible in a single loop.
         boolean drained = false;
-        for (HttpConnection connection : connectionPool.getConnections()) {
+        for (Connection connection : connectionPool.getConnections()) {
             // Connection not available, immediately try next one
             if (!connection.isAvailable()) continue;
 
@@ -155,6 +155,6 @@ public class HostController {
     public void shutdown(Throwable cause) {
         failAllRequests(cause);
 
-        for (HttpConnection connection : connectionPool.getConnections()) connection.terminate(cause);
+        for (Connection connection : connectionPool.getConnections()) connection.terminate(cause);
     }
 }

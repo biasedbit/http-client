@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.client.connection.HttpConnectionFactory;
+import com.biasedbit.http.client.connection.ConnectionFactory;
 import com.biasedbit.http.client.ssl.SslContextFactory;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import lombok.Getter;
@@ -54,9 +54,9 @@ public class DefaultHttpClientFactory
     @Getter @Setter private int     maxHelperThreads            = MAX_HELPER_THREADS;
     @Getter @Setter private boolean cleanupInactiveHostContexts = CLEANUP_INACTIVE_HOST_CONTEXTS;
 
-    @Getter @Setter private HttpConnectionFactory    connectionFactory;
-    @Getter @Setter private TimeoutController        timeoutController;
-    @Getter @Setter private SslContextFactory        sslContextFactory;
+    @Getter @Setter private ConnectionFactory connectionFactory;
+    @Getter @Setter private TimeoutController timeoutController;
+    @Getter @Setter private SslContextFactory sslContextFactory;
 
     // HttpClientFactory ----------------------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 package com.biasedbit.http.client.future
 
-import com.biasedbit.http.client.connection.HttpConnection
+import com.biasedbit.http.client.connection.Connection
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse
 import spock.lang.Specification
 import spock.lang.Timeout
@@ -182,7 +182,7 @@ class DefaultRequestFutureSpec extends Specification {
   def "#cancelled triggers completion of the future with an exception as cause and the received response"() {
     given: "a future which has been started and has an attached connection"
     future.markExecutionStart()
-    def connection = Mock(HttpConnection) { 1 * terminate(RequestFuture.CANCELLED) }
+    def connection = Mock(Connection) { 1 * terminate(RequestFuture.CANCELLED) }
     future.attachConnection(connection)
 
     and: "the future has a couple of listeners"
