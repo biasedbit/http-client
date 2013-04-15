@@ -3,6 +3,7 @@ package com.biasedbit.http.client.future
 import com.biasedbit.http.client.connection.HttpConnection
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse
 import spock.lang.Specification
+import spock.lang.Timeout
 
 import java.util.concurrent.TimeUnit
 
@@ -196,100 +197,118 @@ class DefaultRequestFutureSpec extends Specification {
     listeners.each { assert it.notified }
   }
 
-  // TODO investigate timed tests
+  @Timeout(1)
   def "#await() unlocks only then the future completes"() {
     given: scheduledEvent(100) { future.finishedSuccessfully("result", response) }
     expect: future.await() != null
   }
 
+  @Timeout(1)
   def "#await immediately unlocks if the future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.await() != null
   }
 
+  @Timeout(1)
   def "#await() raises InterruptedException if a thread interrupt occurs while waiting"() {
     given: scheduledInterruptForCurrentThread(100)
     when: future.await()
     then: thrown(InterruptedException)
   }
 
+  @Timeout(1)
   def "#await(timeout, unit) unlocks as soon as the future completes"() {
     given: scheduledEvent(50) { future.finishedSuccessfully("result", response) }
     expect: future.await(100, TimeUnit.MILLISECONDS)
   }
 
+  @Timeout(1)
   def "#await(timeout, unit) immediately returns if future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.await(1, TimeUnit.SECONDS)
   }
 
+  @Timeout(1)
   def "#await(timeout, unit) unlocks after the specified timeout returning 'false' if the future is not complete"() {
     expect: !future.await(50, TimeUnit.MILLISECONDS)
   }
 
+  @Timeout(1)
   def "#await(timeout, unit) raises InterruptedException if a thread interrupt occurs while waiting"() {
     given: scheduledInterruptForCurrentThread(100)
     when: future.await(1, TimeUnit.SECONDS)
     then: thrown(InterruptedException)
   }
 
+  @Timeout(1)
   def "#await(timeout) unlocks as soon as the future completes"() {
     given: scheduledEvent(50) { future.finishedSuccessfully("result", response) }
     expect: future.await(100)
   }
 
+  @Timeout(1)
   def "#await(timeout) immediately returns if future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.await(1000)
   }
 
+  @Timeout(1)
   def "#await(timeout) unlocks after the specified timeout (in ms) returning 'false' if the future is not complete"() {
     expect: !future.await(50)
   }
 
+  @Timeout(1)
   def "#await(timeout) raises InterruptedException if a thread interrupt occurs while waiting"() {
     given: scheduledInterruptForCurrentThread(100)
     when: future.await(1000)
     then: thrown(InterruptedException)
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly() unlocks only then the future completes even if a thread interrupt occurs"() {
     given: scheduledEvent(100) { future.finishedSuccessfully("result", response) }
     and: scheduledInterruptForCurrentThread(50)
     expect: future.awaitUninterruptibly() != null
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly() immediately returns if the future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.awaitUninterruptibly() != null
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly(timeout, unit) unlocks after the specified timeout even if an interrupt occurs"() {
     given: scheduledEvent(100) { future.finishedSuccessfully("result", response) }
     and: scheduledInterruptForCurrentThread(50)
     expect: future.awaitUninterruptibly(1, TimeUnit.SECONDS)
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly(timeout, unit) immediately returns if the future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.awaitUninterruptibly()
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly(timeout) unlocks after the specified timeout (in ms) even if an interrupt occurs"() {
     given: scheduledEvent(100) { future.finishedSuccessfully("result", response) }
     and: scheduledInterruptForCurrentThread(50)
     expect: future.awaitUninterruptibly(1000)
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly(timeout) immediately returns if the future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.awaitUninterruptibly()
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly(timeout, unit) unlocks after timeout returning 'false' if the future is not complete"() {
     expect: !future.awaitUninterruptibly(50, TimeUnit.MILLISECONDS)
   }
 
+  @Timeout(1)
   def "#awaitUninterruptibly(timeout) unlocks after timeout (in ms) returning 'false' if the future is not complete"() {
     expect: !future.awaitUninterruptibly(50)
   }
