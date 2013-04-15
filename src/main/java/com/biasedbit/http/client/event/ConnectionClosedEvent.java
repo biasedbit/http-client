@@ -40,4 +40,8 @@ public class ConnectionClosedEvent
     // HttpClientEvent ------------------------------------------------------------------------------------------------
 
     @Override public EventType getEventType() { return EventType.CONNECTION_CLOSED; }
+
+    // interface ------------------------------------------------------------------------------------------------------
+
+    public boolean hasRequestsToRetry() { return (retryRequests != null) && !retryRequests.isEmpty(); }
 }

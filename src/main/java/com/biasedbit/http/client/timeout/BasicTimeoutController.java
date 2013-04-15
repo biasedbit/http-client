@@ -19,6 +19,7 @@ package com.biasedbit.http.client.timeout;
 import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.future.RequestFutureListener;
 import com.biasedbit.http.client.util.RequestContext;
+import lombok.RequiredArgsConstructor;
 import org.jboss.netty.util.internal.ExecutorUtil;
 
 import java.util.concurrent.*;
@@ -81,9 +82,7 @@ public class BasicTimeoutController
 
     @Override public void terminate() { if (internalExecutor) ExecutorUtil.terminate(executor); }
 
-    @Override public void controlTimeout(RequestContext context) {
-        executor.execute(new TimeoutChecker(context));
-    }
+    @Override public void controlTimeout(RequestContext context) { executor.execute(new TimeoutChecker(context)); }
 
     /**
      * Checks if a given request times out before its execution completes.
@@ -102,6 +101,7 @@ public class BasicTimeoutController
      * small performance slowdown only occurs when the request-response cycle takes 0.01~ to complete which, in real
      * scenarios, is extremely unlikely to ever happen.
      */
+    @RequiredArgsConstructor
     public static class TimeoutChecker
             implements Runnable,
                        RequestFutureListener {
@@ -109,14 +109,8 @@ public class BasicTimeoutController
         // internal vars ----------------------------------------------------------------------------------------------
 
         private final RequestContext request;
-        private final CountDownLatch latch;
 
-        // constructors -----------------------------------------------------------------------------------------------
-
-        public TimeoutChecker(RequestContext request) {
-            this.request = request;
-            latch = new CountDownLatch(1);
-        }
+        private final CountDownLatch latch = new CountDownLatch(1);
 
         // Runnable ---------------------------------------------------------------------------------------------------
 
@@ -130,9 +124,7 @@ public class BasicTimeoutController
             try {
                 // If explicitly released before timing out, nothing to do, request already executed or failed.
                 if (latch.await(request.getTimeout(), TimeUnit.MILLISECONDS)) return;
-            } catch (InterruptedException e) {
-                Thread.interrupted();
-            }
+            } catch (InterruptedException ignored) { /* ignored */ }
 
             // Request timed out...
             // If the future has already been unlocked, then no harm is done by calling this method as it won't produce

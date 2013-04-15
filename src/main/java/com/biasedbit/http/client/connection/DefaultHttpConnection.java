@@ -20,8 +20,7 @@ import com.biasedbit.http.client.future.RequestFuture;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.util.Utils;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
@@ -46,7 +45,10 @@ import java.util.concurrent.Executor;
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
+@RequiredArgsConstructor
+@ToString(of = {"id", "host", "port"})
+public class DefaultHttpConnection
+        extends SimpleChannelUpstreamHandler
         implements HttpConnection,
                    HttpDataSink {
 
@@ -100,21 +102,10 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
     private boolean        discarding;
     private boolean        continueReceived;
 
-    // constructors ---------------------------------------------------------------------------------------------------
-
-    public DefaultHttpConnection(String id, String host, int port, HttpConnectionListener listener,
-                                 TimeoutController timeoutController, Executor executor) {
-        this.id = id;
-        this.host = host;
-        this.port = port;
-        this.listener = listener;
-        this.timeoutController = timeoutController;
-        this.executor = executor;
-    }
-
     // SimpleChannelUpstreamHandler -----------------------------------------------------------------------------------
 
-    @Override public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+    @Override public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+            throws Exception {
         // Synch this big block, as there is a chance that it's a complete response.
         // If it's a complete response (in other words, all the data necessary to mark the request as finished is
         // present), and it's cancelled meanwhile, synch'ing this block will guarantee that the request will
@@ -232,8 +223,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
 
     // HttpConnection -------------------------------------------------------------------------------------------------
 
-    @Override
-    public void terminate(Throwable reason) {
+    @Override public void terminate(Throwable reason) {
         synchronized (mutex) {
             // Already terminated, nothing to do here.
             if (terminate != null) return;
@@ -336,9 +326,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
 
     // HttpDataSink ---------------------------------------------------------------------------------------------------
 
-    @Override public boolean isConnected() {
-        return (terminate == null) && (channel != null) && channel.isConnected();
-    }
+    @Override public boolean isConnected() { return (terminate == null) && (channel != null) && channel.isConnected(); }
 
     @Override public void disconnect() { terminate(RequestFuture.CANCELLED); }
 
@@ -449,15 +437,5 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
         // If configured to do so, don't wait for the server to gracefully shutdown the connection and shut it down
         // ourselves...
         if (disconnectIfNonKeepAliveRequest && !available) channel.close();
-    }
-
-    // object overrides -----------------------------------------------------------------------------------------------
-
-    @Override public String toString() {
-        return new StringBuilder()
-                .append("DefaultHttpConnection{")
-                .append("id='").append(id).append('\'')
-                .append('(').append(host).append(':').append(port)
-                .append(")}").toString();
     }
 }

@@ -102,8 +102,6 @@ public class DefaultHttpClient
 
     protected static final HttpClientEvent POISON = new HttpClientEvent() {
         @Override public EventType getEventType() { return null; }
-
-        @Override public String toString() { return "POISON"; }
     };
 
     // configuration defaults -----------------------------------------------------------------------------------------
@@ -221,24 +219,24 @@ public class DefaultHttpClient
         eventQueue.add(POISON);
         try {
             eventConsumerLatch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
         // Fail all requests that were still in the event queue.
         for (HttpClientEvent event : pendingEvents) {
             switch (event.getEventType()) {
                 case EXECUTE_REQUEST:
-                    ((ExecuteRequestEvent) event).getContext().getFuture().failedWithCause(SHUTTING_DOWN);
+                    ExecuteRequestEvent executeEvent = (ExecuteRequestEvent) event;
+                    executeEvent.getContext().getFuture().failedWithCause(SHUTTING_DOWN);
                     break;
 
                 case CONNECTION_CLOSED:
                     ConnectionClosedEvent closedEvent = (ConnectionClosedEvent) event;
-                    if ((closedEvent.getRetryRequests() != null) && !closedEvent.getRetryRequests().isEmpty()) {
+                    if (closedEvent.hasRequestsToRetry()) {
                         for (RequestContext context : closedEvent.getRetryRequests()) {
                             context.getFuture().failedWithCause(SHUTTING_DOWN);
                         }
                     }
+                    break;
             }
         }
 
@@ -249,9 +247,7 @@ public class DefaultHttpClient
 
         try {
             channelGroup.close().await(1000);
-        } catch (InterruptedException e) {
-            Thread.interrupted();
-        }
+        } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
         channelFactory.releaseExternalResources();
         if (executor != null) ExecutorUtil.terminate(executor);
@@ -262,12 +258,12 @@ public class DefaultHttpClient
     @Override public <T> RequestFuture<T> execute(String host, int port, HttpRequest request,
                                                       HttpResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
-        return execute(host, port, requestInactivityTimeout, request, processor);
+        return execute(host, port, requestInactivityTimeout, request, processor, null);
     }
 
     @Override public RequestFuture<Object> execute(String host, int port, HttpRequest request)
             throws CannotExecuteRequestException {
-        return execute(host, port, request, DiscardProcessor.getInstance());
+        return execute(host, port, requestInactivityTimeout, request, DiscardProcessor.getInstance(), null);
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
