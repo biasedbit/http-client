@@ -24,6 +24,27 @@ dependencies {
   testRuntime "cglib:cglib-nodep:2.2.2" // Required for spock to mock classes
 }
 
+buildscript {
+  repositories {
+    mavenCentral()
+    add(new org.apache.ivy.plugins.resolver.URLResolver()) {
+      name = "GitHub"
+      addArtifactPattern "http://cloud.github.com/downloads/szpak/[module]/[module]-[revision].[ext]"
+    }
+  }
+  dependencies {
+    classpath "info.solidsoft.gradle.pitest:gradle-pitest-plugin:0.29.0"
+    classpath "org.pitest:pitest:0.29"
+  }
+}
+
+apply plugin: "pitest"
+
+pitest {
+  targetClasses = ["com.biasedbit.http.client.*"]
+  threads = 4
+}
+
 
 /* --- IDEA PROJECT CONFIGURATION --- */
 
