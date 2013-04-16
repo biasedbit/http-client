@@ -126,9 +126,9 @@ public class DefaultConnection
                 // Ignore CONTINUE responses, unless we have a data sink listener
                 if (HttpResponseStatus.CONTINUE.equals(response.getStatus())) {
                     continueReceived = true;
-                    if (currentRequest.getDataSinkListener() != null) {
-                        currentRequest.getDataSinkListener().readyToSendData(this);
-                    }
+                    DataSinkListener sinkListener = currentRequest.getDataSinkListener();
+                    if (sinkListener != null) sinkListener.readyToSendData(this);
+
                     return;
                 }
 
@@ -186,11 +186,10 @@ public class DefaultConnection
 
     @Override public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e)
             throws Exception {
-        if (currentRequest == null) return;
-        if (currentRequest.getDataSinkListener() == null) return;
-        if (!continueReceived) return;
+        if ((currentRequest == null) || !continueReceived) return;
 
-        currentRequest.getDataSinkListener().writeComplete(this, e.getWrittenAmount());
+        DataSinkListener sinkListener = currentRequest.getDataSinkListener();
+        if (sinkListener != null) sinkListener.writeComplete(this, e.getWrittenAmount());
     }
 
     // Connection -----------------------------------------------------------------------------------------------------
@@ -379,7 +378,8 @@ public class DefaultConnection
 
         currentResponse = response;
         try {
-            if (!currentRequest.getProcessor().willProcessResponse(response)) {
+            ResponseProcessor processor = currentRequest.getProcessor();
+            if (!processor.willProcessResponse(response)) {
                 // Rather than waiting for the full content to arrive (which will be discarded), perform an early
                 // trigger on the Future, signalling request is finished. Note that currentRequestFinished() is *not*
                 // called in this method, which means that execution of other requests will not be allowed, even though
@@ -390,8 +390,7 @@ public class DefaultConnection
 
                 // Even though the processor does not want to process the response, it might still return some default
                 // result, so call getProcessedResponse() on it, rather than passing null to the Future.
-                currentRequest.getFuture().finishedSuccessfully(currentRequest.getProcessor().getProcessedResponse(),
-                                                                currentResponse);
+                currentRequest.getFuture().finishedSuccessfully(processor.getProcessedResponse(), currentResponse);
                 discarding = true;
             } else {
                 // Response processor wants to process the contents of this request.
