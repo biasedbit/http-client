@@ -162,14 +162,6 @@ public class DefaultConnection
         }
     }
 
-    @Override public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
-            throws Exception {
-        // Didn't even connect...
-        if (channel == null) return;
-
-        terminate(e.getCause());
-    }
-
     @Override public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
         channel = e.getChannel();
@@ -182,47 +174,26 @@ public class DefaultConnection
         listener.connectionOpened(this);
     }
 
+    @Override public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+            throws Exception {
+        handleClose(e.getCause());
+    }
+
     @Override public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
-        if (channel == null) {
-            // No need for any extra steps since available only turns true when channel connects.
-            // Simply notify the listener that the connection failed.
-            listener.connectionFailed(this);
-            return;
-        }
-
-        RequestContext request;
-        synchronized (mutex) {
-            if (terminate != null) return;
-
-            terminate = RequestFuture.CONNECTION_LOST;
-            available = false;
-            request = currentRequest; // If this.currentRequest = null request will be null which is ok
-        }
-
-        if ((request != null) && !request.getFuture().isDone() &&
-            (request.isIdempotent() || restoreNonIdempotentOperations)) {
-            listener.connectionTerminated(this, Arrays.asList(request));
-        } else {
-            if ((request != null) && !request.getFuture().isDone()) {
-                request.getFuture().failedWithCause(RequestFuture.CONNECTION_LOST);
-            }
-            listener.connectionTerminated(this);
-        }
+        handleClose(RequestFuture.CONNECTION_LOST);
     }
 
     @Override public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e)
             throws Exception {
-        if ((currentRequest == null) ||
-            (currentRequest.getDataSinkListener() == null) ||
-            (!continueReceived)) {
-            return;
-        }
+        if (currentRequest == null) return;
+        if (currentRequest.getDataSinkListener() == null) return;
+        if (!continueReceived) return;
 
         currentRequest.getDataSinkListener().writeComplete(this, e.getWrittenAmount());
     }
 
-    // Connection -------------------------------------------------------------------------------------------------
+    // Connection -----------------------------------------------------------------------------------------------------
 
     @Override public void terminate(Throwable reason) {
         synchronized (mutex) {
@@ -237,11 +208,8 @@ public class DefaultConnection
         }
 
         if ((channel != null) && channel.isConnected()) {
-            try {
-                channel.close();
-            } catch (Exception ignored) {
-                // may happen if channel closes between passing the condition checks and the call to close() executes.
-            }
+            try { channel.close(); } catch (Exception ignored) { /* ignored */ }
+            // May bomb if channel closes between passing the condition checks and the call to close() executes.
         }
     }
 
@@ -339,6 +307,33 @@ public class DefaultConnection
     }
 
     // private helpers ------------------------------------------------------------------------------------------------
+
+    private void handleClose(Throwable cause) {
+        if (channel == null) {
+            // No need for any extra steps since available only turns true when channel connects.
+            // Simply notify the listener that the connection failed.
+            listener.connectionFailed(this);
+            return;
+        }
+
+        RequestContext request;
+        synchronized (mutex) {
+            if (terminate != null) return;
+
+            terminate = cause;
+            available = false;
+            request = currentRequest; // If this.currentRequest = null request will be null which is ok
+        }
+
+        if ((request != null) && !request.getFuture().isDone() &&
+            (request.isIdempotent() || restoreNonIdempotentOperations)) {
+            listener.connectionTerminated(this, Arrays.asList(request));
+        } else {
+            if ((request != null) && !request.getFuture().isDone()) request.getFuture().failedWithCause(cause);
+
+            listener.connectionTerminated(this);
+        }
+    }
 
     private void receivedContentForCurrentRequest(ChannelBuffer content, boolean last) {
         // This method does not need any particular synchronization to ensure currentRequest doesn't change its state
