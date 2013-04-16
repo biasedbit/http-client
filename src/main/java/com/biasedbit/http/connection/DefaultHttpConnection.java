@@ -251,6 +251,7 @@ public class DefaultHttpConnection extends SimpleChannelUpstreamHandler
                 // executes.
             }
         }
+        this.listener.connectionTerminated(this);
     }
 
     @Override
