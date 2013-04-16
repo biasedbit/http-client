@@ -45,7 +45,6 @@ apply plugin: "pitest"
 
 pitest {
   targetClasses = ["com.biasedbit.http.client.*"]
-  threads = 4
 }
 
 
