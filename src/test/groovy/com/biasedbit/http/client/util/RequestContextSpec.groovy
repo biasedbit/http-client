@@ -43,10 +43,9 @@ class RequestContextSpec extends Specification {
     then: context.timeout == 0
   }
 
-  @Unroll def "#isIdempotent returns #value when method is #method"() {
+  @Unroll def "-isIdempotent returns #value when method is #method"() {
     setup: def context = new RequestContext("biasedbit.com", 80, 500, request, processor)
     and: request.method >> method
-
     expect: context.isIdempotent() == value
 
     where:
@@ -60,11 +59,9 @@ class RequestContextSpec extends Specification {
     DELETE  | true
     TRACE   | true
     CONNECT | false
-
-    isIdempotent = "#isIdempotent"
   }
 
-  def "#toString prints a nice description"() {
+  def "-toString prints a nice description"() {
     def request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, GET, "/index")
     def context = new RequestContext("biasedbit.com", 80, 500, request, processor)
     expect: context.toString().startsWith("GET /index (biasedbit.com:80)")

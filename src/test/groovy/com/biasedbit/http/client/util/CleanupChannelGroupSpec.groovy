@@ -14,7 +14,7 @@ class CleanupChannelGroupSpec extends Specification {
 
   def setup() { group = new CleanupChannelGroup("test-group") }
 
-  def "#close closes all channels when called once"() {
+  def "-close closes all channels when called once"() {
     setup:
     def channel1 = channelMock(1)
     def channel2 = channelMock(2)
@@ -27,19 +27,19 @@ class CleanupChannelGroupSpec extends Specification {
     and: 1 * channel2.close() >> channel1.getCloseFuture()
   }
 
-  def "#close raises exception when called twice"() {
+  def "-close raises exception when called twice"() {
     setup: group.close()
     when: group.close()
     then: thrown(IllegalStateException)
   }
 
-  def "#add adds a channel to the group"() {
+  def "-add adds a channel to the group"() {
     setup: def channel = channelMock(1)
     expect: group.add(channel)
     and: group.size() == 1
   }
 
-  def "#add immediately closes a channel if the group has already been closed"() {
+  def "-add immediately closes a channel if the group has already been closed"() {
     setup:
     def channel = channelMock(1)
     1 * channel.close()

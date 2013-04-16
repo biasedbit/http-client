@@ -18,7 +18,7 @@ class DefaultHttpClientFactorySpec extends Specification {
     factory.sslContextFactory = Mock(SslContextFactory)
   }
 
-  def "#createClient creates a host context with input parameters"() {
+  def "-createClient creates a host context with input parameters"() {
     expect: with(factory.createClient()) { client ->
       client != null
 

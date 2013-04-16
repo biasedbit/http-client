@@ -10,19 +10,12 @@ import java.util.concurrent.Executor
  */
 class DefaultConnectionFactorySpec extends Specification {
 
-  DefaultConnectionFactory factory
-  ConnectionListener       listener
-  TimeoutController            timeoutController
-  Executor                     executor
+  def factory           = new DefaultConnectionFactory()
+  def listener          = Mock(ConnectionListener)
+  def timeoutController = Mock(TimeoutController)
+  def executor          = Mock(Executor)
 
-  def setup() {
-    factory = new DefaultConnectionFactory()
-    listener = Mock(ConnectionListener)
-    timeoutController = Mock(TimeoutController)
-    executor = Mock(Executor)
-  }
-
-  def "#createConnection creates a connection with the current settings"() {
+  def "-createConnection creates a connection with the current settings"() {
     expect: with(factory.createConnection("id", "host", 80, listener, timeoutController, executor)) { connection ->
       connection != null
 

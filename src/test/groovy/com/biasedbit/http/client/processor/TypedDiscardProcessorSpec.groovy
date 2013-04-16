@@ -16,12 +16,12 @@ class TypedDiscardProcessorSpec extends Specification {
 
   def processor = new TypedDiscardProcessor<Object>()
 
-  def "#getInstance returns the singleton instance"() {
+  def "-getInstance returns the singleton instance"() {
     setup: def instance = TypedDiscardProcessor.instance
     expect: instance == TypedDiscardProcessor.instance
   }
 
-  def "#willProcessResponse always returns false"() {
+  def "-willProcessResponse always returns false"() {
     expect: !processor.willProcessResponse(response)
     where:
     response << [
@@ -33,7 +33,7 @@ class TypedDiscardProcessorSpec extends Specification {
     ]
   }
 
-  def "#getProcessedResponse always returns null"() {
+  def "-getProcessedResponse always returns null"() {
     expect: processor.processedResponse == null
 
     when: processor.addData(copiedBuffer("test", UTF_8))

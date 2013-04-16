@@ -16,7 +16,7 @@ class ConnectionPoolSpec extends Specification {
     connection = Mock(Connection)
   }
 
-  def "#connectionOpening increments the number of connections"() {
+  def "-connectionOpening increments the number of connections"() {
     when: pool.connectionOpening()
     then: pool.totalConnections() == 1
     and: pool.connections.isEmpty()
@@ -26,7 +26,7 @@ class ConnectionPoolSpec extends Specification {
     and: !pool.hasConnections()
   }
 
-  def "#connectionFailed decreases the number of connections and sets the connection failure flag"() {
+  def "-connectionFailed decreases the number of connections and sets the connection failure flag"() {
     setup:
     pool.connectionOpening()
     pool.connectionOpening()
@@ -36,7 +36,7 @@ class ConnectionPoolSpec extends Specification {
     and: pool.hasConnectionFailures()
   }
 
-  def "#connectionOpen adds a connection to the pool and increments the number of connections"() {
+  def "-connectionOpen adds a connection to the pool and increments the number of connections"() {
     setup:
     assert pool.totalConnections() == 0
     assert !pool.hasConnections()
@@ -47,14 +47,14 @@ class ConnectionPoolSpec extends Specification {
     and: pool.connections.contains(connection)
   }
 
-  def "#connectionOpen does not increment the number of connections if there were connections opening"() {
+  def "-connectionOpen does not increment the number of connections if there were connections opening"() {
     setup: pool.connectionOpening()
     when: pool.connectionOpen(connection)
     then: pool.totalConnections() == 1
     and: pool.hasConnections()
   }
 
-  def "#connectionOpen clears the connection failure flag"() {
+  def "-connectionOpen clears the connection failure flag"() {
     setup:
     pool.connectionOpening()
     pool.connectionFailed()
@@ -65,7 +65,7 @@ class ConnectionPoolSpec extends Specification {
     and: pool.totalConnections() == 1
   }
 
-  def "#connectionClosed removes a connection from the pool and decrements the number of connections"() {
+  def "-connectionClosed removes a connection from the pool and decrements the number of connections"() {
     setup: pool.connectionOpen(connection)
     when: pool.connectionClosed(connection)
     then: !pool.hasConnections()
