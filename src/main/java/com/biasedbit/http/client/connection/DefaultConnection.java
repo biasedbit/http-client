@@ -16,7 +16,9 @@
 
 package com.biasedbit.http.client.connection;
 
+import com.biasedbit.http.client.future.DataSinkListener;
 import com.biasedbit.http.client.future.RequestFuture;
+import com.biasedbit.http.client.processor.ResponseProcessor;
 import com.biasedbit.http.client.timeout.TimeoutController;
 import com.biasedbit.http.client.util.RequestContext;
 import com.biasedbit.http.client.util.Utils;
