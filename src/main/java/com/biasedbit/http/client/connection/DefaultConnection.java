@@ -240,14 +240,16 @@ public class DefaultConnection
         }
 
         synchronized (mutex) {
+            boolean channelOpenAndReady = (channel != null) && channel.isConnected();
+
             // This implementation only allows one execution at a time. If requests are performed during the period in
             // which isAvailable() returns false, the request is immediately rejected.
-            if (!available && (terminate == null) && channel.isConnected()) {
+            if (!available && (terminate == null) && channelOpenAndReady) {
                 // Terminate request wasn't issued, connection is open but unavailable, so fail the request!
                 context.getFuture().failedWithCause(RequestFuture.EXECUTION_REJECTED);
                 listener.requestFinished(this, context);
                 return true;
-            } else if ((terminate != null) || !channel.isConnected()) {
+            } else if ((terminate != null) || !channelOpenAndReady) {
                 // Terminate was issued or channel is no longer connected, don't accept execution and leave request
                 // untouched. Switching available to false isn't really necessary but...
                 available = false;
