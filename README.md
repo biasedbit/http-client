@@ -8,6 +8,11 @@ Built on top of Netty and designed for high concurrency scenarios where multiple
 Among many small optimizations, connections are reused whenever possible, which results in a severe reduction of total request execution times by cutting connection establishment overhead.
 
 
+### Version 1.1 is nearly ready
+
+Be sure to check the [change log](CHANGES.md). The user-facing API has remained pretty much the same apart from some class renaming &mdash; the transition should be smooth.
+
+
 ## Dependencies
 
 * JDK 1.7
@@ -111,7 +116,7 @@ Note that you can accomplish the same effect as the factory example by simply us
 
 ## Test coverage status
 
-A complete battery of tests was created for version 2.0, using [Spock Framework](https://github.com/spockframework/spock).
+This project has a battery of unit and integration tests created with [Spock Framework](https://github.com/spockframework/spock).
 
 The current coverage, as reported by IntelliJ IDEA is around **92%**. Keep in mind this project uses Lombok, so there is some auto-generated code (getters & setters, constructors) that is not tested.
 
