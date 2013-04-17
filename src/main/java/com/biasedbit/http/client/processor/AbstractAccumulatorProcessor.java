@@ -104,7 +104,7 @@ public abstract class AbstractAccumulatorProcessor<T>
     @Override public void addLastData(ChannelBuffer content)
             throws Exception {
         if (!finished) {
-            buffer.writeBytes(content);
+            if (content.readableBytes() > 0) buffer.writeBytes(content);
             result = convertBufferToResult(buffer);
             buffer = null;
             finished = true;
