@@ -1,11 +1,13 @@
 package com.biasedbit.http.client
 
 import com.biasedbit.http.client.connection.Connection
+import com.biasedbit.http.client.connection.ConnectionListener
 import com.biasedbit.http.client.connection.DefaultConnection
 import com.biasedbit.http.client.event.ExecuteRequestEvent
 import com.biasedbit.http.client.future.DataSinkListener
 import com.biasedbit.http.client.future.RequestFuture
 import com.biasedbit.http.client.processor.DiscardProcessor
+import com.biasedbit.http.client.timeout.TimeoutController
 import com.biasedbit.http.client.util.RequestContext
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import spock.lang.Specification
@@ -68,14 +70,21 @@ class DefaultHttpClientSpec extends Specification {
 
   def "it fails all retry requests with SHUTTING_DOWN if a client is terminated after a connection closes"() {
     given: "a couple of requests to retry after a connection is closed"
-    def connection = new DefaultConnection("id", "biasedbit.com", 80, null, null, null)
+    def connection = new DefaultConnection("id", "biasedbit.com", 80,
+        Mock(ConnectionListener), Mock(TimeoutController), null)
     def requests = [
         new RequestContext("biasedbit.com", 80, 100, request, new DiscardProcessor()),
         new RequestContext("biasedbit.com", 80, 100, request, new DiscardProcessor()),
     ]
-    client.handleExecuteRequest(new ExecuteRequestEvent(requests[0]))
 
-    and: "a connection is closed"
+    and: "there are some events in the event processing queue"
+    3.times {
+      client.handleExecuteRequest(new ExecuteRequestEvent(requests[0]))
+      client.connectionOpened(connection)
+      client.requestFinished(connection, requests[0])
+    }
+
+    and: "a connection is closed with requests to retry"
     client.connectionTerminated(connection, requests)
 
     when: "the client terminates immediately after the connection closed event"
