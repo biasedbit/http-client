@@ -17,6 +17,7 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 import static org.jboss.netty.buffer.ChannelBuffers.EMPTY_BUFFER
 import static org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
@@ -36,12 +37,12 @@ class DefaultConnectionSpec extends Specification {
   def port              = 80
   def listener          = Mock(ConnectionListener)
   def timeoutController = Mock(TimeoutController)
-  def executor          = Mock(Executor)
-  def connection        = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+  def connection        = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, null)
   def decoder           = new DecoderEmbedder(connection)
   def outgoingMessages  = []
 
   def setup() { setupDownstreamPipelineMessageTrap() }
+
   def cleanup() { decoder.finish() }
 
   def "it preserves creation properties"() {
@@ -70,7 +71,7 @@ class DefaultConnectionSpec extends Specification {
   def "it signals the listener a connection has failed to open if it receives a channel closed even before opening"() {
     given: "a connection that is opening"
     // We need to create another connection here because this test assumes the common case (an open connection)
-    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, null)
 
     when: connection.channelClosed(null, null)
     then: 1 * listener.connectionFailed(connection)
@@ -110,7 +111,7 @@ class DefaultConnectionSpec extends Specification {
   }
 
   def "it signals a connection termination if the response is not keep-alive"() {
-    given: "a non-keepalive request"
+    given: "a request"
     def request = createRequest()
 
     when: "the request is executed"
@@ -123,6 +124,22 @@ class DefaultConnectionSpec extends Specification {
 
     then: "the listener is notified of the connection termination"
     1 * listener.connectionTerminated(connection)
+  }
+
+  def "it delegates the network write to the executor when configured with one"() {
+    given: "a connection configured to use an executor"
+    def executor = Mock(Executor)
+    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+    decoder = new DecoderEmbedder(connection)
+
+    and: "a request"
+    def request = createRequest()
+
+    when: "the request is executed"
+    connection.execute(request)
+
+    then: "a task is submitted to the executor"
+    1 * executor.execute(_)
   }
 
   // response processor
@@ -372,7 +389,7 @@ class DefaultConnectionSpec extends Specification {
 
   def "it rejects execution if the connection is not yet established"() {
     given: "a connection not yet established"
-    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, null)
 
     and: "a request to execute"
     def request = createRequest()
@@ -407,6 +424,73 @@ class DefaultConnectionSpec extends Specification {
     !request.future.done
   }
 
+  // network write failure
+
+  def "it immediately fails the request and signals finished request if the network write fails"() {
+    given: "a channel that will raise exception when writing the request to the server"
+    channel().pipeline.addLast("bomber", new SimpleChannelDownstreamHandler() {
+      @Override void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        throw new Exception("kaboom")
+      }
+    })
+
+    and: "a request to execute"
+    def request = createRequest()
+
+    when: "the connection executes the request"
+    assert connection.execute(request)
+
+    and: "a client waits for the future associated with the request to complete"
+    request.future.await(200)
+
+    then: "the request will be marked as failed"
+    request.future.done
+    !request.future.successful
+    request.future.cause != null
+    request.future.cause.message.endsWith("kaboom") // endsWith because this is a wrapped exception
+
+    and: "the connection listener will have been notified of a finished request"
+    1 * listener.requestFinished(connection, request)
+
+    and: "the connection will still be marked as being available"
+    connection.available
+  }
+
+  def "it immediately fails the request and signals finished request if the network write fails using an executor"() {
+    given: "a connection configured to use an executor"
+    def executor = Executors.newSingleThreadExecutor()
+    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+    decoder = new DecoderEmbedder(connection)
+
+    and: "the network channel will raise exception when writing the request to the server"
+    channel().pipeline.addLast("bomber", new SimpleChannelDownstreamHandler() {
+      @Override void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        throw new Exception("kaboom")
+      }
+    })
+
+    and: "a request to execute"
+    def request = createRequest()
+
+    when: "the connection executes the request"
+    assert connection.execute(request)
+
+    and: "a client waits for the future associated with the request to complete"
+    request.future.await(200)
+
+    then: "the request will be marked as failed"
+    request.future.done
+    !request.future.successful
+    request.future.cause != null
+    request.future.cause.message.endsWith("kaboom") // endsWith because this is a wrapped exception
+
+    and: "the connection listener will have been notified of a finished request"
+    1 * listener.requestFinished(connection, request)
+
+    and: "the connection will still be marked as being available"
+    connection.available
+  }
+
   // data sink
 
   def "-isConnected returns true when the channel is connected and the connection has not been terminated"() {
@@ -415,7 +499,7 @@ class DefaultConnectionSpec extends Specification {
 
   def "-isConnected returns false when the channel is not yet connected"() {
     given: "a connection not yet established"
-    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, null)
 
     expect: !connection.connected
   }
@@ -480,7 +564,7 @@ class DefaultConnectionSpec extends Specification {
 
   def "-sendData ignores calls if connection is not yet established"() {
     given: "a connection not yet established"
-    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, executor)
+    connection = new DefaultConnection("${host}:${port}", host, port, listener, timeoutController, null)
 
     when: "data is fed to it"
     connection.sendData(copiedBuffer("biasedbit.com", CharsetUtil.UTF_8), false)
@@ -505,8 +589,9 @@ class DefaultConnectionSpec extends Specification {
     when: "data is fed to it"
     connection.sendData(copiedBuffer("biasedbit.com", CharsetUtil.UTF_8), false)
 
-    then: "no data is sent down the pipeline"
-    outgoingMessages.empty
+    then: "no data is sent down the pipeline, only the request"
+    outgoingMessages[0] instanceof DefaultHttpRequest
+    outgoingMessages.size() == 1
   }
 
   def "-sendData ignores calls if data is null and 'last' flag is not set"() {
@@ -520,8 +605,9 @@ class DefaultConnectionSpec extends Specification {
     when: "null data is fed to the connection"
     connection.sendData(null, false)
 
-    then: "no data is sent down the pipeline"
-    outgoingMessages.empty
+    then: "no data is sent down the pipeline, only the request"
+    outgoingMessages[0] instanceof DefaultHttpRequest
+    outgoingMessages.size() == 1
   }
 
   def "-sendData ignores calls if data has no readable bytes and 'last' flag is not set"() {
@@ -535,8 +621,9 @@ class DefaultConnectionSpec extends Specification {
     when: "null data is fed to the connection"
     connection.sendData(EMPTY_BUFFER, false)
 
-    then: "no data is sent down the pipeline"
-    outgoingMessages.empty
+    then: "no data is sent down the pipeline, only the request"
+    outgoingMessages[0] instanceof DefaultHttpRequest
+    outgoingMessages.size() == 1
   }
 
   def "-sendData writes a DefaultHttpChunk with the contents of input buffer if data is not marked as last"() {
@@ -552,7 +639,7 @@ class DefaultConnectionSpec extends Specification {
 
     then: "a DefaultHttpChunk with data is sent down the pipeline"
     !outgoingMessages.empty
-    with(outgoingMessages[0] as DefaultHttpChunk) { content.toString(CharsetUtil.UTF_8) == "biasedbit.com" }
+    with(outgoingMessages[1] as DefaultHttpChunk) { content.toString(CharsetUtil.UTF_8) == "biasedbit.com" }
   }
 
   def "-sendData writes a data chunk and a trailer chunk if the 'last' flag is set to true"() {
@@ -568,10 +655,10 @@ class DefaultConnectionSpec extends Specification {
 
     then: "a data chunk is sent down the pipeline"
     !outgoingMessages.empty
-    with(outgoingMessages[0] as DefaultHttpChunk) { content.toString(CharsetUtil.UTF_8) == "biasedbit.com" }
+    with(outgoingMessages[1] as DefaultHttpChunk) { content.toString(CharsetUtil.UTF_8) == "biasedbit.com" }
 
     and: "a trailer chunk is also sent down the pipeline"
-    outgoingMessages[1] instanceof DefaultHttpChunkTrailer
+    outgoingMessages[2] instanceof DefaultHttpChunkTrailer
   }
 
   def "it notifies the data sink listener it's ready to send data when the 100-Continue response is received"() {
