@@ -96,7 +96,7 @@ public class DefaultRequestFuture<T>
             done = true;
 
             // The connection must be killed in order for the request to effectively be cancelled
-            connection.terminate(CANCELLED);
+            if (connection != null) connection.terminate(CANCELLED);
 
             if (waiters > 0) notifyAll();
         }
