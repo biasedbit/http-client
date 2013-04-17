@@ -316,8 +316,7 @@ public class DefaultHttpClient
         eventQueue.offer(new ConnectionOpenEvent(connection));
     }
 
-    @Override public void connectionTerminated(Connection connection,
-                                               Collection<RequestContext> retryRequests) {
+    @Override public void connectionTerminated(Connection connection, Collection<RequestContext> retryRequests) {
         if (terminate) {
             if ((retryRequests != null) && !retryRequests.isEmpty()) {
                 for (RequestContext request : retryRequests) request.getFuture().failedWithCause(SHUTTING_DOWN);
@@ -428,7 +427,7 @@ public class DefaultHttpClient
 
         // Restore the requests to the queue prior to cleanup check - avoids unnecessary cleanup when there are request
         // to be retried.
-        if (event.getRetryRequests() != null) controller.restoreRequestsToQueue(event.getRetryRequests());
+        if (event.hasRequestsToRetry()) controller.restoreRequestsToQueue(event.getRetryRequests());
 
         // If the pool has no connections and no requests are in queue for this host, then clean it up.
         // No requests in queue, no connections open or opening... Cleanup resources.
