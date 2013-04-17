@@ -9,6 +9,7 @@ import com.biasedbit.http.server.DummyHttpServer
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest
 import org.jboss.netty.handler.codec.http.HttpHeaders
 import spock.lang.Specification
+import spock.lang.Timeout
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -42,26 +43,27 @@ class DefaultHttpClientTest extends Specification {
     client.terminate()
   }
 
+  @Timeout(3)
   def "it fails requests with TIMED_OUT cause if server doesn't respond within the configured request timeout"() {
     setup: server.responseLatency = 1000
-    when:
-    def future = client.execute(host, port, 100, request, new DiscardProcessor())
-    then: future.awaitUninterruptibly(5000)
+    when: def future = client.execute(host, port, 100, request, new DiscardProcessor())
+    then: future.await(2, TimeUnit.SECONDS)
     and: future.isDone()
     and: !future.isSuccessful()
     and: future.getCause() == TIMED_OUT
   }
 
+  @Timeout(2)
   def "it fails with CANNOT_CONNECT if connection fails"() {
     setup: server.terminate()
-    when:
-    def future = client.execute(host, port, request, new DiscardProcessor())
-    then: future.awaitUninterruptibly(1000)
+    when: def future = client.execute(host, port, request, new DiscardProcessor())
+    then: future.await(1, TimeUnit.SECONDS)
     and: future.isDone()
     and: !future.isSuccessful()
     and: future.getCause() == CANNOT_CONNECT
   }
 
+  @Timeout(2)
   def "it connects with SSL"() {
     given: "a server that accepts SSL connections"
     server.terminate()
@@ -75,12 +77,13 @@ class DefaultHttpClientTest extends Specification {
 
     expect: "it to successfully execute its request"
     with(client.execute(host, port, request)) { future ->
-      future.awaitUninterruptibly()
+      future.await(1, TimeUnit.SECONDS)
       future.isDone()
       future.isSuccessful()
     }
   }
 
+  @Timeout(2)
   def "it supports NIO mode"() {
     given: "a client configured to use NIO"
     client = new DefaultHttpClient()
@@ -89,7 +92,7 @@ class DefaultHttpClientTest extends Specification {
 
     expect: "it to successfully execute"
     with(client.execute(host, port, request)) { future ->
-      future.awaitUninterruptibly(1000)
+      future.await(1, TimeUnit.SECONDS)
       future.isDone()
       future.isSuccessful()
     }
