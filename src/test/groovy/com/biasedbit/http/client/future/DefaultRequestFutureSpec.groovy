@@ -216,7 +216,7 @@ class DefaultRequestFutureSpec extends Specification {
   }
 
   @Timeout(1)
-  def "-await immediately unlocks if the future is already complete"() {
+  def "-await() immediately unlocks if the future is already complete"() {
     given: future.finishedSuccessfully("result", response)
     expect: future.await() != null
   }
@@ -293,7 +293,7 @@ class DefaultRequestFutureSpec extends Specification {
   def "-awaitUninterruptibly(timeout, unit) unlocks after the specified timeout even if an interrupt occurs"() {
     given: scheduledEvent(100) { future.finishedSuccessfully("result", response) }
     and: scheduledInterruptForCurrentThread(50)
-    expect: future.awaitUninterruptibly(1, TimeUnit.SECONDS)
+    expect: future.awaitUninterruptibly(200, TimeUnit.MILLISECONDS)
   }
 
   @Timeout(1)
@@ -303,21 +303,21 @@ class DefaultRequestFutureSpec extends Specification {
   }
 
   @Timeout(1)
+  def "-awaitUninterruptibly(timeout, unit) unlocks after timeout returning 'false' if the future is not complete"() {
+    expect: !future.awaitUninterruptibly(50, TimeUnit.MILLISECONDS)
+  }
+
+  @Timeout(1)
   def "-awaitUninterruptibly(timeout) unlocks after the specified timeout (in ms) even if an interrupt occurs"() {
     given: scheduledEvent(100) { future.finishedSuccessfully("result", response) }
     and: scheduledInterruptForCurrentThread(50)
-    expect: future.awaitUninterruptibly(1000)
+    expect: future.awaitUninterruptibly(200)
   }
 
   @Timeout(1)
   def "-awaitUninterruptibly(timeout) immediately returns if the future is already complete"() {
     given: future.finishedSuccessfully("result", response)
-    expect: future.awaitUninterruptibly()
-  }
-
-  @Timeout(1)
-  def "-awaitUninterruptibly(timeout, unit) unlocks after timeout returning 'false' if the future is not complete"() {
-    expect: !future.awaitUninterruptibly(50, TimeUnit.MILLISECONDS)
+    expect: future.awaitUninterruptibly(200)
   }
 
   @Timeout(1)
