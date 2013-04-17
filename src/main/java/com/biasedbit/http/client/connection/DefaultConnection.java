@@ -275,9 +275,7 @@ public class DefaultConnection
                     try {
                         channel.write(context.getRequest());
                     } catch (Exception e) {
-                        currentRequest = null;
-                        context.getFuture().failedWithCause(e);
-                        available = true;
+                        handleWriteFailed(context, e);
                     }
                 }
             });
@@ -288,9 +286,7 @@ public class DefaultConnection
                 channel.write(context.getRequest());
             } catch (Exception e) {
                 // Some error occurred underneath, maybe ChannelClosedException.
-                currentRequest = null;
-                context.getFuture().failedWithCause(e);
-                available = true;
+                handleWriteFailed(context, e);
                 return true;
             }
         }
@@ -318,6 +314,13 @@ public class DefaultConnection
     }
 
     // private helpers ------------------------------------------------------------------------------------------------
+
+    private void handleWriteFailed(RequestContext context, Throwable cause) {
+        currentRequest = null;
+        context.getFuture().failedWithCause(cause);
+        listener.requestFinished(DefaultConnection.this, context);
+        available = isConnected(); // Only mark the connection available if we're still connected & not terminated
+    }
 
     private void receivedContentForCurrentRequest(ChannelBuffer content, boolean last) {
         // This method does not need any particular synchronization to ensure currentRequest doesn't change its state
