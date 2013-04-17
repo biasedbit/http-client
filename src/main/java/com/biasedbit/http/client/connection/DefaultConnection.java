@@ -178,12 +178,12 @@ public class DefaultConnection
 
     @Override public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
             throws Exception {
-        handleClose(e.getCause());
+        terminate(e.getCause());
     }
 
     @Override public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
-        handleClose(RequestFuture.CONNECTION_LOST);
+        terminate(RequestFuture.CONNECTION_LOST);
     }
 
     @Override public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e)
@@ -197,18 +197,26 @@ public class DefaultConnection
     // Connection -----------------------------------------------------------------------------------------------------
 
     @Override public void terminate(Throwable reason) {
+        RequestContext request;
         synchronized (mutex) {
-            // Already terminated, nothing to do here.
             if (terminate != null) return;
 
             terminate = reason;
-            // Mark as unavailable
             available = false;
-
-            if (currentRequest != null) currentRequest.getFuture().failedWithCause(terminate);
+            request = currentRequest; // If this.currentRequest = null request will be null which is ok
         }
 
-        if ((channel != null) && channel.isConnected()) {
+        if ((request != null) && !request.getFuture().isDone() &&
+            (request.isIdempotent() || restoreNonIdempotentOperations)) {
+            listener.connectionTerminated(this, Arrays.asList(request));
+        } else {
+            if ((request != null) && !request.getFuture().isDone()) request.getFuture().failedWithCause(reason);
+            listener.connectionTerminated(this);
+        }
+
+        if (channel == null) {
+            listener.connectionFailed(this);
+        } else if (channel.isConnected()) {
             try { channel.close(); } catch (Exception ignored) { /* ignored */ }
             // May bomb if channel closes between passing the condition checks and the call to close() executes.
         }
@@ -294,7 +302,7 @@ public class DefaultConnection
         return true;
     }
 
-    // DataSink ---------------------------------------------------------------------------------------------------
+    // DataSink -------------------------------------------------------------------------------------------------------
 
     @Override public boolean isConnected() { return (terminate == null) && (channel != null) && channel.isConnected(); }
 
@@ -308,33 +316,6 @@ public class DefaultConnection
     }
 
     // private helpers ------------------------------------------------------------------------------------------------
-
-    private void handleClose(Throwable cause) {
-        if (channel == null) {
-            // No need for any extra steps since available only turns true when channel connects.
-            // Simply notify the listener that the connection failed.
-            listener.connectionFailed(this);
-            return;
-        }
-
-        RequestContext request;
-        synchronized (mutex) {
-            if (terminate != null) return;
-
-            terminate = cause;
-            available = false;
-            request = currentRequest; // If this.currentRequest = null request will be null which is ok
-        }
-
-        if ((request != null) && !request.getFuture().isDone() &&
-            (request.isIdempotent() || restoreNonIdempotentOperations)) {
-            listener.connectionTerminated(this, Arrays.asList(request));
-        } else {
-            if ((request != null) && !request.getFuture().isDone()) request.getFuture().failedWithCause(cause);
-
-            listener.connectionTerminated(this);
-        }
-    }
 
     private void receivedContentForCurrentRequest(ChannelBuffer content, boolean last) {
         // This method does not need any particular synchronization to ensure currentRequest doesn't change its state
