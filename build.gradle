@@ -1,7 +1,7 @@
 /* A Java high performance throughput-oriented HTTP client library built with Netty */
 description = "http-client"
 
-version = "2.0.0-SNAPSHOT"
+version = "1.1.0-SNAPSHOT"
 repositories { mavenCentral() }
 
 apply plugin: "groovy" // takes care of setting up Java
