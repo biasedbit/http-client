@@ -1,0 +1,115 @@
+/* A Java high performance throughput-oriented HTTP client library built with Netty */
+description = "http-client"
+
+version = "1.1.0-SNAPSHOT"
+repositories { mavenCentral() }
+
+apply plugin: "groovy" // takes care of setting up Java
+
+// Add integration test sources support
+apply from: "https://raw.github.com/brunodecarvalho/gradle-plugins/master/integration-test.gradle"
+// Add a nice rspec-like colored output to the test suites
+apply from: "https://raw.github.com/brunodecarvalho/gradle-plugins/master/colored-test-output.gradle"
+
+dependencies {
+  sourceCompatibility = 1.7
+
+  groovy group: "org.codehaus.groovy", name: "groovy-all", version: "2.1.2"
+
+  compile 'io.netty:netty:3.6.4.Final'      // I/O swiss army knife
+  compile 'org.projectlombok:lombok:0.11.6' // Because f*** you, getters and setters!
+
+  testCompile "junit:junit:4.11"
+  testCompile "org.spockframework:spock-core:0.7-groovy-2.0"
+  testRuntime "cglib:cglib-nodep:2.2.2" // Required for spock to mock classes
+}
+
+
+/* --- MUTATION TESTING CONFIGURATION --- */
+
+buildscript {
+  repositories {
+    mavenCentral()
+    add(new org.apache.ivy.plugins.resolver.URLResolver()) {
+      name = "GitHub"
+      addArtifactPattern "http://cloud.github.com/downloads/szpak/[module]/[module]-[revision].[ext]"
+    }
+  }
+  dependencies {
+    classpath "info.solidsoft.gradle.pitest:gradle-pitest-plugin:0.29.0"
+    classpath "org.pitest:pitest:0.29"
+  }
+}
+
+apply plugin: "pitest"
+
+pitest {
+  targetClasses = ["com.biasedbit.http.client.*"]
+}
+
+
+/* --- IDEA PROJECT CONFIGURATION --- */
+
+apply plugin: "idea"
+
+idea {
+  project {
+    jdkName = '1.7'
+    languageLevel = '1.7'
+    wildcards = ['!?*.java', '!?*.groovy'] // everything that matches these will be considered resource
+
+    ipr.withXml { provider ->
+      // Edit the *.ipr xml to fix the annoying VCR root error
+      def vcsNode = provider.node.component.find { it.@name == 'VcsDirectoryMappings' }
+      vcsNode.mapping.@directory = '$PROJECT_DIR$'
+      vcsNode.mapping.@vcs = 'Git'
+
+      // Change the build output directory to build/idea/* instead of out/*
+      def projectNode = provider.node.component.find { it.@name == 'ProjectRootManager' }
+      projectNode.output.@url = 'file://$PROJECT_DIR$/build/idea'
+    }
+  }
+
+  // Add the integration test directories to the project sources
+  module { testSourceDirs += [file("src/integration-test/java"), file("src/integration-test/groovy")] }
+
+  workspace.iws.withXml { provider ->
+    def runManager = provider.node.component.find { it.@name == 'RunManager' }
+
+    runManager.append specsAndIntegrationTests()
+    runManager.append specs()
+    runManager.append integrationTests()
+
+    // Pre-select All Tests as default
+    runManager.@selected = 'JUnit.All tests'
+  }
+}
+
+// helpers to define run targets
+
+Node specsAndIntegrationTests() {
+  new NodeBuilder().configuration(name: "All tests", type: 'JUnit', factoryName: 'JUnit') {
+    option name: 'WORKING_DIRECTORY', value: 'file://$PROJECT_DIR$/build'
+    option name: 'TEST_OBJECT', value: 'package'
+    option name: 'PACKAGE_NAME', value: 'com.biasedbit.http.client'
+    option(name: 'TEST_SEARCH_SCOPE') { value defaultName: 'wholeProject' }
+  }
+}
+
+Node specs() {
+  new NodeBuilder().configuration(name: "Specs", type: 'JUnit', factoryName: 'JUnit') {
+    option name: 'WORKING_DIRECTORY', value: 'file://$PROJECT_DIR$/build'
+    option name: 'TEST_OBJECT', value: 'pattern'
+    option(name: 'TEST_SEARCH_SCOPE') { value defaultName: 'wholeProject' }
+    patterns { pattern testClass: 'com.biasedbit.http.client.*.*Spec' }
+  }
+}
+
+Node integrationTests() {
+  new NodeBuilder().configuration(name: "Integration tests", type: 'JUnit', factoryName: 'JUnit') {
+    option name: 'WORKING_DIRECTORY', value: 'file://$PROJECT_DIR$/build'
+    option name: 'TEST_OBJECT', value: 'pattern'
+    option(name: 'TEST_SEARCH_SCOPE') { value defaultName: 'wholeProject' }
+    patterns { pattern testClass: 'com.biasedbit.http.client.*.*Test' }
+  }
+}

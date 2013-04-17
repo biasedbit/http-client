@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.event;
+
+import com.biasedbit.http.client.util.RequestContext;
+import lombok.*;
 
 /**
- * Factory for {@link HttpClient} instances.
+ * Event generated when a request completes, either successfully or not.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+@RequiredArgsConstructor
+@ToString
+public class RequestCompleteEvent
+        implements ClientEvent {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient createClient();
+    // properties -----------------------------------------------------------------------------------------------------
+
+    @Getter private final RequestContext context;
+
+    // ClientEvent ------------------------------------------------------------------------------------------------
+
+    @Override public EventType getEventType() { return EventType.REQUEST_COMPLETE; }
 }

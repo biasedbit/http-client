@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.processor;
 
 /**
- * Factory for {@link HttpClient} instances.
+ * {@link ResponseProcessor} implementation that always discards the response body
+ * ({@link #willProcessResponse(org.jboss.netty.handler.codec.http.HttpResponse)} always returns {@code false}).
+ * <p/>
+ * Always returns {@code null} when  {@link #getProcessedResponse()} is called and performs no action when
+ * {@link #addData(org.jboss.netty.buffer.ChannelBuffer)} or {@link #addLastData(org.jboss.netty.buffer.ChannelBuffer)}
+ * are called.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
-
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient createClient();
-}
+public class DiscardProcessor
+        extends TypedDiscardProcessor<Object> { }
