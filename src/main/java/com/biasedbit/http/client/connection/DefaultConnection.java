@@ -311,7 +311,7 @@ public class DefaultConnection
     @Override public void disconnect() { terminate(RequestFuture.CANCELLED); }
 
     @Override public void sendData(ChannelBuffer data, boolean isLast) {
-        if (!isConnected()) return;
+        if (!isConnected() || (currentRequest == null) || !continueReceived) return;
 
         if ((data != null) && (data.readableBytes() > 0)) channel.write(new DefaultHttpChunk(data));
         if (isLast) channel.write(new DefaultHttpChunkTrailer());
