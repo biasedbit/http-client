@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.processor;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 /**
- * Factory for {@link HttpClient} instances.
- *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public class ByteAccumulatorProcessor
+        extends AbstractAccumulatorProcessor<byte[]> {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient createClient();
+    // AbstractAccumulatorProcessor -----------------------------------------------------------------------------------
+
+    @Override protected byte[] convertBufferToResult(ChannelBuffer buffer) {
+        byte[] data = new byte[buffer.readableBytes()];
+        buffer.readBytes(data);
+
+        return data;
+    }
 }

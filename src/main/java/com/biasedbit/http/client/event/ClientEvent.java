@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.event;
 
 /**
- * Factory for {@link HttpClient} instances.
+ * An generic event that is consumed by the consumer thread in {@link com.biasedbit.http.client.DefaultHttpClient}.
+ * <p/>
+ * When an event is consumed it will generate actions, such as executing requests, opening connections, queueing
+ * requests, etc.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public interface ClientEvent {
 
     /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
+     * @return Type of the event.
      */
-    HttpClient createClient();
+    EventType getEventType();
 }

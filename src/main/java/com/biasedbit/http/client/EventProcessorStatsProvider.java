@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Bruno de Carvalho
+ * Copyright 2013 BiasedBit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.biasedbit.http.client;
 
-import com.biasedbit.http.event.EventType;
+import com.biasedbit.http.client.event.EventType;
 
 /**
  * Provides statistics for an event processor.
@@ -52,5 +52,7 @@ public interface EventProcessorStatsProvider {
      * @return Total of processed events.
      */
     long getProcessedEvents();
+
+    long getProcessedEvents(EventType event);
 }
 

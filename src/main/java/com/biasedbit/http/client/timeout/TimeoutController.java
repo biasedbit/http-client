@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.timeout;
+
+import com.biasedbit.http.client.util.RequestContext;
 
 /**
- * Factory for {@link HttpClient} instances.
+ * Facility to manage timeouts for requests.
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public interface TimeoutController {
+
+    boolean init();
+
+    void terminate();
 
     /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
+     * Manage the timeout for the provided context.
      *
-     * @return A newly configured uninitialised {@link HttpClient}.
+     * @param context The request context to monitor. Timeout value is extracted from {@link
+     *                com.biasedbit.http.client.util.RequestContext#getTimeout()}.
      */
-    HttpClient createClient();
+    void controlTimeout(RequestContext context);
 }

@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package com.biasedbit.http.client;
+package com.biasedbit.http.client.future;
+
+import com.biasedbit.http.client.connection.DataSink;
 
 /**
- * Factory for {@link HttpClient} instances.
- *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-public interface HttpClientFactory {
+public interface DataSinkListener {
 
-    /**
-     * Creates, configures and returns an uninitialised {@link HttpClient} instance.
-     * Always remember to call {@code init()} on the instance returned (and {@code terminate()} once you're done
-     * with it).
-     *
-     * @return A newly configured uninitialised {@link HttpClient}.
-     */
-    HttpClient createClient();
+    void readyToSendData(DataSink sink);
+
+    void writeComplete(DataSink sink, long writtenAmount);
 }
