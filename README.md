@@ -28,20 +28,16 @@ HttpClient client = new DefaultHttpClient();
 client.init();
 
 // Setup the request
-HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_0,
-                                             HttpMethod.GET, "/");
+HttpRequest request = new DefaultHttpRequest(HTTP_1_0, GET, "/");
 
 // Execute the request, turning the result into a String
-HttpRequestFuture future = client.execute("biasedbit.com", 80, request,
-                                          new BodyAsStringProcessor());
+RequestFuture<String> future = client.execute("biasedbit.com", 80, request, new BodyAsStringProcessor());
 future.awaitUninterruptibly();
 // Print some details about the request
 System.out.println(future);
     
-// If response was >= 200 and <= 299, print the body
-if (future.isSuccessfulResponse()) {
-    System.out.println(future.getProcessedResult());
-}
+// If response was >= 200 and <= 299, print the body (a String)
+if (future.isSuccessfulResponse()) System.out.println(future.getProcessedResult());
 
 // Cleanup
 client.terminate();
@@ -55,15 +51,12 @@ Only the relevant parts are shown here.
 
 ```java
 // Execute the request
-HttpRequestFuture<String> future = client.execute("biasedbit.com", 80, request,
-                                                  new BodyAsStringProcessor());
-future.addListener(new HttpRequestFutureListener<String>() {
-    @Override
-    public void operationComplete(HttpRequestFuture future) throws Exception {
+RequestFuture<String> future = client.execute("biasedbit.com", 80, request, new BodyAsStringProcessor());
+future.addListener(new RequestFutureListener<String>() {
+    @Override public void operationComplete(RequestFuture<String> future)
+            throws Exception {
         System.out.println(future);
-        if (future.isSuccessfulResponse()) {
-            System.out.println(future.getProcessedResult());
-        }
+        if (future.isSuccessfulResponse()) System.out.println(future.getProcessedResult());
         client.terminate();
     }
 });
@@ -93,20 +86,38 @@ Or using a client factory, in case you want multiple clients:
 ```
 
 `HttpClientFactory` instances will configure each client produced exactly how they were configured - they have the same options as (or more than) the `HttpClient`s they generate.
-Instead of having some sort of configuration object, you configure the factory and then call `getClient()` in it to obtain a pre-configured client.
+Instead of having some sort of configuration object, you configure the factory and then call `createClient()` in it to obtain a pre-configured client.
 
 You can also create a client for a component, based on a predefined factory:
 
 ```xml
 <bean id="someBean" class="com.biasedbit.SomeComponent">
   <property name="httpClient">
-    <bean factory-bean="httpClientFactory" factory-method="getClient" />
+    <bean factory-bean="httpClientFactory" factory-method="createClient" />
   </property>
   <property ... />
 </bean>
 ```
 
 Note that you can accomplish the same effect as the factory example by simply using an abstract definition of a `HttpClient` bean and then using Spring inheritance.
+
+
+## Test coverage status
+
+A complete battery of tests was created for version 2.0, using [Spock Framework](https://github.com/spockframework/spock).
+
+The current coverage, as reported by IntelliJ IDEA is around **92%**. Keep in mind this project uses Lombok, so there is some auto-generated code (getters & setters, constructors) that is not tested.
+
+This project is also configured with [pitest](http://pitest.org) through [gradle-pitest-plugin](http://gradle-pitest-plugin.solidsoft.info/). The coverage reported by pitest is **81%**, with **55%** mutation coverage.
+
+To run the mutation test target and check the report, run the following:
+
+```bash
+$ gradle pitest
+$ open build/reports/pitest/<most recent date>/index.html
+```
+
+> The difference in coverage reported by IDEA and pitest's reports is due to the use of Lombok (IDEA reports coverage on original source code and pitest reports coverage on de-lombok'd (expanded) code.
 
 
 ## License
