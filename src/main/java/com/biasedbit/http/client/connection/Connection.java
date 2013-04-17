@@ -37,8 +37,8 @@ import org.jboss.netty.channel.ChannelHandler;
  * Implementations of this interface are thread-safe. However, it is ill-advised to used them from multiple threads in
  * order to avoid entropic behavior. If you really want to use a single connection from multiple threads, you should
  * manually synchronise externally. The reason for this is that if both threads call {@link #isAvailable()} at the same
- * time, both will be able to {@linkplain #execute(com.biasedbit.http.client.util.RequestContext) submit requests}, even though
- * the implementation may not accept both (and consequently fail the last one with
+ * time, both will be able to {@linkplain #execute(com.biasedbit.http.client.util.RequestContext) submit requests}, even
+ * though the implementation may not accept both (and consequently fail the last one with
  * {@link com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED}).
  * <p/>
  * Example:
@@ -50,22 +50,24 @@ import org.jboss.netty.channel.ChannelHandler;
  *     }
  * }</pre>
  * The reason for this implementation decision is making the common case fast: a vast majority of the times that
- * {@link #isAvailable()} is called, {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} will accept the
- * request. So rather than having only execute returning {@code true} or {@code false} based on the connection
- * availibility, this quicker call is a very reliable heuristic to determine if requests can be submitted or not.
+ * {@link #isAvailable()} is called, {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} will
+ * accept the request. So rather than having only execute returning {@code true} or {@code false} based on the
+ * connection availibility, this quicker call is a very reliable heuristic to determine if requests can be submitted
+ * or not.
  *
  * <div class="note">
  * <div class="header">Note:</div>
  * There is no guarantee that a request will be approved if {@link #isAvailable()} returned true. Even though the
  * odds are extremely slim, the connection may go down between the call to {@link #isAvailable()} and {@link
  * #execute(com.biasedbit.http.client.util.RequestContext) execute()}.
- * <p/>For such cases (and only for such cases) {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} will return {@code false}
+ * <p/>For such cases (and only for such cases)
+ * {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} will return {@code false}
  * rather than fail, the request in order for the caller to be given the chance to retry the same request in another
  * connection.
  * <p/>
- * In every other scenario where {@link #isAvailable()} returns false, calling {@link #execute(com.biasedbit.http.client.util.RequestContext)
- * execute()} <strong>will fail</strong> the request (with cause {@link
- * com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED}).
+ * In every other scenario where {@link #isAvailable()} returns false, calling
+ * {@link #execute(com.biasedbit.http.client.util.RequestContext) execute()} <strong>will fail</strong> the request
+ * (with cause {@link com.biasedbit.http.client.future.RequestFuture#EXECUTION_REJECTED}).
  * </div>
  *
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
@@ -124,6 +126,10 @@ public interface Connection
      * The exception to the above rule is when the request is submitted and the connection goes down meanwhile. In this
      * case, the request <strong>will not</strong> be marked as failed and this method will return {@code false} so that
      * the caller may retry the same request in another connection.
+     * <p/>
+     * Implementations of this method that return {@code true} <strong>MUST</strong> call the connection listener's
+     * {@link ConnectionListener#requestFinished(Connection, com.biasedbit.http.client.util.RequestContext)} when the
+     * request completes (or fails) unless the connection terminates due to other reasons.
      * <p/>
      * You should always, <strong>always</strong> test first with {@link #isAvailable()}.
      * <p/>
