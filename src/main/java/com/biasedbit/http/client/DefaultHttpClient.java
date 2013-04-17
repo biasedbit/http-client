@@ -743,8 +743,4 @@ public class DefaultHttpClient
 
         this.sslContextFactory = sslContextFactory;
     }
-
-    // object overrides -----------------------------------------------------------------------------------------------
-
-    @Override public String toString() { return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode()); }
 }

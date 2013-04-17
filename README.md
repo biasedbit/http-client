@@ -47,10 +47,17 @@ client.terminate();
 
 In asynchronous mode, an event listener is attached to the object returned by the http client when a request execution is submitted. Attaching this listener allows the programmer to define some computation to occur when the request finishes.
 
-Only the relevant parts are shown here.
-
 ```java
-// Execute the request
+// Execute an asynchronous request, JDK 8 syntax
+RequestFuture<String> future = client.execute("biasedbit.com", 80, request, new BodyAsStringProcessor());
+future.addListener((future) -> {
+        System.out.println(future);
+        if (future.isSuccessfulResponse()) System.out.println(future.getProcessedResult());
+        client.terminate();
+    }
+});
+
+// Execute an asynchronous request
 RequestFuture<String> future = client.execute("biasedbit.com", 80, request, new BodyAsStringProcessor());
 future.addListener(new RequestFutureListener<String>() {
     @Override public void operationComplete(RequestFuture<String> future)
