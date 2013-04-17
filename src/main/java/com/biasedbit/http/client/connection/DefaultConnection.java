@@ -30,6 +30,8 @@ import org.jboss.netty.handler.codec.http.*;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 
+import static org.jboss.netty.handler.codec.http.HttpHeaders.*;
+
 /**
  * Non-pipelining implementation of {@link Connection} interface.
  * <p/>
@@ -81,7 +83,7 @@ public class DefaultConnection
      * <p/>
      * By default, this option is disabled (safer).
      */
-    @Getter @Setter private boolean restoreNonIdempotentOperations  = RESTORE_NON_IDEMPOTENT_OPERATIONS;
+    @Getter @Setter private boolean restoreNonIdempotentOperations = RESTORE_NON_IDEMPOTENT_OPERATIONS;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -178,12 +180,12 @@ public class DefaultConnection
 
     @Override public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
             throws Exception {
-        terminate(e.getCause());
+        terminate(e.getCause(), true);
     }
 
     @Override public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
             throws Exception {
-        terminate(RequestFuture.CONNECTION_LOST);
+        terminate(RequestFuture.CONNECTION_LOST, true);
     }
 
     @Override public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e)
@@ -196,31 +198,7 @@ public class DefaultConnection
 
     // Connection -----------------------------------------------------------------------------------------------------
 
-    @Override public void terminate(Throwable reason) {
-        RequestContext request;
-        synchronized (mutex) {
-            if (terminate != null) return;
-
-            terminate = reason;
-            available = false;
-            request = currentRequest; // If this.currentRequest = null request will be null which is ok
-        }
-
-        if ((request != null) && !request.getFuture().isDone() &&
-            (request.isIdempotent() || restoreNonIdempotentOperations)) {
-            listener.connectionTerminated(this, Arrays.asList(request));
-        } else {
-            if ((request != null) && !request.getFuture().isDone()) request.getFuture().failedWithCause(reason);
-            listener.connectionTerminated(this);
-        }
-
-        if (channel == null) {
-            listener.connectionFailed(this);
-        } else if (channel.isConnected()) {
-            try { channel.close(); } catch (Exception ignored) { /* ignored */ }
-            // May bomb if channel closes between passing the condition checks and the call to close() executes.
-        }
-    }
+    @Override public void terminate(Throwable reason) { terminate(reason, false); }
 
     @Override public String getId() { return id; }
 
@@ -265,8 +243,8 @@ public class DefaultConnection
 
         // Now, it's theorethically possible that terminate() is called by other thread while this one is still "stuck"
         // (yes, I know write() is damn fast) on write() or the connection goes down while write() is still executing
-        // and by some race-condition-miracle the events trigger faster than write() executes (hooray for imperative
-        // multithreading!) thus causing write to fail. That's why this block is inside a try-catch. Y'never know...
+        // and by some race-condition-oddity the events trigger faster than write() executes thus causing write to fail.
+        // Hence this block inside a try-catch.
         if (executor != null) {
             // Delegating writes to an executor results in lower throughput but also lower request/response time.
             executor.execute(new Runnable() {
@@ -304,7 +282,7 @@ public class DefaultConnection
 
     @Override public boolean isConnected() { return (terminate == null) && (channel != null) && channel.isConnected(); }
 
-    @Override public void disconnect() { terminate(RequestFuture.CANCELLED); }
+    @Override public void disconnect() { terminate(RequestFuture.CANCELLED, false); }
 
     @Override public void sendData(ChannelBuffer data, boolean isLast) {
         if (!isConnected() || (currentRequest == null) || !continueReceived) return;
@@ -318,8 +296,35 @@ public class DefaultConnection
     private void handleWriteFailed(RequestContext context, Throwable cause) {
         currentRequest = null;
         context.getFuture().failedWithCause(cause);
-        listener.requestFinished(DefaultConnection.this, context);
+        listener.requestFinished(this, context);
         available = isConnected(); // Only mark the connection available if we're still connected & not terminated
+    }
+
+    private void terminate(Throwable reason, boolean restoreCurrent) {
+        RequestContext request;
+        synchronized (mutex) {
+            if (terminate != null) return;
+
+            terminate = reason;
+            available = false;
+            request = currentRequest; // If this.currentRequest = null request will be null which is ok
+        }
+
+        if (channel == null) {
+            listener.connectionFailed(this);
+        } else {
+            if (channel.isConnected()) try { channel.close(); } catch (Exception ignored) { /* ignored */ }
+
+            boolean hasRequestWithUnfinishedFuture = (request != null) && !request.getFuture().isDone();
+            boolean shouldRestore = restoreCurrent && hasRequestWithUnfinishedFuture &&
+                                    (request.isIdempotent() || restoreNonIdempotentOperations);
+            if (shouldRestore) {
+                listener.connectionTerminated(this, Arrays.asList(request));
+            } else {
+                if (hasRequestWithUnfinishedFuture) request.getFuture().failedWithCause(reason);
+                listener.connectionTerminated(this);
+            }
+        }
     }
 
     private void receivedContentForCurrentRequest(ChannelBuffer content, boolean last) {
@@ -396,12 +401,9 @@ public class DefaultConnection
         // Always called inside a synchronized block.
 
         RequestContext context = currentRequest;
-        // Only signal as available if the connection will be kept alive and if terminate hasn't been issued AND
-        // the channel is still connected.
-        available = HttpHeaders.isKeepAlive(currentRequest.getRequest()) &&
-                    HttpHeaders.isKeepAlive(currentResponse) &&
-                    terminate == null &&
-                    channel.isConnected();
+
+        boolean keepAlive = isKeepAlive(currentRequest.getRequest()) && isKeepAlive(currentResponse);
+        available = keepAlive && isConnected();
 
         currentRequest = null;
         currentResponse = null;
@@ -410,15 +412,12 @@ public class DefaultConnection
         listener.requestFinished(this, context);
 
         // If it's a non-keepalive connection, mark it as terminated, even though it may not be immediately closed.
-        if (!available) {
-            // Mark this connection as terminated, so that if we get disconnected meanwhile we don't trigger another
-            // connectionTerminated() event
-            terminate = RequestFuture.SHUTTING_DOWN;
-            listener.connectionTerminated(this);
-        }
+        if (!keepAlive) {
+            if (terminate == null) terminate(RequestFuture.SHUTTING_DOWN, false);
 
-        // If configured to do so, don't wait for the server to gracefully shutdown the connection
-        // and shut it down ourselves...
-        if (disconnectIfNonKeepAliveRequest && !available) channel.close();
+            // If configured to do so, don't wait for the server to gracefully shutdown the connection
+            // and shut it down ourselves...
+            if (disconnectIfNonKeepAliveRequest && channel.isConnected()) channel.close();
+        }
     }
 }
