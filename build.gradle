@@ -9,6 +9,7 @@ repositories { mavenCentral() }
 task wrapper(type: Wrapper)
 
 apply plugin: "groovy" // takes care of setting up Java
+apply plugin: "maven"  // allows installation to local maven repository
 
 // Add integration test sources support
 apply from: "https://raw.github.com/brunodecarvalho/gradle-plugins/master/integration-test.gradle"
