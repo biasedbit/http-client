@@ -6,6 +6,8 @@ group = "com.biasedbit"
 
 repositories { mavenCentral() }
 
+task wrapper(type: Wrapper)
+
 apply plugin: "groovy" // takes care of setting up Java
 
 // Add integration test sources support
