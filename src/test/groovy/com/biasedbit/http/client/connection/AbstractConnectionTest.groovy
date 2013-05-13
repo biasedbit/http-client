@@ -224,7 +224,7 @@ abstract class AbstractConnectionTest extends Specification {
 
     then: "the future is marked as complete without result"
     request.future.processedResult == null
-    request.future.successfulResponse
+    request.future.hasSuccessfulResponse()
 
     and: "the connection listener is notified that a request has finished"
     1 * listener.requestFinished(connection, request)

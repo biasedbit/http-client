@@ -62,7 +62,7 @@ public class DefaultRequestFuture<T>
         else return response.getStatus().getCode();
     }
 
-    @Override public boolean isSuccessfulResponse() {
+    @Override public boolean hasSuccessfulResponse() {
         int code = getResponseStatusCode();
         return (code >= 200) && (code <= 299);
     }

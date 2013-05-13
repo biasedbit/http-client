@@ -35,7 +35,7 @@ class DefaultRequestFutureSpec extends Specification {
     with(future) {
       it.isDone()
       it.isSuccessful()
-      it.isSuccessfulResponse()
+      it.hasSuccessfulResponse()
       it.processedResult == "finished"
       it.response == response
       it.status == response.status
@@ -63,7 +63,7 @@ class DefaultRequestFutureSpec extends Specification {
     with(future) {
       it.isDone()
       !it.isSuccessful()
-      !it.isSuccessfulResponse()
+      !it.hasSuccessfulResponse()
       it.processedResult == null
       it.response == null
       it.status == null
@@ -91,7 +91,7 @@ class DefaultRequestFutureSpec extends Specification {
     with(future) {
       it.isDone()
       !it.isSuccessful()
-      it.isSuccessfulResponse()
+      it.hasSuccessfulResponse()
       it.processedResult == null
       it.response == response
       it.status == response.status
@@ -167,10 +167,10 @@ class DefaultRequestFutureSpec extends Specification {
     !listener.notified
   }
 
-  def "-isSuccessfulResponse only returns true if the status code of the response is in the range 200-299"() {
+  def "-hasSuccessfulResponse only returns true if the status code of the response is in the range 200-299"() {
     setup: response = new DefaultHttpResponse(HTTP_1_1, status)
     when: future.finishedSuccessfully("finished", response)
-    then: future.successfulResponse == successfulResponse
+    then: future.hasSuccessfulResponse() == successfulResponse
     where:
     status                     | successfulResponse
     PROCESSING /* 102 */       | false
@@ -196,7 +196,7 @@ class DefaultRequestFutureSpec extends Specification {
     with(future) {
       it.isDone()
       !it.isSuccessful()
-      !it.isSuccessfulResponse()
+      !it.hasSuccessfulResponse()
       it.processedResult == null
       it.response == null
       it.status == null

@@ -42,7 +42,7 @@ future.awaitUninterruptibly();
 System.out.println(future);
     
 // If response was >= 200 and <= 299, print the body (a String)
-if (future.isSuccessfulResponse()) System.out.println(future.getProcessedResult());
+if (future.hasSuccessfulResponse()) System.out.println(future.getProcessedResult());
 
 // Cleanup
 client.terminate();
@@ -57,7 +57,7 @@ In asynchronous mode, an event listener is attached to the object returned by th
 RequestFuture<String> future = client.execute("biasedbit.com", 80, request, new BodyAsStringProcessor());
 future.addListener((future) -> {
         System.out.println(future);
-        if (future.isSuccessfulResponse()) System.out.println(future.getProcessedResult());
+        if (future.hasSuccessfulResponse()) System.out.println(future.getProcessedResult());
         client.terminate();
     }
 });
@@ -68,7 +68,7 @@ future.addListener(new RequestFutureListener<String>() {
     @Override public void operationComplete(RequestFuture<String> future)
             throws Exception {
         System.out.println(future);
-        if (future.isSuccessfulResponse()) System.out.println(future.getProcessedResult());
+        if (future.hasSuccessfulResponse()) System.out.println(future.getProcessedResult());
         client.terminate();
     }
 });

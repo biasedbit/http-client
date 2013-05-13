@@ -43,7 +43,7 @@ public interface RequestFuture<T> {
 
     int getResponseStatusCode();
 
-    boolean isSuccessfulResponse();
+    boolean hasSuccessfulResponse();
 
     void markExecutionStart();
 
