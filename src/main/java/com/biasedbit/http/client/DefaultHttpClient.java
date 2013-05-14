@@ -62,7 +62,8 @@ import static com.biasedbit.http.client.util.Utils.*;
  * <h3>Event queue (producer/consumer)</h3> When this implementation is initialised, it fires up an auxilliary thread,
  * the consumer.
  * <p/>
- * Every time one of the variants of the method {@code execute()} is called, a new {@link com.biasedbit.http.client.event.ClientEvent} is generated
+ * Every time one of the variants of the method {@code execute()} is called, a new
+ * {@link com.biasedbit.http.client.event.ClientEvent} is generated
  * and introduced in a blocking event queue (on the caller's thread execution time). The consumer then grabs that
  * request and acts accordingly - it can either queue the request so that it is later executed in an available
  * connection, request a new connection in case no connections are available, directly execute this request, etc.
@@ -76,19 +77,21 @@ import static com.biasedbit.http.client.util.Utils.*;
  * before B. The reasons are obvious:
  * <p/>
  * <ul>
- *  <li>A can end up in a connection slower than B's</li>
- *  <li>Server can respond faster on one socket than on the other</li>
- *  <li>Response for request B can have 10b and for request A 10bKb</li>
- *  <li>etc</li>
+ * <li>A can end up in a connection slower than B's</li>
+ * <li>Server can respond faster on one socket than on the other</li>
+ * <li>Response for request B can have 10b and for request A 10bKb</li>
+ * <li>etc</li>
  * </ul
  * <p/>
  * If you need to guarantee that a request B can only hit the server after a request A, you can either manually manage
- * that in your code through the {@link com.biasedbit.http.client.future.RequestFuture} API or configure the concrete instance of this class to allow
+ * that in your code through the {@link com.biasedbit.http.client.future.RequestFuture} API or configure the concrete
+ * instance of this class to allow
  * at most 1 connection per host - although this last option will hurt performance globally.
  * <p/>
  * <div class="note">
  * <div class="header">Note:</div>
- * Calling {@linkplain #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor) one of the variants of {@code execute}}
+ * Calling {@linkplain #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor) one
+ * of the variants of {@code execute}}
  * with the client configured with {@linkplain #setAutoDecompress(boolean) auto-inflation} turned on will cause a
  * 'ACCEPT_ENCODING' header to be added with value 'GZIP'.
  * </div>
@@ -380,7 +383,7 @@ public class DefaultHttpClient
                         break;
                     default: // Consume and do nothing, unknown event.
                 }
-            } catch (InterruptedException ignored) {  /* poisoning the queue is the only way to stop */ }
+            } catch (InterruptedException ignored) { /* poisoning the queue is the only way to stop this loop */ }
         }
     }
 
@@ -535,8 +538,8 @@ public class DefaultHttpClient
     /**
      * Sets the default request timeout, in milliseconds.
      * <p/>
-     * When {@link #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor)} is called (i.e. the variant without
-     * explicit request timeout) then this value is applied as the request timeout.
+     * When {@link #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor)} is
+     * called (i.e. the variant without explicit request timeout) then this value is applied as the request timeout.
      * <p/>
      * Requests whose execution time exceeds (precision depends on the
      * {@link com.biasedbit.http.client.timeout.TimeoutController} chosen) this value will be considered failed and
@@ -614,8 +617,8 @@ public class DefaultHttpClient
      * Sets the maximum number of queued requests for this client.
      * <p/>
      * If the number of queued requests is exceeded, calling
-     * {@linkplain #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor) one of the variants of {@code execute()}}
-     * will throw a {@link CannotExecuteRequestException}.
+     * {@linkplain #execute(String, int, HttpRequest, com.biasedbit.http.client.processor.ResponseProcessor) one of
+     * the variants of {@code execute()}} will throw a {@link CannotExecuteRequestException}.
      * <p/>
      * Defaults to {@link Short#MAX_VALUE}.
      *
@@ -701,7 +704,8 @@ public class DefaultHttpClient
     }
 
     /**
-     * The {@link com.biasedbit.http.client.connection.ConnectionFactory} that will be used to create new {@link com.biasedbit.http.client.connection.Connection}.
+     * The {@link com.biasedbit.http.client.connection.ConnectionFactory} that will be used to create new
+     * {@link com.biasedbit.http.client.connection.Connection}.
      * <p/>
      * Defaults to {@link com.biasedbit.http.client.connection.DefaultConnectionFactory} if none is provided.
      *

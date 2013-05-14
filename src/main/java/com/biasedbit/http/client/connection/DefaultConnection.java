@@ -211,7 +211,7 @@ public class DefaultConnection
     @Override public boolean execute(final RequestContext context) {
         Utils.ensureValue(context != null, "RequestContext cannot be null");
 
-        // Test for cancellation or tampering.
+        // Test for cancellation.
         if (context.getFuture().isDone()) {
             listener.requestFinished(this, context);
             return true;
@@ -229,7 +229,7 @@ public class DefaultConnection
                 return true;
             } else if ((terminate != null) || !channelOpenAndReady) {
                 // Terminate was issued or channel is no longer connected, don't accept execution and leave request
-                // untouched. Switching available to false isn't really necessary but...
+                // untouched. Switching available to false isn't really necessary but doesn't harm either.
                 available = false;
                 return false;
             }
@@ -307,7 +307,7 @@ public class DefaultConnection
 
             terminate = reason;
             available = false;
-            request = currentRequest; // If this.currentRequest = null request will be null which is ok
+            request = currentRequest; // If currentRequest = null, request var will be null which is ok
         }
 
         if (channel == null) {

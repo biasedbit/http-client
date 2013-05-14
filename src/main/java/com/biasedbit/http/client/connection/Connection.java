@@ -138,8 +138,8 @@ public interface Connection
      * @param context Request execution context.
      *
      * @return {@code true} if the request was accepted, {@code false} otherwise. If a request is accepted, the
-     * {@code Connection} becomes responsible for calling {@link
-     * com.biasedbit.http.client.future.DefaultRequestFuture#failedWithCause(Throwable) failedWithCause()} or
+     * {@code Connection} becomes responsible for calling
+     * {@link com.biasedbit.http.client.future.DefaultRequestFuture#failedWithCause(Throwable) failedWithCause()} or
      * {@link com.biasedbit.http.client.future.DefaultRequestFuture#finishedSuccessfully(Object,
      * org.jboss.netty.handler.codec.http.HttpResponse) finishedSuccessfully()} on it.
      */
