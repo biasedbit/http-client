@@ -266,7 +266,7 @@ public class PipeliningConnection
                     try {
                         channel.write(context.getRequest());
                     } catch (Exception e) {
-                        handleWriteFailed(context, e);
+                        handleWriteFailed(e);
                     }
                 }
             });
@@ -276,7 +276,7 @@ public class PipeliningConnection
             try {
                 channel.write(context.getRequest());
             } catch (Exception e) {
-                handleWriteFailed(context, e);
+                handleWriteFailed(e);
                 return true;
             }
         }
@@ -292,14 +292,7 @@ public class PipeliningConnection
 
     // private helpers ------------------------------------------------------------------------------------------------
 
-    private void handleWriteFailed(RequestContext context, Throwable cause) {
-        synchronized (mutex) { // Needs to be synchronized to avoid concurrent mod exception.
-            requests.remove(context);
-        }
-
-        context.getFuture().failedWithCause(cause);
-        listener.requestFinished(this, context);
-    }
+    private void handleWriteFailed(Throwable cause) { terminate(cause, false); }
 
     private void terminate(Throwable reason, boolean restoreCurrent) {
         synchronized (mutex) {

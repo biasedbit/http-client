@@ -486,11 +486,11 @@ abstract class AbstractConnectionTest extends Specification {
     request.future.cause != null
     request.future.cause.message.endsWith("kaboom") // endsWith because this is a wrapped exception
 
-    and: "the connection listener will have been notified of a finished request"
-    1 * listener.requestFinished(connection, request)
+    and: "the connection listener will have been notified of the connection termination, without requests to retry"
+    1 * listener.connectionTerminated(connection)
 
-    and: "the connection will still be marked as being available"
-    connection.available
+    and: "the connection will no longer be marked as being available"
+    !connection.available
   }
 
   def "it immediately fails the request and signals finished request if the network write fails using an executor"() {
@@ -521,10 +521,10 @@ abstract class AbstractConnectionTest extends Specification {
     request.future.cause != null
     request.future.cause.message.endsWith("kaboom") // endsWith because this is a wrapped exception
 
-    and: "the connection listener will have been notified of a finished request"
-    1 * listener.requestFinished(connection, request)
+    and: "the connection listener will have been notified of the connection termination, without requests to retry"
+    1 * listener.connectionTerminated(connection)
 
-    and: "the connection will still be marked as being available"
-    connection.available
+    and: "the connection will no longer be marked as being available"
+    !connection.available
   }
 }
