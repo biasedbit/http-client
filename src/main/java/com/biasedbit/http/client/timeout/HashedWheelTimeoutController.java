@@ -48,31 +48,23 @@ public class HashedWheelTimeoutController
 
     private final HashedWheelTimer timer;
 
-    // internal vars --------------------------------------------------------------------------------------------------
-
-    private final boolean internalTimer;
-
     // constructors ---------------------------------------------------------------------------------------------------
-
-    public HashedWheelTimeoutController() {
-        timer = new HashedWheelTimer(500, TimeUnit.MILLISECONDS, 512);
-        internalTimer = true;
-    }
 
     public HashedWheelTimeoutController(long tickDuration, TimeUnit unit, int ticksPerWheel) {
         timer = new HashedWheelTimer(tickDuration, unit, ticksPerWheel);
-        internalTimer = true;
     }
+
+    public HashedWheelTimeoutController() { this(500, TimeUnit.MILLISECONDS, 512); }
 
     // TimeoutManager -------------------------------------------------------------------------------------------------
 
     @Override public boolean init() {
-        if (internalTimer) timer.start();
+        timer.start();
 
         return true;
     }
 
-    @Override public void terminate() { if (internalTimer) timer.stop(); }
+    @Override public void terminate() { timer.stop(); }
 
     @SuppressWarnings({"unchecked"})
     @Override public void controlTimeout(final RequestContext context) {
