@@ -253,7 +253,7 @@ public class DefaultConnection
                     try {
                         channel.write(context.getRequest());
                     } catch (Exception e) {
-                        handleWriteFailed(context, e);
+                        handleWriteFailed(e);
                     }
                 }
             });
@@ -264,7 +264,7 @@ public class DefaultConnection
                 channel.write(context.getRequest());
             } catch (Exception e) {
                 // Some error occurred underneath, maybe ChannelClosedException.
-                handleWriteFailed(context, e);
+                handleWriteFailed(e);
                 return true;
             }
         }
@@ -293,12 +293,7 @@ public class DefaultConnection
 
     // private helpers ------------------------------------------------------------------------------------------------
 
-    private void handleWriteFailed(RequestContext context, Throwable cause) {
-        currentRequest = null;
-        context.getFuture().failedWithCause(cause);
-        listener.requestFinished(this, context);
-        available = isConnected(); // Only mark the connection available if we're still connected & not terminated
-    }
+    private void handleWriteFailed(Throwable cause) { terminate(cause, false); }
 
     private void terminate(Throwable reason, boolean restoreCurrent) {
         RequestContext request;
@@ -338,7 +333,7 @@ public class DefaultConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            currentRequest.getFuture().failedWithCause(e, currentResponse);
+            currentRequest.getFuture().failedWhileProcessingResponse(e, currentResponse);
             discarding = true;
         }
     }
@@ -392,7 +387,7 @@ public class DefaultConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            currentRequest.getFuture().failedWithCause(e, response);
+            currentRequest.getFuture().failedWhileProcessingResponse(e, response);
             discarding = true;
         }
     }

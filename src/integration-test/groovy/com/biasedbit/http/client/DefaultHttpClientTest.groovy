@@ -25,22 +25,35 @@ class DefaultHttpClientTest extends Specification {
 
   def host    = "localhost"
   def port    = 8081
-  def client  = new DefaultHttpClient()
   def request = new DefaultHttpRequest(HTTP_1_1, GET, "/")
   def server  = new DummyHttpServer(host, port)
+
+  DefaultHttpClient client
 
   def setup() {
     assert server.init()
 
-    client.connectionTimeout = 500
-    client.maxQueuedRequests = 50
-    assert client.init()
-    assert client.initialized
+    createClient {
+      client.connectionTimeout = 500
+      client.requestInactivityTimeout = 500
+      client.maxQueuedRequests = 50
+    }
   }
 
   public void cleanup() {
     server.terminate()
     client.terminate()
+  }
+
+  private void createClient(Closure closure = null) {
+    if (client != null) client.terminate()
+
+    client = new DefaultHttpClient()
+
+    if (closure != null) closure.call(client)
+
+    assert client.init()
+    assert client.initialized
   }
 
   @Timeout(3)
@@ -61,6 +74,58 @@ class DefaultHttpClientTest extends Specification {
     and: future.isDone()
     and: !future.isSuccessful()
     and: future.getCause() == CANNOT_CONNECT
+  }
+
+  @Timeout(3)
+  def "it picks up another request when the previous one fails due to time out"() {
+    given: "a client configured with a maximum of 1 concurrent request per host"
+    createClient { it.maxConnectionsPerHost = 1 }
+
+    and: "the target server has a 500ms response latency"
+    server.responseLatency = 500
+
+    when: "a request with 100ms of timeout is executed"
+    def future = client.execute(host, port, 100, request, new DiscardProcessor())
+
+    and: "a request with 800ms of timeout is executed"
+    def future2 = client.execute(host, port, 800, request, new DiscardProcessor())
+
+    then: "both futures associated with the request will finish under 1 second"
+    future.await(1, TimeUnit.SECONDS)
+    future2.await(1, TimeUnit.SECONDS)
+
+    and: "the first request, with 100ms timeout, will have failed with cause TIMED_OUT"
+    future.isDone()
+    !future.isSuccessful()
+    future.getCause() == TIMED_OUT
+
+    and: "the second request, with 800ms timeout, will have terminated successfully"
+    future2.isDone()
+    future2.isSuccessful()
+    future2.getResponse() != null
+    future2.hasSuccessfulResponse()
+  }
+
+  @Timeout(3)
+  def "it immediately fails queued requests when a connection fails"() {
+    given: "the server is not responding"
+    server.terminate()
+
+    when: "two requests are executed while the server is down"
+    def future = client.execute(host, port, 1000, request, new DiscardProcessor())
+    def future2 = client.execute(host, port, 1000, request, new DiscardProcessor())
+
+    then: "both futures associated with the request will finish under 1 second"
+    future.await(1, TimeUnit.SECONDS)
+    future2.await(1, TimeUnit.SECONDS)
+
+    and: "both requests will have failed with cause CANNOT_CONNECT"
+    future.isDone()
+    future2.isDone()
+    !future.isSuccessful()
+    !future2.isSuccessful()
+    future.getCause() == CANNOT_CONNECT
+    future2.getCause() == CANNOT_CONNECT
   }
 
   @Timeout(2)
