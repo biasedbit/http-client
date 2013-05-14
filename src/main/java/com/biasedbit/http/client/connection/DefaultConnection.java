@@ -338,7 +338,7 @@ public class DefaultConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            currentRequest.getFuture().failedWithCause(e, currentResponse);
+            currentRequest.getFuture().failedWhileProcessingResponse(e, currentResponse);
             discarding = true;
         }
     }
@@ -392,7 +392,7 @@ public class DefaultConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            currentRequest.getFuture().failedWithCause(e, response);
+            currentRequest.getFuture().failedWhileProcessingResponse(e, response);
             discarding = true;
         }
     }

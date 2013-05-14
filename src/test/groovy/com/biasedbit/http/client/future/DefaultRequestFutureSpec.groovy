@@ -76,7 +76,30 @@ class DefaultRequestFutureSpec extends Specification {
     listeners.each { assert it.notified }
   }
 
-  def "-failedWithCause triggers completion of the future with an exception as cause and the received response"() {
+  def "-failedWithCause triggers completion of the future and terminates the connection if it is still available"() {
+    given: "a future which has been started"
+    future.markExecutionStart()
+
+    and: "it has been attached to a connection"
+    def connection = Mock(Connection) { isAvailable() >> true }
+    future.attachConnection(connection)
+
+    when: "a timeout failure is triggered"
+    future.failedWithCause(RequestFuture.TIMED_OUT)
+
+    then: "the future will be marked as complete"
+    with(future) {
+      it.isDone()
+      !it.isSuccessful()
+      it.cause == RequestFuture.TIMED_OUT
+      !it.cancelled
+    }
+
+    and: "the connection will have been terminated"
+    1 * connection.terminate(RequestFuture.TIMED_OUT)
+  }
+
+  def "-failedWhileProcessingResponse triggers completion of the future with an exception and the received response"() {
     given: "a future which has been started"
     future.markExecutionStart()
 
@@ -85,7 +108,7 @@ class DefaultRequestFutureSpec extends Specification {
     listeners.each { future.addListener(it) }
 
     expect: "it to accept being finished"
-    future.failedWithCause(RequestFuture.EXECUTION_REJECTED, response)
+    future.failedWhileProcessingResponse(RequestFuture.EXECUTION_REJECTED, response)
 
     and: "it to be marked as completed"
     with(future) {

@@ -341,7 +341,7 @@ public class PipeliningConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().failedWithCause(e, currentResponse);
+            request.getFuture().failedWhileProcessingResponse(e, currentResponse);
             discarding = true;
         }
     }
@@ -394,7 +394,7 @@ public class PipeliningConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().failedWithCause(e, response);
+            request.getFuture().failedWhileProcessingResponse(e, response);
             discarding = true;
         }
     }
