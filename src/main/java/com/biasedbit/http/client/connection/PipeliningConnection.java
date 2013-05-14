@@ -266,7 +266,7 @@ public class PipeliningConnection
                     try {
                         channel.write(context.getRequest());
                     } catch (Exception e) {
-                        handleWriteFailed(context, e);
+                        handleWriteFailed(e);
                     }
                 }
             });
@@ -276,7 +276,7 @@ public class PipeliningConnection
             try {
                 channel.write(context.getRequest());
             } catch (Exception e) {
-                handleWriteFailed(context, e);
+                handleWriteFailed(e);
                 return true;
             }
         }
@@ -292,14 +292,7 @@ public class PipeliningConnection
 
     // private helpers ------------------------------------------------------------------------------------------------
 
-    private void handleWriteFailed(RequestContext context, Throwable cause) {
-        synchronized (mutex) { // Needs to be synchronized to avoid concurrent mod exception.
-            requests.remove(context);
-        }
-
-        context.getFuture().failedWithCause(cause);
-        listener.requestFinished(this, context);
-    }
+    private void handleWriteFailed(Throwable cause) { terminate(cause, false); }
 
     private void terminate(Throwable reason, boolean restoreCurrent) {
         synchronized (mutex) {
@@ -341,7 +334,7 @@ public class PipeliningConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().failedWithCause(e, currentResponse);
+            request.getFuture().failedWhileProcessingResponse(e, currentResponse);
             discarding = true;
         }
     }
@@ -394,7 +387,7 @@ public class PipeliningConnection
         } catch (Exception e) {
             // Unlock the future but don't signal that this connection is free just yet! There may still be contents
             // left to be consumed. Instead, set discarding flag to true.
-            request.getFuture().failedWithCause(e, response);
+            request.getFuture().failedWhileProcessingResponse(e, response);
             discarding = true;
         }
     }

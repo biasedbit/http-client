@@ -196,6 +196,7 @@ public class DefaultRequestFuture<T>
             done = true;
             result = processedResponse;
             this.response = response;
+
             if (waiters > 0) notifyAll();
         }
 
@@ -210,6 +211,9 @@ public class DefaultRequestFuture<T>
             executionEnd = System.nanoTime();
             this.cause = cause;
             done = true;
+
+            if ((connection != null) && connection.isAvailable()) connection.terminate(cause);
+
             if (waiters > 0) notifyAll();
         }
 
@@ -217,7 +221,7 @@ public class DefaultRequestFuture<T>
         return true;
     }
 
-    public boolean failedWithCause(Throwable cause, HttpResponse response) {
+    public boolean failedWhileProcessingResponse(Throwable cause, HttpResponse response) {
         synchronized (this) {
             if (done) return false;
 
@@ -225,6 +229,7 @@ public class DefaultRequestFuture<T>
             this.response = response;
             this.cause = cause;
             done = true;
+
             if (waiters > 0) notifyAll();
         }
 
