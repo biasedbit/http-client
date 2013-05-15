@@ -295,6 +295,8 @@ public class PipeliningConnection
     private void handleWriteFailed(Throwable cause) { terminate(cause, false); }
 
     private void terminate(Throwable reason, boolean restoreCurrent) {
+        if (terminate != null) return; // Quick check to (potentially) avoid synchronization cost
+
         synchronized (mutex) {
             if (terminate != null) return;
 

@@ -80,8 +80,8 @@ class DefaultRequestFutureSpec extends Specification {
     given: "a future which has been started"
     future.markExecutionStart()
 
-    and: "it has been attached to a connection"
-    def connection = Mock(Connection) { isAvailable() >> true }
+    and: "it has been attached to a busy connection"
+    def connection = Mock(Connection) { isAvailable() >> false }
     future.attachConnection(connection)
 
     when: "a timeout failure is triggered"

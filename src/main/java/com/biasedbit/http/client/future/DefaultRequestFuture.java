@@ -212,7 +212,7 @@ public class DefaultRequestFuture<T>
             this.cause = cause;
             done = true;
 
-            if ((connection != null) && connection.isAvailable()) connection.terminate(cause);
+            if (connection != null) connection.terminate(cause);
 
             if (waiters > 0) notifyAll();
         }
