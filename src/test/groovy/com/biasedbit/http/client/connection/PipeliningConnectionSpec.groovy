@@ -8,27 +8,10 @@ import java.util.concurrent.Executor
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
-class PipeliningConnectionSpec extends Specification {
+class PipeliningConnectionSpec extends AbstractConnectionTest {
 
-  def factory           = new PipeliningConnectionFactory()
-  def listener          = Mock(ConnectionListener)
-  def timeoutController = Mock(TimeoutController)
-  def executor          = Mock(Executor)
-
-  def "-createConnection creates a connection with the current settings"() {
-    expect: with(factory.createConnection("id", "host", 80, listener, timeoutController, executor)) { connection ->
-      connection != null
-
-      connection.id == "id"
-      connection.host == "host"
-      connection.port == 80
-      connection.listener == listener
-      connection.timeoutController == timeoutController
-      connection.executor == executor
-
-      connection.disconnectIfNonKeepAliveRequest == factory.disconnectIfNonKeepAliveRequest
-      connection.allowNonIdempotentPipelining == factory.allowNonIdempotentPipelining
-      connection.maxRequestsInPipeline == factory.maxRequestsInPipeline
-    }
+  @Override protected PipeliningConnection createConnection(String host, int port, ConnectionListener listener,
+                                                            TimeoutController timeoutController, Executor executor) {
+    return new PipeliningConnection("${host}:${port}", host, port, listener, timeoutController, executor)
   }
 }
