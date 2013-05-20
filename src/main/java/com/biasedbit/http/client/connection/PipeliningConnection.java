@@ -128,8 +128,9 @@ public class PipeliningConnection
     private boolean      readingChunks;
     private boolean      discarding;
     private Channel      channel;
-    private Throwable    terminate;
     private boolean      willClose;
+
+    private volatile Throwable terminate;
 
     // SimpleChannelUpstreamHandler -----------------------------------------------------------------------------------
 

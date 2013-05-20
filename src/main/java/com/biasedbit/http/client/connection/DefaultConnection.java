@@ -83,7 +83,7 @@ public class DefaultConnection
      * <p/>
      * By default, this option is disabled (safer).
      */
-    @Getter @Setter private boolean restoreNonIdempotentOperations = RESTORE_NON_IDEMPOTENT_OPERATIONS;
+    @Getter @Setter private boolean restoreNonIdempotentOperations  = RESTORE_NON_IDEMPOTENT_OPERATIONS;
 
     // internal vars --------------------------------------------------------------------------------------------------
 
@@ -96,9 +96,8 @@ public class DefaultConnection
 
     private final Object mutex = new Object();
 
-    private Channel   channel;
-    private Throwable terminate;
-    private boolean   available;
+    private Channel channel;
+    private boolean available;
 
     // state management
     private boolean        readingChunks;
@@ -106,6 +105,8 @@ public class DefaultConnection
     private HttpResponse   currentResponse;
     private boolean        discarding;
     private boolean        continueReceived;
+
+    private volatile Throwable terminate;
 
     // SimpleChannelUpstreamHandler -----------------------------------------------------------------------------------
 
