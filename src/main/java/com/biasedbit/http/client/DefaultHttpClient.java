@@ -261,23 +261,24 @@ public class DefaultHttpClient
 
     @Override public RequestFuture<Object> execute(String host, int port, HttpRequest request)
             throws CannotExecuteRequestException {
-        return execute(host, port, requestInactivityTimeout, request, DiscardProcessor.getInstance(), null);
+        return executeWithDataSink(host, port, requestInactivityTimeout, request, DiscardProcessor.getInstance(), null);
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, HttpRequest request,
                                                   ResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
-        return execute(host, port, requestInactivityTimeout, request, processor, null);
+        return executeWithDataSink(host, port, requestInactivityTimeout, request, processor, null);
     }
 
     @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                                      ResponseProcessor<T> processor)
+                                                  ResponseProcessor<T> processor)
             throws CannotExecuteRequestException {
-        return execute(host, port, timeout, request, processor, null);
+        return executeWithDataSink(host, port, timeout, request, processor, null);
     }
 
-    @Override public <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                                  ResponseProcessor<T> processor, DataSinkListener dataSinkListener)
+    @Override public <T> RequestFuture<T> executeWithDataSink(String host, int port, int timeout, HttpRequest request,
+                                                              ResponseProcessor<T> processor,
+                                                              DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException {
 
         if (terminate) throw new CannotExecuteRequestException("HttpClient already terminated");

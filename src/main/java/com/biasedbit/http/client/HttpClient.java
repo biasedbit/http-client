@@ -87,8 +87,8 @@ public interface HttpClient {
                                      ResponseProcessor<T> processor)
             throws CannotExecuteRequestException;
 
-    <T> RequestFuture<T> execute(String host, int port, int timeout, HttpRequest request,
-                                     ResponseProcessor<T> processor, DataSinkListener dataSinkListener)
+    <T> RequestFuture<T> executeWithDataSink(String host, int port, int timeout, HttpRequest request,
+                                             ResponseProcessor<T> processor, DataSinkListener dataSinkListener)
             throws CannotExecuteRequestException;
 
     /**
