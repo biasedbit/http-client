@@ -97,7 +97,7 @@ class DefaultHttpClientSpec extends Specification {
   @Unroll
   def "-execute accepts a '#method' request with an HttpDataSinkListener"() {
     given: request = new DefaultHttpRequest(HTTP_1_1, method, "/")
-    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(DataSinkListener))
+    when: client.executeWithDataSink(host, port, 100, request, new DiscardProcessor(), Mock(DataSinkListener))
     then: noExceptionThrown()
     where: method << [POST, PUT, PATCH]
   }
@@ -105,7 +105,7 @@ class DefaultHttpClientSpec extends Specification {
   @Unroll
   def "-execute raises exception if a '#method' request is submitted with an HttpDataSinkListener"() {
     given: request = new DefaultHttpRequest(HTTP_1_1, method, "/")
-    when: client.execute(host, port, 100, request, new DiscardProcessor(), Mock(DataSinkListener))
+    when: client.executeWithDataSink(host, port, 100, request, new DiscardProcessor(), Mock(DataSinkListener))
     then: thrown(IllegalArgumentException)
     where: method << [OPTIONS, GET, HEAD, DELETE, TRACE, CONNECT]
   }
