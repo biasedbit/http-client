@@ -16,7 +16,7 @@ Be sure to check the [change log](CHANGES.md). The user-facing API has remained 
 ## Dependencies
 
 * JDK 1.7
-* [Netty 3.5](http://netty.io/downloads/)
+* [Netty 3.6](http://netty.io/downloads/)
 * [Lombok 1.6](http://projectlombok.org)
 
 
