@@ -18,6 +18,8 @@ import java.net.SocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import static org.jboss.netty.handler.codec.http.HttpHeaders.*;
+
 /**
  * @author <a href="http://biasedbit.com/">Bruno de Carvalho</a>
  */
@@ -136,9 +138,9 @@ public class UploadMirrorHttpServer {
                 return;
             }
 
-            String continueHeader = request.getHeader(HttpHeaders.Names.EXPECT);
+            String continueHeader = getHeader(request, Names.EXPECT);
             if ((continueHeader != null) &&
-                HttpHeaders.Values.CONTINUE.equalsIgnoreCase(continueHeader) &&
+                Values.CONTINUE.equalsIgnoreCase(continueHeader) &&
                 (pauseBefore100Continue > 0)) {
                 System.err.println("*** Pausing before sending 100 continue...");
                 try { Thread.sleep(pauseBefore100Continue); } catch (InterruptedException ignored) { }
@@ -153,7 +155,7 @@ public class UploadMirrorHttpServer {
                 System.err.println(chunk.getContent().toString(CharsetUtil.UTF_8));
             }
 
-            if (buffer == null) buffer = ChannelBuffers.dynamicBuffer((int) HttpHeaders.getContentLength(request));
+            if (buffer == null) buffer = ChannelBuffers.dynamicBuffer((int) getContentLength(request));
             buffer.writeBytes(chunk.getContent());
 
             if (chunk.isLast()) sendFinalResponse();
@@ -166,10 +168,10 @@ public class UploadMirrorHttpServer {
         private void sendFinalResponse() {
             HttpResponse response = new DefaultHttpResponse(request.getProtocolVersion(), HttpResponseStatus.OK);
             if ((buffer != null) && (buffer.readableBytes() > 0)) {
-                String contentType = request.getHeader(HttpHeaders.Names.CONTENT_TYPE);
+                String contentType = getHeader(request, Names.CONTENT_TYPE);
                 if (contentType == null) contentType = "application/octet-stream";
-                response.addHeader(HttpHeaders.Names.CONTENT_TYPE, contentType);
-                response.addHeader(HttpHeaders.Names.CONTENT_LENGTH, buffer.readableBytes());
+                addHeader(response, Names.CONTENT_TYPE, contentType);
+                addHeader(response, Names.CONTENT_LENGTH, buffer.readableBytes());
                 response.setContent(buffer);
             }
 
@@ -178,10 +180,10 @@ public class UploadMirrorHttpServer {
         }
 
         private void sendResponse(HttpResponse response) {
-            response.addHeader(HttpHeaders.Names.SERVER, "UploadMirrorHttpServer");
-            if (response.getContent() == null) response.addHeader(HttpHeaders.Names.CONTENT_LENGTH, 0);
+            addHeader(response, Names.SERVER, "UploadMirrorHttpServer");
+            if (response.getContent() == null) addHeader(response, Names.CONTENT_LENGTH, 0);
 
-            boolean keepAlive = HttpHeaders.isKeepAlive(request);
+            boolean keepAlive = isKeepAlive(request);
             ChannelFuture f = channel.write(response);
             // Write the response & close the connection after the write operation.
             if (!keepAlive) f.addListener(ChannelFutureListener.CLOSE);

@@ -36,6 +36,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.jboss.netty.handler.codec.http.HttpHeaders.*;
+
 /**
  * A simple HttpServer with configurable error introduction.
  *
@@ -208,10 +210,10 @@ public class DummyHttpServer {
             // Build the response object.
             HttpResponse response = new DefaultHttpResponse(request.getProtocolVersion(), HttpResponseStatus.ACCEPTED);
             response.setContent(contentBuffer);
-            response.setHeader(HttpHeaders.Names.CONTENT_TYPE, "text/xml; charset=UTF-8");
+            setHeader(response, Names.CONTENT_TYPE, "text/xml; charset=UTF-8");
 
-            boolean keepAlive = HttpHeaders.isKeepAlive(request);
-            response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, contentBuffer.readableBytes());
+            boolean keepAlive = isKeepAlive(request);
+            setHeader(response, Names.CONTENT_LENGTH, contentBuffer.readableBytes());
 
             ChannelFuture f = e.getChannel().write(response);
             // Write the response & close the connection after the write operation.

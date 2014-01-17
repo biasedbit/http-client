@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.biasedbit.http.client.future.RequestFuture.*;
 import static com.biasedbit.http.client.util.Utils.*;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.*;
 
 /**
  * Abstract implementation of the {@link HttpClient} interface. Contains most of the boilerplate code that other
@@ -298,7 +299,7 @@ public class DefaultHttpClient
         }
 
         // Perform these checks on the caller thread's time rather than the event dispatcher's.
-        if (autoDecompress) request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
+        if (autoDecompress) setHeader(request, Names.ACCEPT_ENCODING, Values.GZIP);
 
         RequestContext<T> context = new RequestContext<>(host, port, timeout, request, processor);
         context.setDataSinkListener(dataSinkListener);
