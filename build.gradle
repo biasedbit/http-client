@@ -1,7 +1,7 @@
 /* A Java high performance throughput-oriented HTTP client library built with Netty */
 description = "http-client"
 
-version = "1.1.0-SNAPSHOT"
+version = "1.1.0"
 group = "com.biasedbit"
 
 repositories { mavenCentral() }
